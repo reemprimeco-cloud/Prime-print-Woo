@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+ios-app/node_modules/
+
+# Build output
+ios-app/build/
+ios-app/build-device/
+ios-app/ios/App/Pods/
+ios-app/ios/App/DerivedData/
+ios-app/ios/App/App.xcworkspace/xcuserdata/
+ios-app/ios/App/App.xcodeproj/xcuserdata/
+ios-app/ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Local dev install
+dev/wordpress/
+dev/*.sqlite
+dev/*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.claude/

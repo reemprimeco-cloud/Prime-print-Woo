@@ -1,0 +1,797 @@
+# Prime Printing Co. — Arabic translation
+# Customer-facing strings only; admin-only strings (Customizer, product
+# meta box, shipping method settings) are left untranslated on purpose —
+# see the docstring in build_translations.py for why.
+msgid ""
+msgstr ""
+"Project-Id-Version: Prime Printing 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ar\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
+"X-Domain: prime-printing\n"
+
+msgid " (+%s/pc)"
+msgstr " (+%s/قطعة)"
+
+msgid "\"Variable\" is a note for this product — set the actual product type in the Product data dropdown above."
+msgstr ""
+
+msgid "%s is required."
+msgstr "%s مطلوب."
+
+msgid "+ Add field"
+msgstr ""
+
+msgid "A creative printing boutique in Kuwait producing stickers, stamps, calendars and packaging in-house."
+msgstr "بوتيك طباعة إبداعي في الكويت ينتج الستيكرات والأختام والتقاويم والتغليف داخلياً."
+
+msgid "Add client logo"
+msgstr ""
+
+msgid "Address"
+msgstr "العنوان"
+
+msgid "Address type"
+msgstr "نوع العنوان"
+
+msgid "Address type:"
+msgstr "نوع العنوان:"
+
+msgid "Al Ahmadi"
+msgstr "الأحمدي"
+
+msgid "Al Asimah"
+msgstr "العاصمة"
+
+msgid "Al Farwaniya"
+msgstr "الفروانية"
+
+msgid "Al Jahra"
+msgstr "الجهراء"
+
+msgid "All categories"
+msgstr "كل الأقسام"
+
+msgid "All products"
+msgstr "جميع المنتجات"
+
+msgid "An estimate. The final price is confirmed on the product page."
+msgstr "تقدير أولي. السعر النهائي يُؤكَّد في صفحة المنتج."
+
+msgid "Announcement bar"
+msgstr ""
+
+msgid "Apartment"
+msgstr "شقة"
+
+msgid "Apartment no."
+msgstr "رقم الشقة"
+
+msgid "Apple Pay"
+msgstr "أبل باي"
+
+msgid "Area"
+msgstr "المنطقة"
+
+msgid "Area / piece"
+msgstr "المساحة / قطعة"
+
+msgid "Artwork"
+msgstr "التصميم"
+
+msgid "Artwork file"
+msgstr "ملف التصميم"
+
+msgid "Artwork upload"
+msgstr ""
+
+msgid "Auto-fill address"
+msgstr "تعبئة العنوان تلقائياً"
+
+msgid "Avenue (optional)"
+msgstr "الجادة (اختياري)"
+
+msgid "Back to cart"
+msgstr "الرجوع للسلة"
+
+msgid "Best seller"
+msgstr "الأكثر مبيعاً"
+
+msgid "Block"
+msgstr "قطعة"
+
+msgid "Browse the full catalogue"
+msgstr "تصفّحي الكتالوج الكامل"
+
+msgid "Building no. / name"
+msgstr "رقم/اسم المبنى"
+
+msgid "Cash on delivery"
+msgstr "كاش عند الاستلام"
+
+msgid "Cash on delivery fee"
+msgstr "رسوم الدفع عند الاستلام"
+
+msgid "Categories"
+msgstr "الأقسام"
+
+msgid "Checkout"
+msgstr "إتمام الطلب"
+
+msgid "Client logo"
+msgstr ""
+
+msgid "Client logos"
+msgstr ""
+
+msgid "Close menu"
+msgstr "أغلق القائمة"
+
+msgid "Company"
+msgstr "الشركة"
+
+msgid "Company name"
+msgstr "اسم الشركة"
+
+msgid "Configurator product"
+msgstr ""
+
+msgid "Contact details"
+msgstr ""
+
+msgid "Contact email"
+msgstr ""
+
+msgid "Content that appears across the site and on the homepage."
+msgstr ""
+
+msgid "Continue"
+msgstr "متابعة"
+
+msgid "Could not get location — enable location access and try again"
+msgstr "تعذّر الوصول للموقع — فعّلي إذن الموقع وحاولي مجدداً"
+
+msgid "Creative printing boutique — Kuwait"
+msgstr "بوتيك طباعة إبداعي — الكويت"
+
+msgid "Currently unavailable"
+msgstr "غير متوفر حالياً"
+
+msgid "Custom formula — priced by size and quantity"
+msgstr ""
+
+msgid "Delivery"
+msgstr "التوصيل"
+
+msgid "Delivery details"
+msgstr "تفاصيل التوصيل"
+
+msgid "Delivery location"
+msgstr "موقع التوصيل"
+
+msgid "Delivery within 48 hours across Kuwait"
+msgstr "التوصيل خلال ٤٨ ساعة داخل الكويت"
+
+msgid "Directions:"
+msgstr "التوجيهات:"
+
+msgid "Edit client logo"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "Enter %1$s–%2$s cm"
+msgstr "أدخلي بين %1$s و %2$s سم"
+
+msgid "Enter a valid Kuwaiti phone number for the recipient."
+msgstr "أدخلي رقم هاتف كويتي صحيح للمستلم."
+
+msgid "Enter a valid Kuwaiti phone number — it should start with 5, 6 or 9 and be 8 digits long."
+msgstr "أدخلي رقم هاتف كويتي صحيح — يجب أن يبدأ بـ ٥ أو ٦ أو ٩ ويتكون من ٨ أرقام."
+
+msgid "Enter dimensions between %1$s and %2$s cm."
+msgstr "أدخلي أبعاداً بين %1$s و %2$s سم."
+
+msgid "Enter the recipient's name."
+msgstr "أدخلي اسم المستلم."
+
+msgid "Estimated total"
+msgstr "الإجمالي التقديري"
+
+msgid "Everything we make, all at once"
+msgstr "كل ما نصنعه، دفعة واحدة"
+
+msgid "Everything we print, in one place."
+msgstr "كل ما نطبعه، في مكان واحد."
+
+msgid "Extra directions (optional)"
+msgstr "وصف محدد (اختياري)"
+
+msgid "Facebook"
+msgstr "فيسبوك"
+
+msgid "Facebook link"
+msgstr ""
+
+msgid "Featured"
+msgstr "المميزة"
+
+msgid "Field label, e.g. \"Gift note\""
+msgstr ""
+
+msgid "Fields shown to the customer"
+msgstr ""
+
+msgid "File upload"
+msgstr ""
+
+msgid "Final price is recalculated on our server when added to cart."
+msgstr "السعر النهائي يُعاد احتسابه في السيرفر عند الإضافة للسلة."
+
+msgid "Finish"
+msgstr "التشطيب"
+
+msgid "Finish options"
+msgstr ""
+
+msgid "Finish options (below)"
+msgstr ""
+
+msgid "Fixed — use the regular/sale price above"
+msgstr ""
+
+msgid "Floor"
+msgstr "الطابق"
+
+msgid "Footer description"
+msgstr ""
+
+msgid "Footer — company"
+msgstr ""
+
+msgid "Footer — shop"
+msgstr ""
+
+msgid "From %s"
+msgstr "يبدأ من %s"
+
+msgid "Full name"
+msgstr "الاسم الكامل"
+
+msgid "Full wa.me link, for example https://wa.me/9650000000"
+msgstr ""
+
+msgid "Get a quote"
+msgstr "اطلب سعر"
+
+msgid "Get in touch"
+msgstr "تواصل معنا"
+
+msgid "Gift"
+msgstr "هدية"
+
+msgid "Gift note (optional)"
+msgstr "ملاحظة الهدية (اختياري)"
+
+msgid "Gift note:"
+msgstr "ملاحظة الهدية:"
+
+msgid "Go to the shop"
+msgstr "اذهبي للمتجر"
+
+msgid "Google Pay"
+msgstr "قوقل باي"
+
+msgid "Governorate"
+msgstr "المحافظة"
+
+msgid "Hawalli"
+msgstr "حولي"
+
+msgid "Header & footer"
+msgstr ""
+
+msgid "Height (cm)"
+msgstr "الارتفاع (سم)"
+
+msgid "House / building no."
+msgstr "رقم المنزل / المبنى"
+
+msgid "Hero headline"
+msgstr ""
+
+msgid "Hero paragraph"
+msgstr ""
+
+msgid "Hero — small line above the headline"
+msgstr ""
+
+msgid "Home"
+msgstr "الرئيسية"
+
+msgid "Homepage"
+msgstr ""
+
+msgid "House"
+msgstr "منزل"
+
+msgid "House no."
+msgstr "رقم المنزل"
+
+msgid "I agree to be contacted on WhatsApp about my order and offers."
+msgstr "أوافق على التواصل عبر واتساب لتحديثات الطلب والعروض."
+
+msgid "If it can be printed, we <em>already</em> print it."
+msgstr "إذا كان يُطبع، فنحن <em>نطبعه</em> بالفعل."
+
+msgid "In stock · ships within 48 hours after approval"
+msgstr "متوفر · يُشحن خلال ٤٨ ساعة بعد الاعتماد"
+
+msgid "Instagram"
+msgstr "انستقرام"
+
+msgid "Instagram link"
+msgstr ""
+
+msgid "Invoice email"
+msgstr "إيميل استلام الفاتورة"
+
+msgid "Jump to a category"
+msgstr "انتقلي إلى قسم"
+
+msgid "KNET"
+msgstr "كي نت"
+
+msgid "Kuwait — KNET · Visa · Mastercard"
+msgstr "الكويت — كي نت · فيزا · ماستركارد"
+
+msgid "Language"
+msgstr "اللغة"
+
+msgid "Leave empty to hide the bar entirely."
+msgstr ""
+
+msgid "Locating…"
+msgstr "جارٍ التحديد…"
+
+msgid "Location not supported in this browser"
+msgstr "الموقع غير مدعوم في هذا المتصفح"
+
+msgid "Logo image"
+msgstr ""
+
+msgid "Made to your size"
+msgstr "على مقاسك"
+
+msgid "Menu"
+msgstr "القائمة"
+
+msgid "Method title"
+msgstr ""
+
+msgid "Minimum order total (KWD)"
+msgstr ""
+
+msgid "Minimum price per piece (KWD)"
+msgstr ""
+
+msgid "Mist"
+msgstr ""
+
+msgid "Mobile full-screen menu"
+msgstr ""
+
+msgid "Most products"
+msgstr "الأكثر منتجات"
+
+msgid "Mubarak Al-Kabeer"
+msgstr "مبارك الكبير"
+
+msgid "Name A–Z"
+msgstr "الاسم أ–ي"
+
+msgid "Navy"
+msgstr ""
+
+msgid "Navy deep"
+msgstr ""
+
+msgid "Need a company invoice?"
+msgstr "تبي فاتورة باسم الشركة؟"
+
+msgid "Next"
+msgstr "التالي"
+
+msgid "No client logos yet."
+msgstr ""
+
+msgid "No matches"
+msgstr "لا توجد نتائج"
+
+msgid "No payment methods are available. Please contact us to place your order."
+msgstr "لا تتوفر طرق دفع حالياً. يرجى التواصل معنا لإتمام طلبك."
+
+msgid "No searching required"
+msgstr "بدون بحث"
+
+msgid "No street address was collected — contact the recipient above for delivery details."
+msgstr "لم يتم تسجيل عنوان — تواصلي مع المستلم أعلاه لتفاصيل التوصيل."
+
+msgid "Not set yet"
+msgstr "لم يُحدَّد بعد"
+
+msgid "Nothing found."
+msgstr "لا يوجد شيء."
+
+msgid "On request"
+msgstr "حسب الطلب"
+
+msgid "One column"
+msgstr "عمود واحد"
+
+msgid "One flat rate per Kuwait governorate. Rates are set in code (prime_governorates() in inc/checkout-data.php), not in this settings screen — this method exists only to plug that table into WooCommerce's own shipping calculation."
+msgstr ""
+
+msgid "One per line: Label | price delta in KWD. Example: Holographic | 0.050"
+msgstr ""
+
+msgid "One service per line. Leave empty to list your product categories automatically."
+msgstr ""
+
+msgid "Open in Google Maps"
+msgstr "فتح في خرائط قوقل"
+
+msgid "Open menu"
+msgstr "افتح القائمة"
+
+msgid "Page not found"
+msgstr "الصفحة غير موجودة"
+
+msgid "Paper"
+msgstr ""
+
+msgid "Payment method"
+msgstr "طريقة الدفع"
+
+msgid "Phone"
+msgstr "الهاتف"
+
+msgid "Phone number"
+msgstr ""
+
+msgid "Pinned"
+msgstr "تم التحديد"
+
+msgid "Placeholder formula — Phase 4c replaces this with the real figures once the calculator for this product is provided. Editing these numbers now is safe; nothing here is final."
+msgstr ""
+
+msgid "Please upload your artwork file"
+msgstr "يرجى رفع ملف التصميم"
+
+msgid "Please upload your artwork file."
+msgstr "يرجى رفع ملف التصميم."
+
+msgid "Popular categories"
+msgstr "الأقسام الشائعة"
+
+msgid "Previous"
+msgstr "السابق"
+
+msgid "Price / piece"
+msgstr "السعر / قطعة"
+
+msgid "Price my sticker"
+msgstr "سعّر ستيكري"
+
+msgid "Price: high to low"
+msgstr "السعر: من الأعلى"
+
+msgid "Price: low to high"
+msgstr "السعر: من الأقل"
+
+msgid "Pricing model"
+msgstr ""
+
+msgid "Primary"
+msgstr "التنقل الرئيسي"
+
+msgid "Primary navigation"
+msgstr ""
+
+msgid "Prime Printing"
+msgstr ""
+
+msgid "Prime Printing Co."
+msgstr ""
+
+msgid "Prime Printing — by governorate"
+msgstr ""
+
+msgid "Products in the shuffling wall"
+msgstr ""
+
+msgid "Quantity"
+msgstr "الكمية"
+
+msgid "Rate per cm² (KWD)"
+msgstr ""
+
+msgid "Recipient name"
+msgstr "اسم المستلم"
+
+msgid "Recipient phone"
+msgstr "رقم المستلم"
+
+msgid "Recipient:"
+msgstr "المستلم:"
+
+msgid "Remove"
+msgstr ""
+
+msgid "Required"
+msgstr ""
+
+msgid "Results for “%s”"
+msgstr "نتائج البحث عن «%s»"
+
+msgid "Sale"
+msgstr "تخفيض"
+
+msgid "Scroll"
+msgstr "انزل"
+
+msgid "Search"
+msgstr "بحث"
+
+msgid "Search products and categories"
+msgstr "ابحثي في المنتجات والأقسام"
+
+msgid "See everything"
+msgstr "شوف كل شيء"
+
+msgid "Select area"
+msgstr "اختر المنطقة"
+
+msgid "Select governorate"
+msgstr "اختر المحافظة"
+
+msgid "Select your area."
+msgstr "اختاري منطقتك."
+
+msgid "Select your governorate."
+msgstr "اختاري محافظتك."
+
+msgid "Service ticker"
+msgstr ""
+
+msgid "Set logo image"
+msgstr ""
+
+msgid "Shop"
+msgstr "المتجر"
+
+msgid "Show image %d"
+msgstr "عرض الصورة %d"
+
+msgid "Show more (%s)"
+msgstr "عرض المزيد (%s)"
+
+msgid "Shown to the customer as the shipping method name."
+msgstr ""
+
+msgid "Shuffle"
+msgstr "بعثر"
+
+msgid "Simple add-ons — a text field or a file upload shown on any product, independent of the pricing model above."
+msgstr ""
+
+msgid "Since your browser does not support JavaScript, or it is disabled, please ensure you click the %s button below to update the totals on this order before placing your order. You may need to refresh this page or open it in a new browser tab."
+msgstr "بما أن متصفحك لا يدعم جافاسكريبت، أو أنه معطّل، يرجى التأكد من الضغط على زر %s أدناه لتحديث إجمالي هذا الطلب قبل إتمامه. قد تحتاجين لتحديث الصفحة أو فتحها في تبويب جديد."
+
+msgid "Size"
+msgstr "المقاس"
+
+msgid "Skip to content"
+msgstr "تخطَّ إلى المحتوى"
+
+msgid "Sky"
+msgstr ""
+
+msgid "Sort"
+msgstr "فرز"
+
+msgid "Stickers, stamps, calendars, packaging, backdrops, catalogs. Everything in one place — scroll and it finds you."
+msgstr "ستيكرات، أختام، تقاويم، تغليف، خلفيات، كتالوجات. كل شيء في مكان واحد — انزلي وسيجدك بنفسه."
+
+msgid "Street"
+msgstr "شارع"
+
+msgid "Tax number (optional)"
+msgstr "الرقم الضريبي (اختياري)"
+
+msgid "Text"
+msgstr ""
+
+msgid "That page has moved or never existed. Try the shop, or search for what you need."
+msgstr "هذه الصفحة انتقلت أو لم تكن موجودة. جرّبي المتجر، أو ابحثي عمّا تحتاجينه."
+
+msgid "The custom-priced product the homepage calculator links to. Leave unset to hide that section."
+msgstr ""
+
+msgid "Trusted by"
+msgstr "عملاؤنا"
+
+msgid "Try a different word, or browse all categories."
+msgstr "جرّبي كلمة أخرى، أو تصفحي كل الأقسام."
+
+msgid "Two columns"
+msgstr "عمودين"
+
+msgid "Type the size. Watch the price move."
+msgstr "اكتبي المقاس. وشوفي السعر يتحرك."
+
+msgid "Upload your artwork, pick the dimensions, and the total updates live. The specs travel with the order straight to your invoice."
+msgstr "ارفعي التصميم، اختاري الأبعاد، والإجمالي يتحدث مباشرة. المواصفات ترافق الطلب حتى الفاتورة."
+
+msgid "Used in the footer, the mobile menu, and the WhatsApp links on orders."
+msgstr ""
+
+msgid "Variable — priced by WooCommerce variations"
+msgstr ""
+
+msgid "Visa / Mastercard"
+msgstr "فيزا / ماستركارد"
+
+msgid "What we print"
+msgstr "ما نطبعه"
+
+msgid "WhatsApp"
+msgstr "واتساب"
+
+msgid "WhatsApp link"
+msgstr ""
+
+msgid "WhatsApp us"
+msgstr "واتساب"
+
+msgid "When gift mode is on, we contact the recipient for their address."
+msgstr "عند تفعيل الهدية نتواصل مع المستلم لأخذ عنوانه."
+
+msgid "Width (cm)"
+msgstr "العرض (سم)"
+
+msgid "Width / height (cm)"
+msgstr ""
+
+msgid "Wrap words in &lt;em&gt; to colour them sky blue. Use &lt;br&gt; for a line break."
+msgstr ""
+
+msgid "Your cart is currently empty."
+msgstr "سلتك فارغة حالياً."
+
+msgid "Your details"
+msgstr "بياناتك"
+
+msgid "Your order"
+msgstr "طلبك"
+
+msgid "Your phone"
+msgstr "رقم هاتفك"
+
+msgid "© %1$s %2$s"
+msgstr "© %1$s %2$s"
+
+msgid "— None —"
+msgstr ""
+
+msgid "Cart (%s)"
+msgid_plural "Cart (%s)"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+msgid "%s product"
+msgid_plural "%s products"
+msgstr[0] "منتج واحد"
+msgstr[1] "منتجان"
+msgstr[2] "%s منتجات"
+msgstr[3] "%s منتجاً"
+msgstr[4] "%s منتجاً"
+msgstr[5] "%s منتج"
+
+msgid "%s category"
+msgid_plural "%s categories"
+msgstr[0] "قسم واحد"
+msgstr[1] "قسمان"
+msgstr[2] "%s أقسام"
+msgstr[3] "%s قسماً"
+msgstr[4] "%s قسماً"
+msgstr[5] "%s قسم"
+
+msgid "Pick up your order here"
+msgstr "استلم طلبك من هنا"
+
+msgid "Get directions"
+msgstr "احصل على الاتجاهات"
+
+msgid "Prime Printing Co. — pickup location"
+msgstr "شركة برايم للطباعة — موقع الاستلام"
+
+msgid "Quantity (pcs)"
+msgstr "الكمية (قطعة)"
+
+msgid "Artwork file (optional)"
+msgstr "ملف التصميم (اختياري)"
+
+msgid "You can also send it later on WhatsApp — the order still goes through without it."
+msgstr "يمكنك أيضاً إرساله لاحقاً عبر واتساب — الطلب يمر بدونه أيضاً."
+
+msgid "Sheet length needed"
+msgstr "طول الشيت المطلوب"
+
+msgid "Total sheet price"
+msgstr "السعر الإجمالي للشيت"
+
+msgid "Enter a width and height for your sticker."
+msgstr "أدخل عرض وارتفاع الستيكر."
+
+msgid "Enter a width and height for your card."
+msgstr "أدخل عرض وارتفاع الكرت."
+
+msgid "Enter how many pieces you need."
+msgstr "أدخل عدد القطع المطلوبة."
+
+msgid "Need cutting?"
+msgstr "تحتاج قص؟"
+
+msgid "Cart"
+msgstr "السلة"
+
+msgid "Account"
+msgstr "حسابي"
+
+msgid "My account"
+msgstr "حسابي"
+
+msgid "Back"
+msgstr "رجوع"
+
+msgid "Share"
+msgstr "مشاركة"
+
+msgid "Popular"
+msgstr "الأكثر طلباً"
+
+msgid "All"
+msgstr "الكل"
+
+msgid "See all"
+msgstr "عرض الكل"
+
+msgid "Shop all products"
+msgstr "تسوق كل المنتجات"
+
+msgid "Order received"
+msgstr "تم استلام الطلب"
+
+msgid "Not found"
+msgstr "الصفحة غير موجودة"
+
+msgid "Search products"
+msgstr "ابحث عن منتج"
+
+msgid "Fast delivery"
+msgstr "توصيل سريع"
+
+msgid "Shop now"
+msgstr "تسوق الآن"
+
+msgid "App navigation"
+msgstr "تنقل التطبيق"

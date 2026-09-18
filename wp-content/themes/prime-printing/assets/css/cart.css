@@ -1,0 +1,530 @@
+/**
+ * Prime Printing — cart
+ *
+ * The Cart page renders through page.php's .prime-prose, with WooCommerce's
+ * own [woocommerce_cart] markup (table.cart, .cart_totals, .wc-proceed-to-
+ * checkout) untouched underneath. Scoped to body.woocommerce-cart so nothing
+ * here leaks onto other .prime-prose pages (About, Contact, …).
+ *
+ * Selectors targeting elements WooCommerce itself renders are qualified to
+ * match or exceed WooCommerce's own specificity, same rule as checkout.css.
+ */
+
+/* ---- Line items ------------------------------------------------------------ */
+.woocommerce-cart .prime-prose table.cart {
+  inline-size: 100%;
+  border: 1px solid var(--line);
+  border-collapse: collapse;
+  margin-block-end: var(--sp-6);
+  /*
+   * `table-layout: auto` (the default) sizes each column from the
+   * *narrowest* content that's forced to fit across every row — and
+   * `td.actions` below (the coupon box + Update Cart button) is a
+   * `display: flex` cell spanning colspan="6" with no width of its own, so
+   * it collapses to its content's min-width instead of stretching across
+   * all six columns like a plain table cell would. That min-width then feeds
+   * back into the auto algorithm's column distribution and squeezed every
+   * column unpredictably — the product-remove column alone measured 237px
+   * (for a single "×" icon) while product-name measured 77px, on a report
+   * (Reem, 2026-09-07, screenshot: "same issue... squeezed") of wrapped
+   * product names and a nearly-invisible thumbnail. Fixed widths sidestep
+   * the auto algorithm's guesswork entirely — every column below gets an
+   * explicit, predictable share instead.
+   */
+  table-layout: fixed;
+}
+
+/*
+ * Column widths for the fixed layout. Scoped above the phone breakpoint on
+ * purpose: below 600px the table's cells become stacked `display: block`
+ * rows (see the bottom of this file), and these rules are more specific than
+ * that block's `inline-size: 100%`, so left unscoped they'd win the cascade
+ * and shrink each stacked row to 44px/90px/13% — wrecking the mobile view
+ * Reem asked to keep exactly as it is.
+ */
+@media (min-width: 601px) {
+  .woocommerce-cart .prime-prose table.cart th.product-remove,
+  .woocommerce-cart .prime-prose table.cart td.product-remove { inline-size: 44px; }
+
+  .woocommerce-cart .prime-prose table.cart th.product-thumbnail,
+  .woocommerce-cart .prime-prose table.cart td.product-thumbnail { inline-size: 90px; }
+
+  .woocommerce-cart .prime-prose table.cart th.product-price,
+  .woocommerce-cart .prime-prose table.cart td.product-price,
+  .woocommerce-cart .prime-prose table.cart th.product-subtotal,
+  .woocommerce-cart .prime-prose table.cart td.product-subtotal { inline-size: 13%; }
+
+  .woocommerce-cart .prime-prose table.cart th.product-quantity,
+  .woocommerce-cart .prime-prose table.cart td.product-quantity { inline-size: 15%; }
+}
+
+.woocommerce-cart .prime-prose table.cart th,
+.woocommerce-cart .prime-prose table.cart td {
+  padding: var(--sp-4);
+  border-block-end: 1px solid var(--line);
+  font-size: var(--fs-body);
+  color: var(--ink-soft);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.woocommerce-cart .prime-prose table.cart thead th {
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: var(--fw-medium);
+}
+
+.woocommerce-cart .prime-prose table.cart tr:last-child td { border-block-end: none; }
+
+.woocommerce-cart .prime-prose table.cart td.product-name a {
+  color: var(--navy);
+  font-weight: var(--fw-medium);
+  text-decoration: none;
+}
+
+.woocommerce-cart .prime-prose table.cart td.product-name a:hover { text-decoration: underline; }
+
+.woocommerce-cart .prime-prose table.cart td.product-thumbnail img {
+  inline-size: 64px;
+  block-size: 64px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+}
+
+.woocommerce-cart .prime-prose table.cart td.product-price,
+.woocommerce-cart .prime-prose table.cart td.product-subtotal {
+  color: var(--navy);
+  font-weight: var(--fw-medium);
+}
+
+.woocommerce-cart .prime-prose table.cart td.product-remove a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 28px;
+  block-size: 28px;
+  border: 1px solid var(--line);
+  color: var(--danger);
+  font-size: var(--fs-lead);
+  line-height: 1;
+  text-decoration: none;
+  transition: .2s;
+}
+
+.woocommerce-cart .prime-prose table.cart td.product-remove a:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--paper);
+}
+
+.woocommerce-cart .prime-prose table.cart .quantity .qty {
+  inline-size: 64px;
+  border: 1px solid var(--line);
+  background: var(--mist);
+  padding: 8px 10px;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+
+.woocommerce-cart .prime-prose table.cart .quantity .qty:focus {
+  outline: none;
+  border-color: var(--sky);
+  background: var(--paper);
+}
+
+/*
+ * WooCommerce prints `.coupon` (the input + Apply coupon button) and
+ * `button[name=update_cart]` as siblings inside one `<td class="actions">` —
+ * left un-styled, WooCommerce's own default CSS floats them, which wraps
+ * unpredictably on narrow screens. Taking over the whole cell's layout here
+ * rather than styling each button in isolation.
+ */
+.woocommerce-cart .prime-prose table.cart td.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  align-items: stretch;
+}
+
+.woocommerce-cart .prime-prose table.cart button[name="update_cart"] {
+  inline-size: 100%;
+  text-align: center;
+  border: 1px solid var(--navy);
+  background: none;
+  color: var(--navy);
+  font-size: var(--fs-body-sm);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 10px var(--sp-5);
+  cursor: pointer;
+  transition: .2s;
+}
+
+.woocommerce-cart .prime-prose table.cart button[name="update_cart"]:not(:disabled):hover {
+  background: var(--navy);
+  color: var(--paper);
+}
+
+.woocommerce-cart .prime-prose table.cart button[name="update_cart"]:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/*
+ * Above the phone breakpoint the cell goes back to being a real table cell.
+ * `display: flex` on a <td> stops it being one: the browser wraps it in an
+ * anonymous cell that has no colspan, so this colspan="6" cell only ever got
+ * the first column's width — 237px under the old auto layout (and it inflated
+ * that column to fit), 44px under the fixed one. Measured live 2026-09-07:
+ * coupon input 34px wide, Update Cart 42px. As a table cell it spans all six
+ * columns again, and the two controls float to opposite ends of that row, as
+ * in the reference Reem sent. Phones keep the stacked flex column above.
+ */
+@media (min-width: 601px) {
+  .woocommerce-cart .prime-prose table.cart td.actions {
+    display: table-cell;
+    /* Room around the controls — the row shouldn't press against the
+       table's own border (Reem, 2026-09-07: "update cart box not fit inside
+       the box"). */
+    padding: var(--sp-5) var(--sp-5);
+  }
+
+  .woocommerce-cart .prime-prose table.cart td.actions::after {
+    content: "";
+    display: block;
+    clear: both;
+  }
+
+  .woocommerce-cart .prime-prose table.cart td.actions .coupon {
+    float: inline-start;
+    inline-size: min(100%, 440px);
+  }
+
+  .woocommerce-cart .prime-prose table.cart button[name="update_cart"] {
+    float: inline-end;
+    inline-size: auto;
+    min-block-size: 42px;
+  }
+
+  /* A button label is one line, always — wrapped into two it reads as
+     broken, which is how the 42px-wide version of this looked. */
+  .woocommerce-cart .prime-prose table.cart button[name="update_cart"],
+  .woocommerce-cart .prime-prose .coupon button[name="apply_coupon"] {
+    white-space: nowrap;
+  }
+}
+
+/* ---- Coupon ------------------------------------------------------------------ */
+/* Explicit placement rather than relying on grid auto-placement: WooCommerce
+   also prints a screen-reader-only <label> as this container's first child,
+   and browsers still count it as a grid item for auto-placement purposes
+   even though it's invisible — which pushed the real, visible input/button
+   into the wrong cells. Placing both by hand sidesteps that entirely. */
+.woocommerce-cart .prime-prose .coupon {
+  display: grid;
+  grid-template-columns: 1fr minmax(150px, auto);
+  gap: 10px;
+}
+
+.woocommerce-cart .prime-prose .coupon input#coupon_code {
+  grid-column: 1;
+  grid-row: 1;
+  inline-size: 100%;
+  min-inline-size: 0;
+  border: 1px solid var(--line);
+  background: var(--mist);
+  padding: 10px 14px;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+
+.woocommerce-cart .prime-prose .coupon input#coupon_code:focus {
+  outline: none;
+  border-color: var(--sky);
+  background: var(--paper);
+}
+
+.woocommerce-cart .prime-prose .coupon button[name="apply_coupon"] {
+  grid-column: 2;
+  grid-row: 1;
+  inline-size: 100% !important;
+  text-align: center;
+  border: 1px solid var(--navy);
+  background: none;
+  color: var(--navy);
+  font-size: var(--fs-body-sm);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 10px var(--sp-5);
+  cursor: pointer;
+  transition: .2s;
+  white-space: nowrap;
+}
+
+.woocommerce-cart .prime-prose .coupon button[name="apply_coupon"]:hover {
+  background: var(--navy);
+  color: var(--paper);
+}
+
+/* ---- Cart totals -------------------------------------------------------------- */
+.woocommerce-cart .prime-prose .cart-collaterals { margin-block-start: var(--sp-8); }
+
+.woocommerce-cart .prime-prose .cart_totals h2 {
+  font-family: var(--display);
+  font-size: var(--fs-lead);
+  font-weight: var(--fw-light);
+  color: var(--navy-deep);
+  margin-block-end: var(--sp-4);
+}
+
+.woocommerce-cart .prime-prose .cart_totals table.shop_table {
+  inline-size: 100%;
+  border: 1px solid var(--line);
+  border-collapse: collapse;
+}
+
+.woocommerce-cart .prime-prose .cart_totals table.shop_table th,
+.woocommerce-cart .prime-prose .cart_totals table.shop_table td {
+  padding: var(--sp-4);
+  border-block-end: 1px solid var(--line);
+  font-size: var(--fs-body);
+  color: var(--ink-soft);
+  text-align: start;
+  vertical-align: top;
+}
+
+.woocommerce-cart .prime-prose .cart_totals table.shop_table th { font-weight: var(--fw-medium); color: var(--navy); }
+
+.woocommerce-cart .prime-prose .cart_totals table.shop_table tr:last-child th,
+.woocommerce-cart .prime-prose .cart_totals table.shop_table tr:last-child td { border-block-end: none; }
+
+.woocommerce-cart .prime-prose .cart_totals .order-total th,
+.woocommerce-cart .prime-prose .cart_totals .order-total td {
+  font-size: var(--fs-lead);
+  font-weight: var(--fw-medium);
+  color: var(--navy);
+  border-block-start: 1px solid var(--line);
+}
+
+.woocommerce-cart .prime-prose .cart_totals .order-total .woocommerce-Price-amount {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: var(--fw-normal);
+  letter-spacing: .03em;
+}
+
+/* Shipping method radios */
+.woocommerce-cart .prime-prose .cart_totals ul#shipping_method {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.woocommerce-cart .prime-prose .cart_totals ul#shipping_method li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: var(--fs-body-sm);
+  color: var(--ink-soft);
+}
+
+.woocommerce-cart .prime-prose .cart_totals ul#shipping_method input[type="radio"] {
+  accent-color: var(--navy);
+  margin-block-start: 3px;
+  flex: none;
+  cursor: pointer;
+}
+
+.woocommerce-cart .prime-prose .cart_totals ul#shipping_method label { cursor: pointer; }
+
+.woocommerce-cart .prime-prose .cart_totals .woocommerce-shipping-destination {
+  font-size: var(--fs-sm);
+  color: var(--ink-faint);
+  margin-block-start: 6px;
+}
+
+/* ---- Proceed to checkout ------------------------------------------------------ */
+/*
+ * `.woocommerce a.checkout-button.button.alt` in WooCommerce's own sheet is
+ * 3 classes + element ≈ (0,3,1); matched here rather than fought with a bare
+ * class, same reasoning as checkout.css's coupon button.
+ */
+.woocommerce-cart .prime-prose .wc-proceed-to-checkout {
+  margin-block-start: var(--sp-5);
+}
+
+.woocommerce-cart .prime-prose .wc-proceed-to-checkout a.checkout-button.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  background: var(--navy);
+  color: var(--paper);
+  border: none;
+  border-radius: 0;
+  font-size: var(--fs-body-lg);
+  font-weight: var(--fw-medium);
+  padding: 17px;
+  text-decoration: none;
+  text-align: center;
+  transition: .25s;
+}
+
+.woocommerce-cart .prime-prose .wc-proceed-to-checkout a.checkout-button.button:hover {
+  background: var(--navy-deep);
+}
+
+/* ---- Notices (empty cart, coupon applied/removed) ----------------------------- */
+.woocommerce-cart .prime-prose .woocommerce-info,
+.woocommerce-cart .prime-prose .woocommerce-error,
+.woocommerce-cart .prime-prose .woocommerce-message {
+  list-style: none;
+  margin: 0 0 var(--sp-5);
+  padding: var(--sp-4);
+  border-inline-start: 3px solid var(--sky);
+  background: var(--mist);
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+
+.woocommerce-cart .prime-prose .woocommerce-error { border-inline-start-color: var(--danger); }
+
+.woocommerce-cart .prime-prose .woocommerce-info a.button,
+.woocommerce-cart .prime-prose .return-to-shop .button {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--navy);
+  background: none;
+  color: var(--navy);
+  font-size: var(--fs-body-sm);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 10px var(--sp-5);
+  text-decoration: none;
+  transition: .2s;
+  margin-block-start: var(--sp-3);
+}
+
+.woocommerce-cart .prime-prose .woocommerce-info a.button:hover,
+.woocommerce-cart .prime-prose .return-to-shop .button:hover {
+  background: var(--navy);
+  color: var(--paper);
+}
+
+/* ---- Cross-sells ---------------------------------------------------------------- */
+.woocommerce-cart .prime-prose .cart-collaterals + .cross-sells,
+.woocommerce-cart .prime-prose .cross-sells {
+  margin-block-start: var(--sp-9);
+}
+
+.woocommerce-cart .prime-prose .cross-sells h2 {
+  font-family: var(--display);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-light);
+  color: var(--navy-deep);
+  margin-block-end: var(--sp-5);
+}
+
+/* ---- Breakpoints ----------------------------------------------------------------- */
+@media (min-width: 782px) {
+  .woocommerce-cart .prime-prose .cart-collaterals {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: var(--sp-8);
+    align-items: start;
+  }
+}
+
+/*
+ * Desktop: the same wide, two-card treatment as checkout.css's own
+ * `@media (min-width: 1100px)` block — the Cart page reuses `.prime-prose`,
+ * a reading-width container shared with About/Contact/Privacy/Terms, and at
+ * 760px unconditionally that made a shopping cart look like the mobile view
+ * stretched into empty space either side of it (Reem, 2026-09-07: "also the
+ * Cart page having same issue of checkout page. squeezed"). Scoped to
+ * body.woocommerce-cart so those other pages keep their own reading width.
+ *
+ * `.cart-collaterals`'s own `1fr 340px` grid above assumes a second child
+ * beside `.cart_totals` (a shipping-rate calculator, say) that this store
+ * never renders — with only one child, that left column empty and squeezed
+ * everything into a narrower box than the row actually had room for, the
+ * same shape of bug as checkout's `.col-1` one. It's overridden back to a
+ * single column here now that `.cart-collaterals` is its own card.
+ */
+@media (min-width: 1100px) {
+  body.woocommerce-cart .prime-prose {
+    max-inline-size: 1160px;
+  }
+
+  /*
+   * Structure taken from the reference Reem sent 2026-09-07 ("make the cart
+   * page design similar to this design in alignment and preview of products
+   * and details"): the item table runs the full width on top; below it,
+   * "You may be interested in" (WooCommerce's cross-sells) sits on the left
+   * and the Cart Totals card on the right. The totals are pinned to the
+   * second column explicitly rather than auto-placed, so when a cart has no
+   * cross-sells to show, the totals still sit on the right as in the
+   * reference instead of sliding over to fill the empty first column.
+   */
+  body.woocommerce-cart .prime-prose .cart-collaterals {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px;
+    align-items: start;
+    gap: var(--sp-8);
+    margin-block-start: var(--sp-8);
+  }
+
+  body.woocommerce-cart .prime-prose .cart-collaterals .cross-sells { grid-column: 1; }
+
+  body.woocommerce-cart .prime-prose .cart-collaterals .cart_totals {
+    grid-column: 2;
+    /* WooCommerce core floats this at width: 48%, expecting it beside
+       cross-sells in a plain block flow — inside its own 400px grid track
+       that left it 192px wide. The track is the width now. */
+    inline-size: 100%;
+    float: none;
+    border: 1px solid var(--line);
+    padding: var(--sp-6);
+  }
+}
+
+@media (max-width: 600px) {
+  .woocommerce-cart .prime-prose table.cart thead { display: none; }
+
+  .woocommerce-cart .prime-prose table.cart,
+  .woocommerce-cart .prime-prose table.cart tbody,
+  .woocommerce-cart .prime-prose table.cart tr,
+  .woocommerce-cart .prime-prose table.cart td {
+    display: block;
+    inline-size: 100%;
+  }
+
+  .woocommerce-cart .prime-prose table.cart tr {
+    border-block-end: 1px solid var(--line);
+    padding-block-end: var(--sp-2);
+  }
+
+  .woocommerce-cart .prime-prose table.cart td {
+    border-block-end: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+  }
+
+  .woocommerce-cart .prime-prose table.cart td::before {
+    content: attr(data-title);
+    font-size: var(--fs-sm);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    flex: none;
+  }
+
+  .woocommerce-cart .prime-prose table.cart td.product-remove { justify-content: flex-end; }
+  .woocommerce-cart .prime-prose table.cart td.product-remove::before { content: none; }
+}

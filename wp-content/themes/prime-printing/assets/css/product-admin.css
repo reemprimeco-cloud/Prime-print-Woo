@@ -1,0 +1,47 @@
+/**
+ * Prime Printing — product edit screen additions.
+ *
+ * Intentionally minimal: this lives inside wp-admin, which has its own design
+ * system. No theme tokens here — matching wp-admin's own spacing/type keeps it
+ * from looking like a bolted-on plugin screen.
+ */
+
+.prime-admin-note {
+	font-style: italic;
+	color: #646970;
+	padding: 0 12px;
+}
+
+.prime-custom-formula {
+	display: none;
+}
+
+.prime-custom-formula.is-visible {
+	display: block;
+}
+
+.prime-inline-check {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-inline-end: 16px;
+	font-weight: 400;
+}
+
+.prime-finishes {
+	width: 100%;
+	max-width: 400px;
+	font-family: monospace;
+}
+
+.prime-addon-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-bottom: 1px solid #eee;
+}
+
+.prime-addon-row input[type="text"] {
+	flex: 1;
+}

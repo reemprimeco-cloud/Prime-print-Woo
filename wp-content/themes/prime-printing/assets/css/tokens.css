@@ -1,0 +1,204 @@
+/**
+ * Prime Printing — design tokens
+ *
+ * Single source of truth for the brand system. Values are lifted directly from
+ * the approved HTML references (theme-motion, shop-v3, product, checkout,
+ * invoice, account). Nothing in this file may be a "close enough" guess: if a
+ * value is not in a reference, it is derived from one and noted as such.
+ *
+ * Rule for every other stylesheet in this theme: no raw hex, no raw font stack,
+ * no raw spacing number. Use a token.
+ */
+
+:root {
+  /* ---- Brand ------------------------------------------------------------ */
+  --navy: #10254A;
+  --navy-deep: #08132A;
+  --sky: #7CA5C4;
+
+  /* ---- Surfaces --------------------------------------------------------- */
+  --paper: #FFFFFF;
+  --mist: #F4F7F9;
+  --line: rgba(16, 37, 74, .12);
+
+  /* Navy/sky at the opacities the references use repeatedly, named so they can
+     be tuned in one place instead of per-component. Across the shop and product
+     references the same "secondary ink text" role is set at .45/.5/.55/.6/.62 —
+     five near-identical greys rather than one deliberate scale. Consolidated to
+     the three values that recur most, closest match wins where a reference
+     falls between two (shop's toggle button at .6 and product's --sub at .62
+     both read as --ink-mid; a 0.02–0.07 alpha gap is not visible). */
+  --line-strong: rgba(16, 37, 74, .22);
+  --ink: var(--navy-deep);
+  --ink-faint: rgba(8, 19, 42, .45);
+  --ink-softer: rgba(8, 19, 42, .5);
+  --ink-soft: rgba(8, 19, 42, .55);
+  --ink-mid: rgba(8, 19, 42, .6);
+  --sky-wash: rgba(124, 165, 196, .12);
+
+  /* On navy surfaces (hero, menu, footer, page head) */
+  --on-navy: #FFFFFF;
+  --on-navy-soft: rgba(255, 255, 255, .72);
+  --on-navy-softer: rgba(255, 255, 255, .6);
+  --on-navy-faint: rgba(255, 255, 255, .5);
+  --on-navy-line: rgba(255, 255, 255, .14);
+  --on-navy-line-strong: rgba(255, 255, 255, .28);
+
+  /* ---- Status ----------------------------------------------------------- */
+  /* --ok/--ok-wash and --warn/--warn-wash are the literal values from the
+     product and account page references (status pills — "in stock", and the
+     account Orders tab's Delivered/Awaiting-quote pills). --danger has no
+     reference source yet — nothing in the built pages needed it as a pill —
+     so it stays extrapolated to the same saturation/wash opacity as the
+     other two, flagged here to confirm once a reference actually uses it. */
+  --ok: #1D7A4F;
+  --ok-wash: #E8F4EE;
+  --warn: #B5730C;
+  --warn-wash: #FBF2E3;
+  --danger: #B23A38;
+  --danger-wash: rgba(178, 58, 56, .08);
+
+  /* ---- Type ------------------------------------------------------------- */
+  /* Reem's brand fonts (2026-09-07). Montserrat for everything Latin, loaded
+     from Google Fonts in inc/enqueue.php. GE Dinar Two is a licensed
+     commercial face — it is NOT downloaded from a free-fonts site; it takes
+     effect once Reem's own licensed files are self-hosted via @font-face
+     from assets/fonts/ (until then Arabic falls through to IBM Plex Sans
+     Arabic, which Google Fonts still serves). */
+  --display: 'Montserrat', sans-serif;
+  --body: 'Montserrat', sans-serif;
+  --arabic: 'GE Dinar Two', 'IBM Plex Sans Arabic', sans-serif;
+
+  --fw-thin: 200;
+  --fw-light: 300;
+  --fw-normal: 400;
+  --fw-medium: 500;
+
+  --lh-body: 1.65;
+  --lh-tight: 1.02;
+  --lh-heading: 1.12;
+
+  /* Letter-spacing scale. The references lean hard on wide tracking for
+     uppercase micro-copy; these are the exact values they use. */
+  --track-logo: .22em;
+  --track-eyebrow: .28em;
+  --track-label: .2em;
+  --track-nav: .14em;
+  --track-btn: .16em;
+  --track-tight: .1em;
+
+  /* Fluid display sizes, straight from the references' clamp() values. */
+  --fs-hero: clamp(42px, 7vw, 86px);
+  --fs-page-title: clamp(34px, 5vw, 56px);
+  --fs-section: clamp(28px, 3.6vw, 42px);
+  --fs-cfg: clamp(30px, 4vw, 48px);
+
+  /* Small end raised one step across the board (Reem, 2026-09-07: the small
+     text "can't be read, enlarge it a little") — 10/11px eyebrows and
+     captions were below comfortable reading size, and Montserrat's large
+     x-height carries 15px body text well. Hierarchy between steps is kept. */
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-nav: 13px;
+  --fs-body-sm: 14px;
+  --fs-body: 15px;
+  --fs-body-lg: 16px;
+  --fs-lead: 17px;
+
+  /* ---- Space ------------------------------------------------------------ */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 28px;
+  --sp-8: 34px;
+  --sp-9: 42px;
+  --sp-10: 56px;
+  --sp-11: 74px;
+  --sp-12: 96px;
+
+  /* ---- Layout ----------------------------------------------------------- */
+  /* Widened from 1280px (Reem, 2026-09-05: "the desktop view … maybe little
+     wider") — on a large monitor the old width left broad empty margins and
+     squeezed the product page's right-hand column, which is where the
+     configurator and its result boxes live. */
+  --wrap: 1440px;
+  --wrap-pad: 28px;
+  --wrap-pad-sm: 16px;
+  /* Header sized up a step (Reem, 2026-09-05: "كبر حجم البار العلوي … ابي
+     الشعار يكون واضح للزائر") — the lockup was reading as small against the
+     wide nav. Every header measurement flows from these, so the sticky-shop
+     offset in shop.css follows automatically. */
+  --nav-h: 92px;
+  --topbar-h: 42px;
+
+  /* Logo lockup height. The asset is 720x315 (ratio 2.29), so width follows. */
+  --logo-h: 44px;
+  --logo-h-lg: 56px;
+
+  /* ---- The signature mark ----------------------------------------------- */
+  /* The sky square that forms the dot on the "i" in the real logo asset
+     (assets/img/logo-navy.png). Lifted out of the lockup and reused on its own
+     as bullet, button glyph and section marker across every page. */
+  --mark-size: 9px;
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+  --ease-image: cubic-bezier(.2, .6, .2, 1);
+  --dur-fast: .25s;
+  --dur: .3s;
+  --dur-slow: .4s;
+  --dur-menu: .38s;
+  --dur-image: .7s;
+
+  /* ---- Elevation -------------------------------------------------------- */
+  --z-bar: 50;
+  --z-nav: 60;
+  --z-hero-nav: 90;
+  --z-menu: 100;
+
+  /* ---- Currency --------------------------------------------------------- */
+  /* Kuwaiti dinar is quoted to 3 decimals everywhere in the references. */
+  --price-decimals: 3;
+}
+
+/*
+ * Arabic pages (Polylang puts lang="ar" on <html>, so this re-scopes the
+ * inherited tokens for the whole tree). Arabic script at the same pixel
+ * size reads smaller than Latin — its letters sit low with short verticals
+ * and no capitals — so the text sizes step up roughly 15% (Reem, 2026-09-07,
+ * screenshot of the Arabic hero: the eyebrow and subtitle were unreadable).
+ * Every letter-spacing token collapses to 0: tracking pulls connected Arabic
+ * letters apart and is simply wrong for the script. --track-logo is kept —
+ * the wordmark stays Latin on both languages. Redefining the tokens here
+ * rather than restyling elements one by one means every component that
+ * already reads var(--fs-*) / var(--track-*) picks this up unchanged.
+ */
+:lang(ar) {
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-nav: 14px;
+  --fs-body-sm: 15px;
+  --fs-body: 16px;
+  --fs-body-lg: 17px;
+  --fs-lead: 18px;
+  --track-eyebrow: 0;
+  --track-label: 0;
+  --track-nav: 0;
+  --track-btn: 0;
+  --track-tight: 0;
+}
+
+@media (max-width: 560px) {
+  :root {
+    --wrap-pad: var(--wrap-pad-sm);
+    /* A 92px bar plus the 42px top strip eats a third of a phone screen, so
+       the header steps back down here — still larger than it was, without
+       pushing the product itself below the fold. */
+    --nav-h: 76px;
+    --topbar-h: 38px;
+    --logo-h: 38px;
+  }
+}

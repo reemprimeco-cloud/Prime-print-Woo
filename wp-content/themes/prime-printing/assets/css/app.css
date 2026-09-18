@@ -1,0 +1,524 @@
+/**
+ * Prime Printing — app mode
+ *
+ * Loaded only when the request comes from the iOS app (inc/native-app-ui.php),
+ * after every page stylesheet, so plain selectors scoped to `body.prime-app`
+ * win on cascade order. Phone-first: the app runs on iPhone and iPad only.
+ * Logical properties throughout, so the Arabic (RTL) app needs no second copy.
+ */
+
+:root {
+  --app-bar-h: 56px;
+  --app-tab-h: 62px;
+  --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-safe-top: env(safe-area-inset-top, 0px);
+}
+
+/* ---- Web chrome that has no place in the app ---------------------------- */
+/* header.php / footer.php skip the header, mobile menu and footer parts in
+   app mode already; these cover anything a plugin or template still prints. */
+body.prime-app .prime-topbar,
+body.prime-app .prime-nav,
+body.prime-app .prime-menu,
+body.prime-app .prime-footer,
+body.prime-app .prime-crumb,
+body.prime-app .prime-pagehead,
+body.prime-app .prime-bar,
+body.prime-app .prime-count,
+body.prime-app .prime-back,
+body.prime-app #wpadminbar { display: none; }
+
+body.prime-app {
+  /* Room for the fixed tab bar plus the iPhone home indicator. */
+  padding-block-end: calc(var(--app-tab-h) + var(--app-safe-bottom));
+  background: var(--paper);
+}
+
+
+/* ---- Top bar -------------------------------------------------------------- */
+.prime-app-bar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-nav);
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  block-size: calc(var(--app-bar-h) + var(--app-safe-top));
+  padding-block-start: var(--app-safe-top);
+  padding-inline: 8px;
+  background: rgba(255, 255, 255, .96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-block-end: 1px solid var(--line);
+}
+
+.prime-app-bar--home {
+  grid-template-columns: minmax(0, 1fr) 44px;
+  padding-inline: var(--wrap-pad) 8px;
+}
+
+.prime-app-bar .prime-logo { display: block; line-height: 0; }
+.prime-app-bar .prime-logo .prime-logo__img { inline-size: 112px; block-size: auto; }
+
+.prime-app-bar__title {
+  text-align: center;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-inline: 4px;
+}
+
+.prime-app-bar__btn {
+  inline-size: 44px;
+  block-size: 44px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--navy);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.prime-app-bar__btn svg {
+  inline-size: 22px;
+  block-size: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+[dir="rtl"] .prime-app-bar__btn--back svg { transform: scaleX(-1); }
+
+/* ---- Bottom tab bar -------------------------------------------------------- */
+.prime-app-tabs {
+  position: fixed;
+  inset-block-end: 0;
+  inset-inline: 0;
+  z-index: var(--z-nav);
+  display: flex;
+  background: rgba(255, 255, 255, .97);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-block-start: 1px solid var(--line);
+  padding-block-end: var(--app-safe-bottom);
+}
+
+.prime-app-tab {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  block-size: var(--app-tab-h);
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  -webkit-tap-highlight-color: transparent;
+}
+
+:lang(ar) .prime-app-tab {
+  font-size: 11.5px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.prime-app-tab svg {
+  inline-size: 24px;
+  block-size: 24px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.prime-app-tab.is-on { color: var(--navy); }
+
+.prime-app-tab.is-on::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inline-size: 28px;
+  block-size: 2px;
+  background: var(--sky);
+}
+
+.prime-app-tab__badge {
+  position: absolute;
+  inset-block-start: 6px;
+  inset-inline-start: calc(50% + 3px);
+  min-inline-size: 17px;
+  block-size: 17px;
+  padding-inline: 4px;
+  border-radius: 9px;
+  background: var(--sky);
+  color: var(--navy-deep);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  display: grid;
+  place-items: center;
+}
+
+.prime-app-tab__badge.is-empty { display: none; }
+
+/* ---- Shared: search field, section heads, chips --------------------------- */
+.prime-app-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  block-size: 46px;
+  padding-inline: 14px;
+  background: var(--mist);
+  border: 1px solid var(--line);
+}
+
+.prime-app-search svg {
+  flex: none;
+  inline-size: 17px;
+  block-size: 17px;
+  stroke: var(--ink-soft);
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.prime-app-search input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  border: 0;
+  background: none;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.prime-app-search input::placeholder { color: var(--ink-faint); }
+.prime-app-search input:focus { outline: none; }
+.prime-app-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+.prime-app-sec {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-inline: var(--wrap-pad);
+  margin-block-end: var(--sp-3);
+}
+
+.prime-app-sec h2 {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--navy);
+}
+
+.prime-app-sec a {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  color: var(--sky);
+}
+
+.prime-app-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-block: var(--sp-4);
+  /* Bleed to the screen edge so the last chip peeks out and reads as scrollable. */
+  margin-inline: calc(-1 * var(--wrap-pad));
+  padding-inline: var(--wrap-pad);
+}
+
+.prime-app-chips::-webkit-scrollbar { display: none; }
+
+.prime-app-chip {
+  flex: none;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.prime-app-chip.is-on {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--on-navy);
+  font-weight: var(--fw-medium);
+}
+
+/* ---- Home ------------------------------------------------------------------ */
+body.prime-app .prime-app-home { padding-block: var(--sp-4) var(--sp-8); }
+
+.prime-app-home__search { margin: 0 var(--wrap-pad) var(--sp-5); }
+
+.prime-app-banner {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  margin: 0 var(--wrap-pad) var(--sp-6);
+  padding: 18px 18px 16px;
+  background: var(--navy);
+  color: var(--on-navy);
+}
+
+.prime-app-banner__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block-end: 8px;
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--sky);
+}
+
+.prime-app-banner__eyebrow::before {
+  content: "";
+  inline-size: 6px;
+  block-size: 6px;
+  background: var(--sky);
+}
+
+.prime-app-banner__title {
+  display: block;
+  max-inline-size: 240px;
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: var(--fw-light);
+  line-height: 1.25;
+}
+
+:lang(ar) .prime-app-banner__title { font-weight: var(--fw-normal); font-size: 18px; }
+
+.prime-app-banner__cta {
+  display: inline-block;
+  margin-block-start: 12px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, .5);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--track-btn);
+  text-transform: uppercase;
+}
+
+.prime-app-banner__art {
+  position: absolute;
+  inset-inline-end: -16px;
+  inset-block-end: -16px;
+  inline-size: 110px;
+  block-size: 110px;
+  border: 1px solid rgba(124, 165, 196, .5);
+}
+
+.prime-app-banner__art::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(124, 165, 196, .35);
+}
+
+.prime-app-cats {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-inline: var(--wrap-pad);
+  padding-block-end: var(--sp-6);
+}
+
+.prime-app-cats::-webkit-scrollbar { display: none; }
+
+.prime-app-cat {
+  flex: none;
+  inline-size: 76px;
+  text-align: center;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.prime-app-cat__icon {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  inline-size: 64px;
+  block-size: 64px;
+  margin: 0 auto 7px;
+  border-radius: 50%;
+  background: var(--mist);
+  border: 1px solid var(--line);
+}
+
+.prime-app-cat__icon svg,
+.prime-app-cat__icon img {
+  inline-size: 46px;
+  block-size: 46px;
+  object-fit: contain;
+}
+
+.prime-app-cat > span:last-child {
+  display: block;
+  font-size: 10.5px;
+  font-weight: var(--fw-medium);
+  line-height: 1.2;
+}
+
+:lang(ar) .prime-app-cat > span:last-child { font-size: 12px; }
+
+.prime-app-home__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-block-end: var(--sp-5);
+}
+
+@media (min-width: 701px) {
+  .prime-app-home__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.prime-app-more {
+  display: block;
+  margin: 0 var(--wrap-pad);
+  padding: 14px;
+  border: 1px solid var(--navy);
+  text-align: center;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--track-btn);
+  text-transform: uppercase;
+  color: var(--navy);
+}
+
+/* ---- Shop ------------------------------------------------------------------ */
+.prime-app-shophead { padding-block-start: var(--sp-4); }
+
+.prime-app-shophead__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-block-end: var(--sp-3);
+}
+
+.prime-app-shophead h1 {
+  font-size: 24px;
+  font-weight: var(--fw-light);
+  color: var(--navy);
+  line-height: 1.2;
+}
+
+:lang(ar) .prime-app-shophead h1 { font-weight: var(--fw-normal); }
+
+.prime-app-shophead__count {
+  flex: none;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* Product grid: two across on a phone, compact cards, price above a
+   full-width button. Tablet keeps shop.css's own three-across. */
+body.prime-app .prime-grid {
+  gap: 14px;
+  padding-block: var(--sp-2) var(--sp-8);
+}
+
+body.prime-app .prime-card { border-color: transparent; }
+body.prime-app .prime-card:hover { transform: none; }
+body.prime-app .prime-grid .prime-card__body { padding: 10px 0 0; }
+body.prime-app .prime-grid .prime-card__kicker { display: none; }
+body.prime-app .prime-grid .prime-card__title {
+  font-size: var(--fs-body-sm);
+  line-height: 1.3;
+  margin-block-end: 6px;
+}
+body.prime-app .prime-grid .prime-price { font-size: var(--fs-body-sm); }
+body.prime-app .prime-grid .prime-card__foot {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+body.prime-app .prime-grid .prime-card__add {
+  inline-size: 100%;
+  text-align: center;
+  padding: 10px 6px;
+  font-size: var(--fs-xs);
+  letter-spacing: .1em;
+}
+
+@media (max-width: 700px) {
+  body.prime-app .prime-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.prime-app .prime-more { inline-size: 100%; }
+}
+
+/* ---- Product --------------------------------------------------------------- */
+body.prime-app .prime-product__grid {
+  padding-block: var(--sp-2) var(--sp-8);
+  gap: 22px;
+}
+
+/* Add to cart stays pinned above the tab bar while the customer is still
+   scrolling through sizes and options; it scrolls away with the form once
+   the form has passed. `sticky` needs no ancestor with overflow set — the
+   summary column has none. */
+body.prime-app .prime-product__summary button.single_add_to_cart_button.button.alt {
+  position: sticky;
+  inset-block-end: calc(var(--app-tab-h) + var(--app-safe-bottom) + 10px);
+  z-index: 5;
+  box-shadow: 0 10px 28px rgba(8, 19, 42, .18);
+}
+
+/* ---- Cart / Checkout / Account --------------------------------------------- */
+body.prime-app .prime-checkout-head,
+body.prime-app .prime-cart-head { display: none; }
+
+.prime-app-lang {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-end: var(--sp-5);
+  /* The account page lays nav and content out side by side; this sits above
+     both, never as a third column. */
+  flex-basis: 100%;
+  inline-size: 100%;
+  grid-column: 1 / -1;
+}
+
+.prime-app-lang .prime-seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.prime-app-lang .prime-seg a {
+  padding: 8px 16px;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+}
+
+.prime-app-lang .prime-seg a.is-on {
+  background: var(--navy);
+  color: var(--on-navy);
+}
+
+/* ---- Notices: keep clear of the fixed bars --------------------------------- */
+body.prime-app .woocommerce-notices-wrapper:not(:empty) { padding-block-start: var(--sp-3); }

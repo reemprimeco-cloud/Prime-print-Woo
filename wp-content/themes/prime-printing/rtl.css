@@ -1,0 +1,48 @@
+/**
+ * Prime Printing — RTL
+ *
+ * WordPress loads this automatically when is_rtl() is true, i.e. on the
+ * Polylang /ar/ tree. Nearly the entire theme mirrors on its own: every
+ * stylesheet through Phase 5 (base, layout, home, shop, product, checkout)
+ * uses logical properties exclusively — margin-inline, inset-inline-*,
+ * border-inline-*, padding-inline, text-align: start — never a bare left or
+ * right. A grep across assets/css/*.css for physical left/right/float
+ * properties or text-align: left|right turns up nothing, confirmed each time
+ * a new page's stylesheet was added.
+ *
+ * What lands here is the genuinely small remainder logical properties cannot
+ * flip by themselves: a hard-coded directional glyph, a rotation whose sign
+ * encodes a direction, and the one piece of Latin type that must not mirror.
+ *
+ * Phase 7/8 add their own rules here as the invoice and account templates are
+ * built, following the same rule: check first whether logical properties
+ * already handled it before adding anything.
+ */
+
+/* Display type set for Latin capitals; Arabic gets no tracking.
+   The wordmark itself is an image, so it needs neither rule. */
+[dir="rtl"] .prime-menu__links a { letter-spacing: 0; }
+
+/* Directional glyphs in the menu search submit and back links point the
+   other way in Arabic. */
+[dir="rtl"] .prime-menu__search button { transform: scaleX(-1); }
+
+/* The scroll cue's gradient rule and the hero streams' rotation are
+   symmetrical, so they need no flip; the drift direction does. */
+[dir="rtl"] .prime-hero__streams { transform: rotate(8deg) scale(1.25); }
+
+
+/* The checkout header's back button ("←") is a plain glyph, not an icon font
+   — scaleX mirrors its shape exactly the way it does the menu search arrow
+   above, for the same reason (Arabic reads right-to-left, so "back" points
+   the other way). */
+[dir="rtl"] .prime-back { transform: scaleX(-1); }
+
+/* The glyph itself must not also mirror a second time from an inherited
+   transform — .prime-back's icon is the button's own text content, not a
+   nested element, so no counter-flip is needed here (contrast the search
+   button above, which also has no nested icon). Noted for the next addition:
+   if a future RTL flip ever wraps an *icon element* inside an already-flipped
+   container, that icon needs its own counter transform: scaleX(-1) or its
+   glyph reads backwards.
+ */

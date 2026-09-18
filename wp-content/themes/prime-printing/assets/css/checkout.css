@@ -1,0 +1,594 @@
+/**
+ * Prime Printing — checkout
+ *
+ * Follows prime-printing-checkout.html: a single-column page, sticky header,
+ * step sections with checkmarks, address-type/payment tiles, a sticky
+ * pay bar. Selectors targeting elements WooCommerce itself renders (form
+ * fields, the coupon box, gateway descriptions) are qualified to match or
+ * exceed WooCommerce's own specificity — its stylesheet reaches these same
+ * elements with 2–3 class selectors (`.woocommerce button.button.alt`,
+ * `.woocommerce form .form-row input.input-text`, …), and a bare single-class
+ * theme rule silently loses to those regardless of load order. See the
+ * comment on .prime-pagehead-checkout below for one concrete instance this
+ * theme already hit.
+ */
+
+/* ---- Page shell ----------------------------------------------------------- */
+.prime-checkout-head {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, .96);
+  backdrop-filter: blur(12px);
+  border-block-end: 1px solid var(--line);
+}
+
+.prime-checkout-head__in {
+  max-inline-size: 560px;
+  margin-inline: auto;
+  padding: 14px var(--wrap-pad-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.prime-back {
+  inline-size: 40px;
+  block-size: 40px;
+  border: 1px solid var(--line);
+  background: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: .25s;
+  flex: none;
+}
+
+.prime-back:hover { background: var(--navy); color: var(--paper); border-color: var(--navy); }
+
+.prime-checkout-head h1 {
+  font-size: var(--fs-lead);
+  font-weight: var(--fw-medium);
+  color: var(--navy);
+  letter-spacing: .02em;
+}
+
+.prime-checkout-page {
+  max-inline-size: 560px;
+  margin-inline: auto;
+  padding: 0 var(--wrap-pad-sm) 50px;
+}
+
+.prime-steps {
+  display: flex;
+  gap: 6px;
+  padding-block: 16px 4px;
+}
+
+.prime-steps__bar {
+  flex: 1;
+  block-size: 2px;
+  background: var(--line);
+}
+
+.prime-steps__bar.is-on { background: var(--sky); }
+
+/* ---- Sections --------------------------------------------------------------- */
+.prime-sec { margin-block-start: 30px; }
+
+.prime-sech {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-block-end: 16px;
+}
+
+.prime-sech h2 {
+  font-size: var(--fs-nav);
+  font-weight: var(--fw-medium);
+  letter-spacing: .18em;
+  color: var(--navy);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-transform: none;
+}
+
+.prime-sech__ok {
+  color: var(--sky);
+  font-size: var(--fs-body-sm);
+  opacity: 0;
+  transition: .3s;
+}
+
+.prime-sech.is-done .prime-sech__ok { opacity: 1; }
+
+.prime-sech__line { flex: 1; block-size: 1px; background: var(--line); }
+
+/* ---- Form fields: WooCommerce's own .form-row/.input-text markup --------- */
+/*
+ * `.woocommerce form .form-row input.input-text` is 1 class + `form` element +
+ * 1 class + `input` element + 1 class = specificity (0,3,2) in WooCommerce's
+ * own stylesheet. A bare `.prime-checkout-page input` would lose to that
+ * outright — qualified here to match it.
+ */
+.prime-checkout-page .form-row { margin-block-end: 10px; }
+
+.prime-checkout-page form .form-row input.input-text,
+.prime-checkout-page form .form-row textarea,
+.prime-checkout-page form .form-row select {
+  inline-size: 100%;
+  border: 1px solid transparent;
+  background: var(--mist);
+  padding: 15px 16px;
+  font-size: var(--fs-lead);
+  color: var(--ink);
+  transition: .2s;
+  border-radius: 0;
+}
+
+.prime-checkout-page form .form-row input.input-text::placeholder { color: var(--ink-faint); }
+
+.prime-checkout-page form .form-row input.input-text:focus,
+.prime-checkout-page form .form-row textarea:focus,
+.prime-checkout-page form .form-row select:focus {
+  outline: none;
+  background: var(--paper);
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px var(--sky-wash);
+}
+
+.prime-checkout-page form .form-row.woocommerce-invalid input.input-text {
+  border-color: var(--danger);
+  background: var(--danger-wash);
+}
+
+.prime-checkout-page form .form-row .woocommerce-invalid-message,
+.prime-checkout-page .woocommerce-NoticeGroup .woocommerce-error li {
+  color: var(--danger);
+  font-size: var(--fs-sm);
+  margin-block: -4px 10px 0;
+  list-style: none;
+}
+
+.prime-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.prime-duo .form-row { margin-block-end: 0; }
+
+/* ---- Phone -------------------------------------------------------------- */
+/*
+ * The code box has no label of its own, but the phone field next to it does
+ * (WooCommerce prints a <label> above its input) — aligning the grid row to
+ * its end, rather than centering it, lines the code box up with the input
+ * itself instead of splitting the difference across label + input.
+ */
+.prime-phone {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+  align-items: end;
+  margin-block-end: 10px;
+}
+
+.prime-phone .form-row { margin: 0; }
+
+.prime-cc {
+  background: var(--mist);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: var(--fs-lead);
+  color: var(--ink);
+  border: 1px solid transparent;
+  block-size: 51px;
+}
+
+/* ---- Checkbox / expand / panel ------------------------------------------ */
+.prime-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  background: var(--mist);
+  padding: 14px 16px;
+  cursor: pointer;
+  margin-block-end: 10px;
+  transition: .2s;
+}
+
+.prime-check:hover { background: var(--sky-wash); }
+
+.prime-check input {
+  inline-size: 19px;
+  block-size: 19px;
+  accent-color: var(--navy);
+  margin-block-start: 2px;
+  flex: none;
+  cursor: pointer;
+}
+
+.prime-check span { font-size: var(--fs-body); color: var(--ink-soft); line-height: 1.55; }
+
+.prime-expand {
+  inline-size: 100%;
+  border: 1px dashed var(--line);
+  background: none;
+  padding: 15px;
+  font-size: var(--fs-body);
+  color: var(--navy);
+  cursor: pointer;
+  transition: .25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.prime-expand:hover { border-color: var(--sky); background: var(--sky-wash); }
+
+.prime-panel { display: none; padding-block-start: 10px; }
+.prime-panel.is-open { display: block; }
+
+/* ---- Tiles (address type + payment method) ------------------------------ */
+.prime-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+  margin-block-end: 12px;
+}
+
+.prime-tile {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 15px 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: .22s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 78px;
+  justify-content: center;
+}
+
+.prime-tile:hover { border-color: var(--sky); }
+
+.prime-tile.is-on { border-color: var(--navy); background: var(--sky-wash); border-width: 1.5px; }
+
+.prime-tile__icon { font-size: 19px; line-height: 1; color: var(--navy); }
+
+.prime-tile__label { font-size: var(--fs-nav); color: var(--ink-soft); line-height: 1.35; }
+
+.prime-tile.is-on .prime-tile__label { color: var(--navy); font-weight: var(--fw-medium); }
+
+/* ---- Delivery pin --------------------------------------------------------- */
+.prime-locate {
+  border: 1px solid var(--line);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-block-end: 10px;
+  background: var(--paper);
+}
+
+.prime-map {
+  inline-size: 66px;
+  block-size: 56px;
+  background: var(--sky-wash);
+  flex: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.prime-pin {
+  position: absolute;
+  inset-block-start: 14px;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  inline-size: 15px;
+  block-size: 15px;
+  background: var(--navy);
+  border-radius: 50% 50% 50% 0;
+  rotate: -45deg;
+}
+
+.prime-locate__txt { flex: 1; min-inline-size: 0; }
+.prime-locate__t1 { font-size: var(--fs-body); font-weight: var(--fw-medium); color: var(--navy); }
+.prime-locate__t2 { font-size: var(--fs-sm); color: var(--ink-faint); }
+.prime-locate__t2 a { color: var(--navy); text-decoration: underline; }
+
+.prime-locbtn {
+  background: var(--navy);
+  color: var(--paper);
+  border: none;
+  font-size: var(--fs-sm);
+  padding: 11px 15px;
+  cursor: pointer;
+  transition: .25s;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.prime-locbtn:hover { background: var(--sky); color: var(--navy-deep); }
+
+/* ---- Gift box ------------------------------------------------------------- */
+.prime-gift { border: 1px solid var(--line); padding: 16px; margin-block-end: 10px; background: var(--paper); }
+.prime-gift__hint { font-size: var(--fs-body); color: var(--ink-soft); margin-block-end: 14px; line-height: 1.6; }
+
+/* ---- Panel visibility (address-type switching, no reload) --------------- */
+[data-prime-address-panel].is-hidden,
+[data-prime-locate-wrap].is-hidden,
+[data-prime-address-common].is-hidden,
+[data-prime-area-other].is-hidden,
+[data-prime-address-optional-hint].is-hidden { display: none; }
+
+/* ---- Payment box (a gateway's own payment_fields() output) --------------- */
+.prime-payment-box { display: none; padding-block-start: 12px; }
+.prime-payment-box.is-on { display: block; }
+
+/* ---- Order review: WooCommerce's own review-order.php, restyled --------- */
+.prime-checkout-page table.shop_table {
+  inline-size: 100%;
+  border: 1px solid var(--line);
+  border-collapse: collapse;
+  margin-block-start: 6px;
+}
+
+.prime-checkout-page table.shop_table th,
+.prime-checkout-page table.shop_table td {
+  padding: 14px;
+  border-block-end: 1px solid var(--line);
+  font-size: var(--fs-body);
+  color: var(--ink-soft);
+  text-align: start;
+}
+
+.prime-checkout-page table.shop_table thead th {
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.prime-checkout-page table.shop_table tfoot tr:last-child th,
+.prime-checkout-page table.shop_table tfoot tr:last-child td {
+  border-block-end: none;
+  padding-block-start: 15px;
+  border-block-start: 1px solid var(--line);
+}
+
+.prime-checkout-page table.shop_table tfoot .order-total th,
+.prime-checkout-page table.shop_table tfoot .order-total td {
+  font-size: var(--fs-lead);
+  font-weight: var(--fw-medium);
+  color: var(--navy);
+}
+
+.prime-checkout-page table.shop_table tfoot .order-total .woocommerce-Price-amount {
+  font-family: var(--display);
+  font-size: 25px;
+  font-weight: var(--fw-normal);
+  letter-spacing: .03em;
+}
+
+/* Coupon form: WooCommerce's `.woocommerce form.checkout_coupon .button` is
+   1 class + `form` element + 1 class + `button` element + 1 class = (0,3,2);
+   matched here rather than fought with a bare class. */
+.prime-checkout-page .checkout_coupon {
+  display: grid;
+  grid-template-columns: 1fr 96px;
+  gap: 10px;
+  margin-block-start: 6px;
+  border: none;
+  padding: 0;
+}
+
+.prime-checkout-page .checkout_coupon .form-row-first,
+.prime-checkout-page .checkout_coupon .form-row-last { margin: 0; }
+
+.prime-checkout-page form.checkout_coupon button.button {
+  border: 1px solid var(--navy);
+  background: none;
+  color: var(--navy);
+  font-size: var(--fs-body);
+  cursor: pointer;
+  transition: .25s;
+  padding: 0 var(--sp-3);
+}
+
+.prime-checkout-page form.checkout_coupon button.button:hover { background: var(--navy); color: var(--paper); }
+
+/* ---- Pay bar ---------------------------------------------------------------- */
+/*
+ * Sits directly under the payment method tiles, in normal document flow —
+ * not fixed to the viewport. A pay button floating in place over the page
+ * while the customer is still filling in their details/address reads as
+ * presumptuous; it belongs right after they've chosen how to pay.
+ */
+.place-order {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  margin-block-start: 20px;
+  padding: 18px;
+}
+
+/* `.woocommerce #payment div.form-row .button` in WooCommerce's own sheet is
+   2 classes + 3 elements ≈ (0,2,3); `#place_order` adds an ID (1,0,0) which
+   already outranks anything class-based, so no extra qualification needed
+   here — an ID always wins on specificity regardless of class count. */
+.prime-pay {
+  inline-size: 100%;
+  background: var(--navy);
+  color: var(--paper);
+  border: none;
+  font-size: var(--fs-body-lg);
+  font-weight: var(--fw-medium);
+  padding: 17px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  transition: .25s;
+}
+
+.prime-pay:hover { background: var(--navy-deep); }
+.prime-pay:disabled { background: #C9D2DC; color: var(--paper); cursor: not-allowed; }
+
+.prime-pay__amt { font-family: var(--display); font-weight: var(--fw-normal); letter-spacing: .03em; }
+
+.prime-trust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--ink-faint);
+  margin-block-start: 10px;
+}
+
+.prime-checkout-page .woocommerce-terms-and-conditions-wrapper { margin-block-end: 12px; font-size: var(--fs-body-sm); }
+
+/* ---- Breakpoints ---------------------------------------------------------- */
+
+/*
+ * Desktop: two panels side by side — the address form and the order summary
+ * each their own card on a light backdrop — matching the reference Reem sent
+ * 2026-09-07 ("خلها نفس هذا التنسيق و الترتيب", a screenshot of a form-card
+ * next to a "Your Cart" card). Colours and corners are this theme's own
+ * tokens (flat, hairline borders — the same language as every other card in
+ * the site) rather than the reference's own rounded/black-pill skin; only
+ * the two-panel structure and proportions are taken from it. The 560px page
+ * was the original single-column reference layout, which on an actual
+ * desktop screen just read as the mobile view stretched into empty space
+ * either side of it. Mobile/tablet below this breakpoint are untouched.
+ */
+@media (min-width: 1100px) {
+  /* The Checkout page renders through page.php → .prime-prose, the 760px
+     reading-width container shared with About/Contact — so the two rules
+     below could never take effect on their own: the page can't be wider
+     than its parent. Measured live 2026-09-07 at a 1440px viewport:
+     .prime-checkout-page 760px, .prime-prose max-inline-size 760px. Scoped
+     to the checkout body class so those other pages keep their width. */
+  body.woocommerce-checkout .prime-prose {
+    max-inline-size: 1160px;
+  }
+
+  .prime-checkout-head__in {
+    max-inline-size: 1160px;
+  }
+
+  .prime-checkout-page {
+    max-inline-size: 1160px;
+    background: var(--mist);
+    padding-block-start: var(--sp-6);
+  }
+
+  /* A ratio, not a fixed pixel width for the summary card — both sides grow
+     together as the window widens instead of the form soaking up every
+     extra pixel while the summary stays pinned at one size (Reem,
+     2026-09-07: "make it more wider flexible"). */
+  .checkout.woocommerce-checkout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(340px, 1fr);
+    align-items: start;
+    gap: 24px;
+  }
+
+  /* Direct child only: `.prime-sec` is also the class on the "Your details"
+     and "Address" sections *inside* the form card (form-billing.php), and
+     an unscoped rule gave those a second border and padding nested inside
+     the card's own. */
+  .col2-set#customer_details,
+  .checkout.woocommerce-checkout > .prime-sec {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: var(--sp-6);
+  }
+
+  /*
+   * WooCommerce's own checkout CSS floats `.col-1` at 48% width, expecting a
+   * `.col-2` sibling beside it — this template only ever renders `.col-1`
+   * (no separate shipping-address column), so the other 52% just sat empty
+   * and every field crammed into the narrow remainder. Invisible at the old
+   * 560px width, impossible to miss once the card holding it got this wide
+   * (Reem, 2026-09-07, screenshot: "Full name" wrapped onto three lines and
+   * the phone field showing only two digits — "this is not acceptable").
+   */
+  .col2-set#customer_details .col-1 {
+    width: 100%;
+    float: none;
+  }
+
+  /* Was stacked spacing for the single-column layout; as its own card next
+     to the form it would just be dead space above the card's own padding.
+     Direct child only, for the same reason as above — the inner sections
+     keep their 30px spacing from one another. */
+  .checkout.woocommerce-checkout > .prime-sec {
+    margin-block-start: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .prime-duo,
+  .prime-phone { grid-template-columns: 1fr 1fr; }
+}
+
+/* ---- Pickup location (order confirmation, local pickup orders only) ------ */
+.prime-pickup-location {
+  max-inline-size: 600px;
+  margin: 32px auto 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  background: var(--mist);
+}
+
+.prime-pickup-location h2 {
+  margin: 0 0 4px;
+  font-family: var(--display);
+  font-size: var(--fs-lead);
+  color: var(--ink);
+}
+
+.prime-pickup-address {
+  margin: 0 0 16px;
+  color: var(--ink-soft);
+  font-size: var(--fs-body-sm);
+}
+
+.prime-pickup-map {
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.prime-pickup-map iframe {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.prime-pickup-location .button {
+  margin-block-start: 16px;
+}
+
+/* The legacy `woocommerce-main` plugin prints a "Go to My Account" link
+   (twice) above the checkout form. The theme's header/tab bar already has
+   the account link; this one is noise. */
+body.woocommerce-checkout .checkout-my-account-link { display: none; }

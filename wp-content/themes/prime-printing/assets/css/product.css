@@ -1,0 +1,687 @@
+/**
+ * Prime Printing — single product
+ *
+ * Follows prime-printing-product.html. Two kinds of selector in this file:
+ *   .prime-*                  markup this theme controls directly
+ *   .woocommerce-tabs, .related, .variations, .quantity …
+ *                              WooCommerce's own markup, restyled in place
+ *                              rather than replaced, so review plugins,
+ *                              structured data and the variation form's own
+ *                              JS keep working untouched.
+ */
+
+.prime-product__grid {
+  display: grid;
+  /* minmax(0, …) rather than a bare 1fr: a grid track's default minimum is
+     `auto`, so a wide image could otherwise push its column past its share.
+     `align-items: start` keeps the summary column its natural height instead
+     of stretching it to match a tall gallery. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 52px;
+  padding-block: var(--sp-6) 60px;
+  align-items: start;
+}
+
+/* ---- Gallery -------------------------------------------------------------- */
+.prime-gallery__main {
+  aspect-ratio: 1 / 1;
+  /* Capped (Reem, 2026-09-05: "the product page is too large … its too huge").
+     A square that simply tracks the column width grew to 666px on a wide
+     screen once the container was widened, which pushed Add to cart about
+     1,400px down the page — below the fold on any laptop. The cap keeps the
+     image generous without the buying controls scrolling out of sight; the
+     column itself stays fluid, so nothing is cropped differently. */
+  max-block-size: 460px;
+  /* The cap only holds if the box may be narrower than its track too,
+     otherwise the aspect ratio forces the width back up. */
+  max-inline-size: 460px;
+  background: var(--mist);
+  padding: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.prime-gallery__thumbs { max-inline-size: 460px; }
+
+.prime-gallery__main img {
+  inline-size: 100%;
+  block-size: 100%;
+  /* The whole product, not a crop of it — see the shop card note in shop.css. */
+  object-fit: contain;
+}
+
+.prime-gallery__thumbs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+  margin-block-start: 9px;
+}
+
+.prime-gallery__thumb {
+  aspect-ratio: 1 / 1;
+  background: var(--mist);
+  overflow: hidden;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  padding: 0;
+  transition: .2s;
+}
+
+.prime-gallery__thumb.is-on { border-color: var(--sky); }
+
+.prime-gallery__thumb img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+}
+
+/* ---- Summary column --------------------------------------------------- */
+.prime-kicker {
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--sky);
+  margin-block-end: var(--sp-3);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.prime-product__summary .product_title {
+  font-size: clamp(26px, 3vw, 34px);
+  letter-spacing: .01em;
+  margin-block-end: var(--sp-2);
+}
+
+/* WooCommerce's star rating, restyled to the reference's inline treatment. */
+.prime-product__summary .woocommerce-product-rating {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin-block-end: var(--sp-5);
+}
+
+.prime-product__summary .star-rating { color: var(--sky); letter-spacing: 1px; }
+.prime-product__summary .woocommerce-review-link { color: inherit; }
+
+.prime-product__summary .price {
+  display: block;
+  font-family: var(--display);
+  font-size: 26px;
+  color: var(--navy);
+  letter-spacing: .03em;
+  margin-block-end: var(--sp-6);
+  padding-block-end: var(--sp-6);
+  border-block-end: 1px solid var(--line);
+}
+
+.prime-product__summary .price ins { text-decoration: none; }
+.prime-product__summary .price del { opacity: .5; font-size: .8em; margin-inline-end: 8px; }
+
+/* ---- WooCommerce's own two-column float layout --------------------------
+ *
+ * WooCommerce lays the single product out with `div.images { float:left;
+ * width:48% }` and `div.summary { float:right; width:48% }`. This theme uses a
+ * grid instead, and against a grid those percentages resolve against each
+ * item's own track — so the summary column rendered at 48% of its 666px track
+ * (320px), which is what squeezed the configurator and wrapped its result
+ * labels onto three lines each.
+ *
+ * `body` leads each selector so these land at (0,3,3) and beat WooCommerce's
+ * own (0,3,2) without !important.
+ */
+body.woocommerce div.product div.images,
+body.woocommerce div.product div.summary,
+body.woocommerce-page div.product div.images,
+body.woocommerce-page div.product div.summary,
+body.woocommerce div.product .prime-product__gallery,
+body.woocommerce div.product .prime-product__summary {
+  float: none;
+  width: auto;
+  margin: 0;
+}
+
+/* ---- Configurator (custom-priced products, inc/product-pricing.php) ---- */
+.prime-configurator-fields {
+  border: 1px solid var(--line);
+  padding: var(--sp-6);
+  margin-block-end: var(--sp-6);
+  background: var(--mist);
+}
+
+.prime-configurator-fields .prime-field input,
+.prime-configurator-fields .prime-field select {
+  background: var(--paper);
+}
+
+.prime-configurator-fields .prime-field input:focus,
+.prime-configurator-fields .prime-field select:focus {
+  outline: none;
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px var(--sky-wash);
+}
+
+.prime-field__error {
+  display: none;
+  font-size: var(--fs-sm);
+  color: var(--danger);
+  margin-block-start: 5px;
+}
+
+.prime-field__hint {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--ink-faint);
+  margin-block-start: 5px;
+}
+
+.prime-field.is-invalid input,
+[data-prime-error-field].is-invalid input {
+  border-color: var(--danger);
+  background: var(--danger-wash);
+}
+
+.prime-field.is-invalid .prime-field__error,
+[data-prime-error-field].is-invalid .prime-field__error {
+  display: block;
+}
+
+/*
+ * .prime-check (the lamination / cutting add-on toggles) is otherwise only
+ * styled in checkout.css, which never loads on a product page — left plain
+ * here it renders as a bare unstyled inline checkbox with no box around it,
+ * breaking the field's own bordered-box look (Reem, 2026-09-07: "fix the box
+ * design its out"). Scoped to the configurator so it matches the surrounding
+ * width/height/height fields without touching checkout's own version.
+ */
+.prime-configurator-fields .prime-check {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 13px 14px;
+  margin-block-end: 18px;
+  cursor: pointer;
+}
+
+.prime-configurator-fields .prime-check input[type="checkbox"] {
+  inline-size: 18px;
+  block-size: 18px;
+  flex: none;
+  accent-color: var(--navy);
+  cursor: pointer;
+}
+
+.prime-configurator-fields .prime-check span {
+  font-size: var(--fs-body-lg);
+  color: var(--ink);
+}
+
+.prime-calcrow {
+  display: flex;
+  gap: 10px;
+  margin-block-end: var(--sp-4);
+}
+
+.prime-calcbox {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: var(--sp-4);
+  text-align: center;
+}
+
+.prime-calcbox__k {
+  font-size: var(--fs-xs);
+  /* Tighter than --track-label: at the wide tracking these headings broke
+     across two or three lines ("CARDS / SHEET" over three), which read as
+     cramped rather than considered. */
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-block-end: 6px;
+  white-space: nowrap;
+}
+
+.prime-calcbox__v {
+  font-family: var(--display);
+  font-size: 19px;
+  color: var(--navy);
+  letter-spacing: .03em;
+  /* Keeps "5.000 د.ك" from splitting the amount from its currency symbol. */
+  white-space: nowrap;
+}
+
+.prime-calcbox--hi { border-color: var(--navy); border-width: 1.5px; }
+
+/* A prominent grand-total row on its own, below the spec boxes (UV DTF's
+   "Total sheet price" — see inc/uv-dtf-calculator.php). Not wrapped in
+   .prime-calcrow, so it needs its own bottom margin to match the row's. */
+.prime-calcbox--total {
+  margin-block-end: var(--sp-4);
+  padding-block: var(--sp-5);
+}
+
+.prime-calcbox--total .prime-calcbox__v {
+  font-size: 24px;
+}
+
+.prime-calc-note {
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  text-align: center;
+  margin-block-start: 2px;
+}
+
+/* ---- Simple add-ons (inc/product-addons.php) --------------------------- */
+.prime-addons { margin-block-end: var(--sp-5); }
+
+/* ---- Add to cart form --------------------------------------------------- */
+.prime-product__summary .cart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.prime-product__summary .quantity {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  inline-size: fit-content;
+}
+
+.prime-product__summary .quantity input.qty {
+  inline-size: 60px;
+  block-size: 42px;
+  border: none;
+  border-inline: 1px solid var(--line);
+  text-align: center;
+  font-size: var(--fs-body-lg);
+}
+
+/*
+ * Qualified with `.button.alt` in addition to `.single_add_to_cart_button`:
+ * WooCommerce's own stylesheet styles this exact button via
+ * `.woocommerce button.button.alt` (3 classes + 1 element) to its brand
+ * purple. `.prime-product__summary button.single_add_to_cart_button` alone
+ * was only 2 classes + 1 element — lower specificity, so WooCommerce's purple
+ * silently won regardless of load order. Matching its own `.button.alt`
+ * qualifiers pushes this rule strictly higher without an !important.
+ */
+.prime-product__summary button.single_add_to_cart_button.button.alt {
+  inline-size: 100%;
+  background: var(--navy);
+  color: var(--paper);
+  border: none;
+  font-size: var(--fs-body-lg);
+  font-weight: var(--fw-medium);
+  padding: 17px;
+  cursor: pointer;
+  transition: .25s;
+}
+
+.prime-product__summary button.single_add_to_cart_button.button.alt:hover { background: var(--navy-deep); }
+.prime-product__summary button.single_add_to_cart_button.button.alt.disabled { opacity: .6; cursor: not-allowed; }
+
+/* Variable products (Phase 4b) — WooCommerce's native variation form. */
+.prime-product__summary table.variations { inline-size: 100%; margin-block-end: var(--sp-4); }
+.prime-product__summary table.variations td { padding-block: 6px; }
+.prime-product__summary table.variations label { font-size: var(--fs-sm); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-soft); }
+.prime-product__summary table.variations select {
+  inline-size: 100%;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 11px 13px;
+  font-size: var(--fs-body-lg);
+  color: var(--ink);
+}
+.prime-product__summary .woocommerce-variation-price .price { border: none; padding: 0; margin-block-end: var(--sp-4); font-size: 20px; }
+.prime-product__summary .woocommerce-variation-availability { margin-block-end: var(--sp-3); font-size: var(--fs-body); color: var(--ink-soft); }
+.prime-product__summary .reset_variations { display: inline-block; margin-block-start: 8px; font-size: var(--fs-sm); color: var(--sky); }
+
+.prime-stockline {
+  font-size: var(--fs-body);
+  color: var(--ink-soft);
+  margin-block-start: var(--sp-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.prime-stockline.is-out { color: var(--danger); }
+
+/* ---- Tabs (WooCommerce's native .woocommerce-tabs) ---------------------- */
+.woocommerce-tabs {
+  border-block-start: 1px solid var(--line);
+  padding-block-start: 30px;
+  margin-block-start: 6px;
+}
+
+/* WooCommerce's own stylesheet puts overflow:hidden on this list, so on a
+   phone the third tab ("Reviews") was simply clipped off the right edge with
+   no way to reach it. Letting the row wrap keeps every tab reachable; each
+   label stays on one line so a tab never breaks mid-word. */
+.woocommerce-tabs ul.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-block-end: 1px solid var(--line);
+  margin-block-end: 26px;
+  list-style: none;
+}
+
+/* WooCommerce core gives each li `padding: 0 1em; margin: 0 -5px` (its own
+   tab-shape styling). This design spaces tabs with the <a>'s margin instead,
+   so that box is pure dead width here — enough to push two tabs that would
+   otherwise share a row onto separate lines on a phone. */
+.woocommerce-tabs ul.tabs li {
+  padding: 0;
+  margin: 0;
+}
+
+.woocommerce-tabs ul.tabs li a {
+  display: block;
+  border-block-end: 2px solid transparent;
+  font-size: var(--fs-body-sm);
+  letter-spacing: .06em;
+  padding: 14px 0;
+  margin-inline-end: 26px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  transition: .25s;
+}
+
+.woocommerce-tabs ul.tabs li:last-child a { margin-inline-end: 0; }
+
+.woocommerce-tabs ul.tabs li.active a {
+  color: var(--navy);
+  border-color: var(--sky);
+  font-weight: var(--fw-medium);
+}
+
+.woocommerce-tabs .woocommerce-Tabs-panel {
+  max-inline-size: 760px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.8;
+}
+
+.woocommerce-tabs .woocommerce-Tabs-panel h2 {
+  font-size: 14px;
+  font-weight: var(--fw-medium);
+  color: var(--navy);
+  margin: 20px 0 10px;
+}
+
+.woocommerce-tabs .woocommerce-Tabs-panel > *:first-child { margin-block-start: 0; }
+.woocommerce-tabs .woocommerce-Tabs-panel ul { padding-inline-start: 20px; margin-block-end: 14px; }
+.woocommerce-tabs .woocommerce-Tabs-panel li { margin-block-end: 6px; }
+
+.woocommerce-tabs table.shop_attributes { inline-size: 100%; border-collapse: collapse; }
+.woocommerce-tabs table.shop_attributes th,
+.woocommerce-tabs table.shop_attributes td {
+  text-align: start;
+  padding: 10px 0;
+  border-block-end: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.woocommerce-tabs table.shop_attributes th { color: var(--navy); font-weight: var(--fw-medium); inline-size: 200px; }
+
+/* ---- Related products (WooCommerce's native .related.products) ---------
+ *
+ * WooCommerce's own loop CSS floats `li.product`, gives it a percentage width
+ * (from the `columns-4` class on the list) and a ~3.8em bottom margin. Against
+ * `display: grid` those fight the track sizing rather than cooperating with
+ * it: each card collapsed to a fraction of its own grid track, rows wrapped
+ * early, and the vertical gaps doubled up. Every rule below that unsets a
+ * width/float/margin is undoing that, not styling for its own sake.
+ *
+ * The markup here is WooCommerce's, not this theme's, and it has no thumbnail
+ * wrapper — the <img>, the <h2> title and the price span all sit directly
+ * inside one <a>, with the add-to-cart <a class="button"> as its sibling. So
+ * the image is sized directly and the card is a flex column, which is what
+ * keeps the button inside the border and aligned across cards of different
+ * title lengths.
+ */
+.related.products {
+  border-block-start: 1px solid var(--line);
+  padding-block: 56px 80px;
+}
+
+.related.products > h2 {
+  font-family: var(--display);
+  font-weight: var(--fw-light);
+  font-size: 24px;
+  color: var(--navy);
+  margin-block-end: var(--sp-6);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.related.products > h2::before {
+  content: '';
+  display: inline-block;
+  inline-size: var(--mark-size);
+  block-size: var(--mark-size);
+  background: var(--sky);
+}
+
+.related.products ul.products {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.related.products ul.products li.product {
+  /* Undoing WooCommerce's float/percentage-width/margin — see block comment. */
+  float: none;
+  inline-size: auto;
+  margin: 0;
+  padding: 0;
+
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--dur);
+}
+
+/* WooCommerce clears its floated rows with generated content on the list. */
+.related.products ul.products::before,
+.related.products ul.products::after,
+.related.products ul.products li.product::before,
+.related.products ul.products li.product::after {
+  content: none;
+}
+
+.related.products li.product:hover { border-color: var(--sky); }
+
+.related.products li.product > a.woocommerce-loop-product__link {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0;
+}
+
+/* WooCommerce ships `.woocommerce ul.products li.product a img { height: auto }`,
+   which is more specific than a plain `.related.products li.product img`, so
+   the fixed frame below has to out-specify it or the cards end up as tall as
+   whatever the source image's aspect ratio happens to be. */
+.woocommerce .related.products ul.products li.product img,
+.woocommerce-page .related.products ul.products li.product img {
+  display: block;
+  inline-size: 100%;
+  /* Square, not a fixed height (Reem, 2026-09-05) — the card is a grid track
+     of unknown width, so the ratio has to come from the box rather than a
+     pixel value, or the thumbnails stop being square the moment the column
+     size changes. `block-size: auto` is needed to let the ratio drive it. */
+  aspect-ratio: 1 / 1;
+  block-size: auto;
+  /* Filled edge to edge, matching the shop cards — see the note on
+     .prime-card__media in shop.css for why these crop and the single
+     product's own gallery does not. */
+  object-fit: cover;
+  background: var(--mist);
+  margin: 0 0 14px;
+}
+
+/* The image runs to the card's edges, so the text below it needs its own
+   inset — at 14px the titles sat almost against the border (Reem, 2026-09-05:
+   "the product name is too near the edge"). The same value is used for the
+   price and the button so the whole text block lines up on one left edge. */
+/* Out-specifies WooCommerce's own
+   `.woocommerce ul.products li.product .woocommerce-loop-product__title`,
+   which sets `margin: 0; padding: .5em 0` and otherwise pins the title flat
+   against the card's left border. */
+body.woocommerce .related.products ul.products li.product .woocommerce-loop-product__title,
+body.woocommerce-page .related.products ul.products li.product .woocommerce-loop-product__title {
+  font-family: var(--display);
+  font-weight: var(--fw-normal);
+  font-size: 13.5px;
+  line-height: 1.35;
+  color: var(--ink);
+  margin: 0 20px 8px;
+  padding: 0;
+}
+
+.related.products .price {
+  font-family: var(--display);
+  font-size: 13.5px;
+  color: var(--navy);
+  /* Pushed to the foot of the link area so prices line up across cards whose
+     titles run to different numbers of lines. */
+  margin: auto 20px 16px;
+}
+
+.related.products .price del { opacity: .5; font-size: .85em; margin-inline-end: 5px; }
+.related.products .price ins { text-decoration: none; }
+
+/* The add-to-cart / select-options button is a sibling of the link above, so
+   it sits outside that element's padding and needs its own. */
+.related.products li.product > .button {
+  display: block;
+  margin: 0 20px 20px;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-body-sm);
+  line-height: 1.3;
+  color: var(--navy);
+  text-align: center;
+  cursor: pointer;
+  transition: var(--dur-fast);
+}
+
+.related.products li.product > .button:hover {
+  background: var(--navy);
+  color: var(--on-navy);
+  border-color: var(--navy);
+}
+
+/* ---- Breakpoints --------------------------------------------------------- */
+@media (max-width: 900px) {
+  .prime-product__grid { grid-template-columns: 1fr; gap: 30px; }
+  .related.products ul.products { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+}
+
+@media (max-width: 560px) {
+  .prime-configurator-fields .prime-field--duo { grid-template-columns: 1fr 1fr; }
+  .prime-calcrow { flex-direction: column; }
+  .related.products ul.products { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .woocommerce .related.products ul.products li.product img,
+  .woocommerce-page .related.products ul.products li.product img { block-size: auto; }
+  body.woocommerce .related.products ul.products li.product .woocommerce-loop-product__title,
+  body.woocommerce-page .related.products ul.products li.product .woocommerce-loop-product__title { font-size: 12.5px; margin-inline: 13px; }
+  .related.products .price { font-size: 12.5px; margin-inline: 13px; }
+  .related.products li.product > .button { margin: 0 13px 13px; padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); }
+  .prime-gallery__thumbs { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ---- Desktop product layout ---------------------------------------------
+ *
+ * Reem's reference (2026-09-05): thumbnails as a vertical strip on the far
+ * left, the main image large beside them, the buying column on the right, and
+ * the whole thing running the full width of the screen rather than sitting in
+ * the site's centred container — desktop only; tablet and phone keep the
+ * stacked layout above.
+ *
+ * min-width here, so nothing in this block ever meets the max-width
+ * breakpoints below it.
+ */
+@media (min-width: 1100px) {
+  /* Wider than the site's centred container, but still capped — running truly
+     edge-to-edge on a large monitor stretched the row uncomfortably (Reem,
+     2026-09-05: "make the page fit a little bit. not too strech"). */
+  .prime-product > .prime-wrap {
+    max-inline-size: 1600px;
+    padding-inline: 40px;
+  }
+
+  .prime-product__grid {
+    /* The buying column is given a fixed, readable measure and the gallery
+       takes whatever is left, rather than the two splitting the screen 50/50
+       — on a wide monitor an even split makes the form absurdly wide.
+       The gallery column itself is capped too, not left at `1fr`: its own
+       image is capped at 460px (see .prime-gallery__main below), so an
+       uncapped `1fr` track just left empty space between the small image and
+       the pricing column (Reem, 2026-09-07: "reduce the space between the
+       pricing and the product image"). Capping the track to roughly the
+       gallery's real content width (88px thumbs + 16px gap + 460px image)
+       and centering the row closes that gap instead of stretching it across
+       the wide container. */
+    grid-template-columns: minmax(0, 580px) minmax(380px, 460px);
+    justify-content: center;
+    gap: 56px;
+  }
+
+  .prime-gallery {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* Explicit placement rather than `order`: the main image comes first in the
+     markup (template-parts/product/gallery.php) and needs to sit second here,
+     and naming both cells keeps that readable. */
+  .prime-gallery__thumbs {
+    grid-column: 1;
+    grid-row: 1;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    max-inline-size: none;
+    margin: 0;
+  }
+
+  .prime-gallery__main {
+    grid-column: 2;
+    grid-row: 1;
+    max-inline-size: none;
+    /* Still capped, for the same reason as the narrower layout: an uncapped
+       square grows with the column and pushes the buying controls off-screen. */
+    max-block-size: 560px;
+    /* Centred in whatever the column has left over, so the slack sits either
+       side of the image rather than banking up against the buying column. */
+    justify-self: center;
+  }
+}
+
+/*
+ * The product page is the one place the breadcrumb is printed outside the
+ * navy .prime-pagehead band (woocommerce/content-single-product.php prints
+ * it on a bare .prime-wrap), so the band's 50%-white crumb colour left the
+ * text invisible on white — only the sky square showed, which is what Reem
+ * saw as a stray "mark" above the add-to-cart notice (2026-09-16).
+ */
+body.single-product .prime-crumb { color: var(--ink-faint); }
+body.single-product .prime-crumb a { color: inherit; }
+body.single-product .prime-crumb a:hover { color: var(--sky); }

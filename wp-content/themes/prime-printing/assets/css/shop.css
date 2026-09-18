@@ -1,0 +1,462 @@
+/**
+ * Prime Printing — shop
+ *
+ * Category grid, all-products grid, the density/search/sort bar. Follows
+ * prime-printing-shop-v3.html.
+ */
+
+/* ---- Control bar --------------------------------------------------------- */
+.prime-bar {
+  border-block-end: 1px solid var(--line);
+  background: var(--mist);
+  position: sticky;
+  inset-block-start: var(--nav-h);
+  z-index: var(--z-bar);
+}
+
+.prime-bar .prime-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-4);
+  padding-block: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.prime-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.prime-toggle button {
+  background: none;
+  border: none;
+  font-size: var(--fs-nav);
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+  padding: 12px 22px;
+  cursor: pointer;
+  color: var(--ink-mid);
+  transition: .28s;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.prime-toggle button.is-on {
+  background: var(--navy);
+  color: var(--paper);
+}
+
+.prime-toggle button.is-on .prime-mark { background: var(--sky); }
+.prime-toggle button:not(.is-on):hover { color: var(--navy); background: var(--mist); }
+
+.prime-ctrls {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.prime-ctrls form { display: contents; }
+
+.prime-ctrls input[type="search"] {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 11px var(--sp-4);
+  font-size: var(--fs-body);
+  color: var(--ink);
+  min-inline-size: 210px;
+}
+
+.prime-ctrls input[type="search"]:focus {
+  outline: 2px solid var(--sky);
+  outline-offset: -1px;
+}
+
+.prime-ctrls select {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-size: var(--fs-body);
+  padding: 11px 13px;
+  color: var(--ink);
+}
+
+.prime-density {
+  display: none;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.prime-density button {
+  background: none;
+  border: none;
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-tight);
+  padding: 11px 15px;
+  cursor: pointer;
+  color: var(--ink-soft);
+  transition: .25s;
+}
+
+.prime-density button.is-on { background: var(--navy); color: var(--paper); }
+
+/* ---- Count row ------------------------------------------------------------ */
+.prime-count {
+  padding-block: var(--sp-7) 4px;
+  font-size: var(--fs-nav);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-softer);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.prime-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--navy);
+  border-block-end: 1px solid var(--sky);
+  padding-block-end: 4px;
+}
+
+/* ---- Category grid --------------------------------------------------------- */
+.prime-cats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-5);
+  padding-block-end: 90px;
+}
+
+.prime-cat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  transition: border-color var(--dur), transform var(--dur);
+}
+
+.prime-cat:hover,
+.prime-cat:focus-visible {
+  border-color: var(--navy);
+  transform: translateY(-3px);
+}
+
+.prime-cat__icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / .58;
+  overflow: hidden;
+  background: var(--sky-wash);
+}
+
+.prime-cat__icon img {
+  max-inline-size: 100%;
+  max-block-size: 100%;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  transition: transform var(--dur-slow) var(--ease-image);
+}
+
+/*
+ * The icon set (inc/category-icons.php) already carries its own navy→sky
+ * gradient and depth shadow — a flat colour panel behind it would fight
+ * that, so the icon sits on the same light wash for every tile rather than
+ * alternating navy/sky (which only worked for the old single-colour icons).
+ */
+.prime-cat__icon svg {
+  inline-size: 42%;
+  block-size: 88%;
+  transition: transform var(--dur-slow) var(--ease-image);
+}
+
+.prime-cat:hover .prime-cat__icon img,
+.prime-cat:focus-visible .prime-cat__icon img,
+.prime-cat:hover .prime-cat__icon svg,
+.prime-cat:focus-visible .prime-cat__icon svg {
+  transform: scale(1.06);
+}
+
+.prime-cat__corner {
+  position: absolute;
+  inset-block-start: var(--sp-4);
+  inset-inline-start: var(--sp-4);
+  inline-size: 22px;
+  block-size: 22px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prime-cat__corner::before {
+  content: '';
+  inline-size: var(--mark-size);
+  block-size: var(--mark-size);
+  background: var(--sky);
+}
+
+.prime-cat__body {
+  padding: var(--sp-5) var(--sp-6) var(--sp-6);
+  border-block-start: 1px solid var(--line);
+}
+
+.prime-cat__name {
+  font-family: var(--display);
+  font-size: var(--fs-lead);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--track-tight);
+  text-transform: uppercase;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prime-cat__count {
+  display: block;
+  font-size: var(--fs-nav);
+  color: var(--ink-softer);
+  letter-spacing: var(--track-label);
+  margin-block-start: 6px;
+}
+
+/* ---- Product grid ---------------------------------------------------------
+ *
+ * Six across on a desktop screen (Reem, 2026-09-05: "make it 6 product per
+ * row to be smaller") — at four the cards were reading as oversized. Cards
+ * this narrow need their insides scaled down too, which is what the
+ * `min-width: 1001px` block further down does; the intermediate 1001–1240px
+ * range stays at four, because six would squeeze each card under ~180px.
+ */
+.prime-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-6);
+  padding-block-end: 90px;
+}
+
+@media (min-width: 1241px) {
+  .prime-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--sp-4);
+  }
+
+  /* The card's own padding and type step down with it, or a ~210px card ends
+     up mostly padding with a title wrapping every second word. */
+  .prime-grid .prime-card__body { padding: var(--sp-4); }
+  .prime-grid .prime-card__title {
+    font-size: var(--fs-body);
+    margin-block-end: var(--sp-3);
+    line-height: 1.35;
+  }
+  .prime-grid .prime-card__kicker {
+    font-size: 9px;
+    letter-spacing: .14em;
+    margin-block-end: 5px;
+  }
+  .prime-grid .prime-price { font-size: var(--fs-body); }
+
+  /* Price above, button full width beneath it — side by side there is not
+     enough room for both without the button text wrapping. */
+  .prime-grid .prime-card__foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-2);
+  }
+  .prime-grid .prime-card__add {
+    inline-size: 100%;
+    text-align: center;
+    padding: 9px 6px;
+    font-size: var(--fs-xs);
+    letter-spacing: .1em;
+  }
+  .prime-grid .prime-card__badge {
+    font-size: 9px;
+    padding: 4px 7px;
+    inset-block-start: 8px;
+    inset-inline-start: 8px;
+  }
+}
+
+.prime-card {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  transition: border-color var(--dur), transform var(--dur);
+  display: flex;
+  flex-direction: column;
+}
+
+.prime-card:hover { border-color: var(--sky); transform: translateY(-3px); }
+
+/* Square frame, filled edge to edge.
+ *
+ * `cover` crops the photo to fill the card; `contain` would show all of it but
+ * leaves grey bands whenever a photo is not square — landscape shots band top
+ * and bottom, portrait ones band left and right, and a grid of mixed shapes
+ * reads as broken. Reem chose the crop here on 2026-09-05, with the single
+ * product page keeping `contain` so the complete artwork is still visible one
+ * click away (see .prime-gallery__main img in product.css).
+ */
+.prime-card__media {
+  display: block;
+  aspect-ratio: 1 / 1;
+  background: var(--mist);
+  overflow: hidden;
+  position: relative;
+}
+
+.prime-card__media img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  transition: transform .7s var(--ease-image);
+}
+
+.prime-card:hover .prime-card__media img { transform: scale(1.05); }
+
+.prime-card__badge {
+  position: absolute;
+  inset-block-start: 12px;
+  inset-inline-start: 12px;
+  background: var(--sky);
+  color: var(--navy-deep);
+  font-size: var(--fs-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 5px 10px;
+}
+
+.prime-card__body {
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.prime-card__kicker {
+  font-size: var(--fs-xs);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--sky);
+  margin-block-end: var(--sp-2);
+}
+
+.prime-card__kicker:hover { text-decoration: underline; }
+
+.prime-card__title {
+  font-family: var(--display);
+  font-weight: var(--fw-normal);
+  font-size: var(--fs-lead);
+  letter-spacing: .03em;
+  margin-block-end: var(--sp-4);
+  color: var(--ink);
+  flex: 1;
+}
+
+.prime-card__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.prime-card__add {
+  border: 1px solid var(--line);
+  background: none;
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 9px 14px;
+  cursor: pointer;
+  color: var(--navy);
+  transition: .25s;
+  white-space: nowrap;
+}
+
+.prime-card__add:hover { background: var(--navy); color: var(--paper); border-color: var(--navy); }
+.prime-card__add.loading { opacity: .6; pointer-events: none; }
+
+.prime-more {
+  display: block;
+  margin: 0 auto 90px;
+  border: 1px solid var(--line);
+  background: none;
+  font-size: var(--fs-nav);
+  letter-spacing: var(--track-btn);
+  text-transform: uppercase;
+  padding: 15px 40px;
+  cursor: pointer;
+  color: var(--navy);
+  transition: .28s;
+}
+
+.prime-more:hover { background: var(--navy); color: var(--paper); border-color: var(--navy); }
+.prime-more[disabled] { opacity: .5; cursor: wait; }
+
+.prime-empty {
+  padding-block: 60px 100px;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+.prime-empty h3 {
+  font-weight: var(--fw-light);
+  font-size: 22px;
+  color: var(--navy);
+  margin-block-end: var(--sp-3);
+}
+
+/* ---- Breakpoints ------------------------------------------------------- */
+@media (max-width: 1000px) {
+  .prime-cats { grid-template-columns: repeat(2, 1fr); }
+
+  /* Tablet: three products across (Reem, 2026-09-05). The phone breakpoint
+     below drops it to two. */
+  .prime-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); }
+
+  .prime-grid .prime-card__body { padding: var(--sp-4); }
+  .prime-grid .prime-card__title { font-size: var(--fs-body); margin-block-end: var(--sp-3); line-height: 1.35; }
+  .prime-grid .prime-card__kicker { font-size: 9px; letter-spacing: .14em; margin-block-end: 5px; }
+  .prime-grid .prime-price { font-size: var(--fs-body); }
+  .prime-grid .prime-card__foot { flex-direction: column; align-items: stretch; gap: var(--sp-2); }
+  .prime-grid .prime-card__add { inline-size: 100%; text-align: center; padding: 9px 6px; font-size: var(--fs-xs); letter-spacing: .1em; }
+
+  .prime-bar { position: static; }
+  .prime-ctrls input[type="search"] { min-inline-size: 100%; }
+  .prime-ctrls { inline-size: 100%; }
+  .prime-ctrls select { flex: 1; }
+}
+
+@media (max-width: 560px) {
+  .prime-cats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+
+  .prime-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+  .prime-card__body { padding: var(--sp-3); }
+  .prime-card__kicker { font-size: 9px; letter-spacing: .14em; margin-block-end: 5px; }
+  .prime-card__title { font-size: 13.5px; margin-block-end: var(--sp-3); line-height: 1.35; }
+  .prime-price { font-size: var(--fs-body); }
+  .prime-card__foot { flex-direction: column; align-items: stretch; gap: var(--sp-2); }
+  .prime-card__add { inline-size: 100%; text-align: center; padding: 9px 6px; font-size: var(--fs-xs); }
+  .prime-card__badge { font-size: 9px; padding: 4px 7px; inset-block-start: 8px; inset-inline-start: 8px; }
+
+  .prime-toggle { inline-size: 100%; }
+  .prime-toggle button { flex: 1; justify-content: center; padding: 13px 10px; }
+  .prime-density { display: inline-flex; }
+
+  /* One-column density: the JS toggles this on <body>. */
+  body.prime-wide .prime-grid { grid-template-columns: 1fr; gap: var(--sp-4); }
+  body.prime-wide .prime-card__body { padding: var(--sp-4); }
+  body.prime-wide .prime-card__title { font-size: var(--fs-lead); }
+  body.prime-wide .prime-card__foot { flex-direction: row; align-items: center; }
+  body.prime-wide .prime-card__add { inline-size: auto; padding: 9px 14px; font-size: var(--fs-sm); }
+}

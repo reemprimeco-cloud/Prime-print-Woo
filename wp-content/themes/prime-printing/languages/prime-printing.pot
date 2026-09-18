@@ -1,0 +1,706 @@
+# Prime Printing Co. — source strings
+# Extracted from the theme; not hand-maintained.
+msgid ""
+msgstr ""
+"Project-Id-Version: Prime Printing 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Domain: prime-printing\n"
+
+msgid " (+%s/pc)"
+msgstr ""
+
+msgid "\"Variable\" is a note for this product — set the actual product type in the Product data dropdown above."
+msgstr ""
+
+msgid "%s is required."
+msgstr ""
+
+msgid "+ Add field"
+msgstr ""
+
+msgid "A creative printing boutique in Kuwait producing stickers, stamps, calendars and packaging in-house."
+msgstr ""
+
+msgid "Add client logo"
+msgstr ""
+
+msgid "Address"
+msgstr ""
+
+msgid "Address type"
+msgstr ""
+
+msgid "Address type:"
+msgstr ""
+
+msgid "Al Ahmadi"
+msgstr ""
+
+msgid "Al Asimah"
+msgstr ""
+
+msgid "Al Farwaniya"
+msgstr ""
+
+msgid "Al Jahra"
+msgstr ""
+
+msgid "All categories"
+msgstr ""
+
+msgid "All products"
+msgstr ""
+
+msgid "An estimate. The final price is confirmed on the product page."
+msgstr ""
+
+msgid "Announcement bar"
+msgstr ""
+
+msgid "Apartment"
+msgstr ""
+
+msgid "Apartment no."
+msgstr ""
+
+msgid "Apple Pay"
+msgstr ""
+
+msgid "Area"
+msgstr ""
+
+msgid "Area / piece"
+msgstr ""
+
+msgid "Artwork"
+msgstr ""
+
+msgid "Artwork file"
+msgstr ""
+
+msgid "Artwork upload"
+msgstr ""
+
+msgid "Auto-fill address"
+msgstr ""
+
+msgid "Avenue (optional)"
+msgstr ""
+
+msgid "Back to cart"
+msgstr ""
+
+msgid "Best seller"
+msgstr ""
+
+msgid "Block"
+msgstr ""
+
+msgid "Browse the full catalogue"
+msgstr ""
+
+msgid "Building no. / name"
+msgstr ""
+
+msgid "Cash on delivery"
+msgstr ""
+
+msgid "Cash on delivery fee"
+msgstr ""
+
+msgid "Categories"
+msgstr ""
+
+msgid "Checkout"
+msgstr ""
+
+msgid "Client logo"
+msgstr ""
+
+msgid "Client logos"
+msgstr ""
+
+msgid "Close menu"
+msgstr ""
+
+msgid "Company"
+msgstr ""
+
+msgid "Company name"
+msgstr ""
+
+msgid "Configurator product"
+msgstr ""
+
+msgid "Contact details"
+msgstr ""
+
+msgid "Contact email"
+msgstr ""
+
+msgid "Content that appears across the site and on the homepage."
+msgstr ""
+
+msgid "Continue"
+msgstr ""
+
+msgid "Could not get location — enable location access and try again"
+msgstr ""
+
+msgid "Creative printing boutique — Kuwait"
+msgstr ""
+
+msgid "Currently unavailable"
+msgstr ""
+
+msgid "Custom formula — priced by size and quantity"
+msgstr ""
+
+msgid "Delivery"
+msgstr ""
+
+msgid "Delivery details"
+msgstr ""
+
+msgid "Delivery location"
+msgstr ""
+
+msgid "Delivery within 48 hours across Kuwait"
+msgstr ""
+
+msgid "Directions:"
+msgstr ""
+
+msgid "Edit client logo"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "Enter %1$s–%2$s cm"
+msgstr ""
+
+msgid "Enter a valid Kuwaiti phone number for the recipient."
+msgstr ""
+
+msgid "Enter a valid Kuwaiti phone number — it should start with 5, 6 or 9 and be 8 digits long."
+msgstr ""
+
+msgid "Enter dimensions between %1$s and %2$s cm."
+msgstr ""
+
+msgid "Enter the recipient's name."
+msgstr ""
+
+msgid "Estimated total"
+msgstr ""
+
+msgid "Everything we make, all at once"
+msgstr ""
+
+msgid "Everything we print, in one place."
+msgstr ""
+
+msgid "Extra directions (optional)"
+msgstr ""
+
+msgid "Facebook"
+msgstr ""
+
+msgid "Facebook link"
+msgstr ""
+
+msgid "Featured"
+msgstr ""
+
+msgid "Field label, e.g. \"Gift note\""
+msgstr ""
+
+msgid "Fields shown to the customer"
+msgstr ""
+
+msgid "File upload"
+msgstr ""
+
+msgid "Final price is recalculated on our server when added to cart."
+msgstr ""
+
+msgid "Finish"
+msgstr ""
+
+msgid "Finish options"
+msgstr ""
+
+msgid "Finish options (below)"
+msgstr ""
+
+msgid "Fixed — use the regular/sale price above"
+msgstr ""
+
+msgid "Floor"
+msgstr ""
+
+msgid "Footer description"
+msgstr ""
+
+msgid "Footer — company"
+msgstr ""
+
+msgid "Footer — shop"
+msgstr ""
+
+msgid "From %s"
+msgstr ""
+
+msgid "Full name"
+msgstr ""
+
+msgid "Full wa.me link, for example https://wa.me/9650000000"
+msgstr ""
+
+msgid "Get a quote"
+msgstr ""
+
+msgid "Get in touch"
+msgstr ""
+
+msgid "Gift"
+msgstr ""
+
+msgid "Gift note (optional)"
+msgstr ""
+
+msgid "Gift note:"
+msgstr ""
+
+msgid "Go to the shop"
+msgstr ""
+
+msgid "Google Pay"
+msgstr ""
+
+msgid "Governorate"
+msgstr ""
+
+msgid "Hawalli"
+msgstr ""
+
+msgid "Header & footer"
+msgstr ""
+
+msgid "Height (cm)"
+msgstr ""
+
+msgid "Hero headline"
+msgstr ""
+
+msgid "Hero paragraph"
+msgstr ""
+
+msgid "Hero — small line above the headline"
+msgstr ""
+
+msgid "Home"
+msgstr ""
+
+msgid "Homepage"
+msgstr ""
+
+msgid "House"
+msgstr ""
+
+msgid "House no."
+msgstr ""
+
+msgid "I agree to be contacted on WhatsApp about my order and offers."
+msgstr ""
+
+msgid "If it can be printed, we <em>already</em> print it."
+msgstr ""
+
+msgid "In stock · ships within 48 hours after approval"
+msgstr ""
+
+msgid "Instagram"
+msgstr ""
+
+msgid "Instagram link"
+msgstr ""
+
+msgid "Invoice email"
+msgstr ""
+
+msgid "Jump to a category"
+msgstr ""
+
+msgid "KNET"
+msgstr ""
+
+msgid "Kuwait — KNET · Visa · Mastercard"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Leave empty to hide the bar entirely."
+msgstr ""
+
+msgid "Locating…"
+msgstr ""
+
+msgid "Location not supported in this browser"
+msgstr ""
+
+msgid "Logo image"
+msgstr ""
+
+msgid "Made to your size"
+msgstr ""
+
+msgid "Menu"
+msgstr ""
+
+msgid "Method title"
+msgstr ""
+
+msgid "Minimum order total (KWD)"
+msgstr ""
+
+msgid "Minimum price per piece (KWD)"
+msgstr ""
+
+msgid "Mist"
+msgstr ""
+
+msgid "Mobile full-screen menu"
+msgstr ""
+
+msgid "Most products"
+msgstr ""
+
+msgid "Mubarak Al-Kabeer"
+msgstr ""
+
+msgid "Name A–Z"
+msgstr ""
+
+msgid "Navy"
+msgstr ""
+
+msgid "Navy deep"
+msgstr ""
+
+msgid "Need a company invoice?"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "No client logos yet."
+msgstr ""
+
+msgid "No matches"
+msgstr ""
+
+msgid "No payment methods are available. Please contact us to place your order."
+msgstr ""
+
+msgid "No searching required"
+msgstr ""
+
+msgid "No street address was collected — contact the recipient above for delivery details."
+msgstr ""
+
+msgid "Not set yet"
+msgstr ""
+
+msgid "Nothing found."
+msgstr ""
+
+msgid "On request"
+msgstr ""
+
+msgid "One column"
+msgstr ""
+
+msgid "One flat rate per Kuwait governorate. Rates are set in code (prime_governorates() in inc/checkout-data.php), not in this settings screen — this method exists only to plug that table into WooCommerce's own shipping calculation."
+msgstr ""
+
+msgid "One per line: Label | price delta in KWD. Example: Holographic | 0.050"
+msgstr ""
+
+msgid "One service per line. Leave empty to list your product categories automatically."
+msgstr ""
+
+msgid "Open in Google Maps"
+msgstr ""
+
+msgid "Open menu"
+msgstr ""
+
+msgid "Page not found"
+msgstr ""
+
+msgid "Paper"
+msgstr ""
+
+msgid "Payment method"
+msgstr ""
+
+msgid "Phone"
+msgstr ""
+
+msgid "Phone number"
+msgstr ""
+
+msgid "Pinned"
+msgstr ""
+
+msgid "Placeholder formula — Phase 4c replaces this with the real figures once the calculator for this product is provided. Editing these numbers now is safe; nothing here is final."
+msgstr ""
+
+msgid "Please upload your artwork file"
+msgstr ""
+
+msgid "Please upload your artwork file."
+msgstr ""
+
+msgid "Popular categories"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Price / piece"
+msgstr ""
+
+msgid "Price my sticker"
+msgstr ""
+
+msgid "Price: high to low"
+msgstr ""
+
+msgid "Price: low to high"
+msgstr ""
+
+msgid "Pricing model"
+msgstr ""
+
+msgid "Primary"
+msgstr ""
+
+msgid "Primary navigation"
+msgstr ""
+
+msgid "Prime Printing"
+msgstr ""
+
+msgid "Prime Printing Co."
+msgstr ""
+
+msgid "Prime Printing — by governorate"
+msgstr ""
+
+msgid "Products in the shuffling wall"
+msgstr ""
+
+msgid "Quantity"
+msgstr ""
+
+msgid "Rate per cm² (KWD)"
+msgstr ""
+
+msgid "Recipient name"
+msgstr ""
+
+msgid "Recipient phone"
+msgstr ""
+
+msgid "Recipient:"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+msgid "Required"
+msgstr ""
+
+msgid "Results for “%s”"
+msgstr ""
+
+msgid "Sale"
+msgstr ""
+
+msgid "Scroll"
+msgstr ""
+
+msgid "Search"
+msgstr ""
+
+msgid "Search products and categories"
+msgstr ""
+
+msgid "See everything"
+msgstr ""
+
+msgid "Select area"
+msgstr ""
+
+msgid "Select governorate"
+msgstr ""
+
+msgid "Select your area."
+msgstr ""
+
+msgid "Select your governorate."
+msgstr ""
+
+msgid "Service ticker"
+msgstr ""
+
+msgid "Set logo image"
+msgstr ""
+
+msgid "Shop"
+msgstr ""
+
+msgid "Show image %d"
+msgstr ""
+
+msgid "Show more (%s)"
+msgstr ""
+
+msgid "Shown to the customer as the shipping method name."
+msgstr ""
+
+msgid "Shuffle"
+msgstr ""
+
+msgid "Simple add-ons — a text field or a file upload shown on any product, independent of the pricing model above."
+msgstr ""
+
+msgid "Since your browser does not support JavaScript, or it is disabled, please ensure you click the %s button below to update the totals on this order before placing your order. You may need to refresh this page or open it in a new browser tab."
+msgstr ""
+
+msgid "Size"
+msgstr ""
+
+msgid "Skip to content"
+msgstr ""
+
+msgid "Sky"
+msgstr ""
+
+msgid "Sort"
+msgstr ""
+
+msgid "Stickers, stamps, calendars, packaging, backdrops, catalogs. Everything in one place — scroll and it finds you."
+msgstr ""
+
+msgid "Street"
+msgstr ""
+
+msgid "Tax number (optional)"
+msgstr ""
+
+msgid "Text"
+msgstr ""
+
+msgid "That page has moved or never existed. Try the shop, or search for what you need."
+msgstr ""
+
+msgid "The custom-priced product the homepage calculator links to. Leave unset to hide that section."
+msgstr ""
+
+msgid "Trusted by"
+msgstr ""
+
+msgid "Try a different word, or browse all categories."
+msgstr ""
+
+msgid "Two columns"
+msgstr ""
+
+msgid "Type the size. Watch the price move."
+msgstr ""
+
+msgid "Upload your artwork, pick the dimensions, and the total updates live. The specs travel with the order straight to your invoice."
+msgstr ""
+
+msgid "Used in the footer, the mobile menu, and the WhatsApp links on orders."
+msgstr ""
+
+msgid "Variable — priced by WooCommerce variations"
+msgstr ""
+
+msgid "Visa / Mastercard"
+msgstr ""
+
+msgid "What we print"
+msgstr ""
+
+msgid "WhatsApp"
+msgstr ""
+
+msgid "WhatsApp link"
+msgstr ""
+
+msgid "WhatsApp us"
+msgstr ""
+
+msgid "When gift mode is on, we contact the recipient for their address."
+msgstr ""
+
+msgid "Width (cm)"
+msgstr ""
+
+msgid "Width / height (cm)"
+msgstr ""
+
+msgid "Wrap words in &lt;em&gt; to colour them sky blue. Use &lt;br&gt; for a line break."
+msgstr ""
+
+msgid "Your cart is currently empty."
+msgstr ""
+
+msgid "Your details"
+msgstr ""
+
+msgid "Your order"
+msgstr ""
+
+msgid "Your phone"
+msgstr ""
+
+msgid "© %1$s %2$s"
+msgstr ""
+
+msgid "— None —"
+msgstr ""
+
+msgid "Cart (%s)"
+msgid_plural "Cart (%s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "%s product"
+msgid_plural "%s products"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "%s category"
+msgid_plural "%s categories"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Pick up your order here"
+msgstr ""
+
+msgid "Get directions"
+msgstr ""
+
+msgid "Prime Printing Co. — pickup location"
+msgstr ""

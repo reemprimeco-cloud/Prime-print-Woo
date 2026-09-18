@@ -1,0 +1,361 @@
+/**
+ * Prime Printing — base
+ *
+ * Reset, typography, and the shared components that appear on more than one
+ * page: the signature mark, buttons, labels/eyebrows, form fields, section
+ * headings. Page templates extend these; they do not redefine them.
+ */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+* { margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--body);
+  font-weight: var(--fw-light);
+  color: var(--ink);
+  background: var(--paper);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Locks scroll behind the full-screen mobile menu. */
+body.prime-lock { overflow: hidden; }
+
+img,
+svg,
+video { display: block; max-width: 100%; }
+
+a { color: inherit; text-decoration: none; }
+
+button,
+input,
+select,
+textarea { font: inherit; color: inherit; }
+
+/* Visible focus for keyboard users, using the brand sky rather than the UA ring. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+}
+
+.prime-wrap {
+  max-width: var(--wrap);
+  margin-inline: auto;
+  padding-inline: var(--wrap-pad);
+}
+
+/* ---- Signature mark ----------------------------------------------------- */
+/* The sky square from the logo's "i". Decorative everywhere it is used, so it
+   is always aria-hidden at the markup level (see prime_mark() in
+   inc/template-tags.php). */
+.prime-mark {
+  display: inline-block;
+  inline-size: var(--mark-size);
+  block-size: var(--mark-size);
+  background: var(--sky);
+  flex: none;
+}
+
+.prime-mark--navy { background: var(--navy); }
+.prime-mark--white { background: var(--paper); }
+
+/* ---- Screen reader ------------------------------------------------------ */
+.screen-reader-text {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  width: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+}
+
+.screen-reader-text:focus {
+  clip-path: none;
+  height: auto;
+  width: auto;
+  margin: 0;
+  padding: 15px 23px;
+  z-index: var(--z-menu);
+  inset-block-start: var(--sp-3);
+  inset-inline-start: var(--sp-3);
+  background: var(--paper);
+  color: var(--navy);
+  font-size: var(--fs-nav);
+  letter-spacing: var(--track-nav);
+  text-transform: uppercase;
+}
+
+/* ---- Headings ----------------------------------------------------------- */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--display);
+  font-weight: var(--fw-light);
+  color: var(--navy);
+  line-height: var(--lh-heading);
+}
+
+/* ---- Eyebrow / label ---------------------------------------------------- */
+/* Two names for the same idea in the references: `.eyebrow` on dark sections,
+   `.lbl` on light ones. Same type treatment, different default colour context. */
+.prime-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--body);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--sky);
+}
+
+.prime-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--sky);
+}
+
+/* ---- Section heading ---------------------------------------------------- */
+.prime-sechead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--sp-7);
+  flex-wrap: wrap;
+  margin-block-end: var(--sp-9);
+}
+
+.prime-sechead h2 {
+  font-size: var(--fs-section);
+  color: var(--navy);
+}
+
+/* ---- Buttons ------------------------------------------------------------ */
+.prime-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  padding: 15px 32px;
+  font-family: var(--body);
+  font-size: var(--fs-nav);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--track-btn);
+  text-transform: uppercase;
+  border: 1px solid var(--paper);
+  background: var(--paper);
+  color: var(--navy);
+  cursor: pointer;
+  transition: var(--dur);
+}
+
+.prime-btn:hover {
+  background: var(--sky);
+  border-color: var(--sky);
+  color: var(--navy-deep);
+  transform: translateY(-2px);
+}
+
+/* Ghost — for use on navy surfaces. */
+.prime-btn--ghost {
+  background: none;
+  color: var(--on-navy);
+  border-color: rgba(255, 255, 255, .42);
+}
+
+.prime-btn--ghost:hover {
+  background: rgba(255, 255, 255, .1);
+  border-color: var(--paper);
+  color: var(--on-navy);
+}
+
+/* Solid navy — the default CTA on light surfaces. */
+.prime-btn--navy {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--paper);
+}
+
+.prime-btn--navy:hover {
+  background: var(--sky);
+  border-color: var(--sky);
+  color: var(--navy-deep);
+}
+
+/* Outline — secondary action on light surfaces (shuffle, load more, add). */
+.prime-btn--outline {
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--navy);
+  padding: 12px 20px;
+  transform: none;
+}
+
+.prime-btn--outline:hover {
+  background: var(--navy);
+  color: var(--paper);
+  border-color: var(--navy);
+  transform: none;
+}
+
+.prime-btn--block {
+  inline-size: 100%;
+  justify-content: center;
+}
+
+/* ---- Form fields -------------------------------------------------------- */
+.prime-field { margin-block-end: 18px; }
+
+.prime-field label,
+.prime-field > .prime-field-label {
+  display: block;
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-btn);
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-block-end: var(--sp-2);
+}
+
+.prime-field input,
+.prime-field select,
+.prime-field textarea {
+  inline-size: 100%;
+  border: 1px solid var(--line);
+  padding: 13px 14px;
+  font-size: var(--fs-body-lg);
+  background: var(--mist);
+  color: var(--ink);
+}
+
+.prime-field input:focus,
+.prime-field select:focus,
+.prime-field textarea:focus {
+  outline: 2px solid var(--sky);
+  outline-offset: -1px;
+}
+
+.prime-field--duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+}
+
+/* ---- Price -------------------------------------------------------------- */
+.prime-price {
+  font-family: var(--display);
+  font-size: var(--fs-lead);
+  color: var(--navy);
+  letter-spacing: .05em;
+}
+
+/* ---- WooCommerce notices, everywhere ------------------------------------ */
+/* "Added to your cart", coupon applied, validation errors. Only the Cart page
+   styled these (cart.css); on product, shop and checkout pages they fell
+   through to WooCommerce core's own look — an absolutely-positioned glyph
+   icon, an olive-green top border, and the "View cart" button floated into
+   the text. At phone width (the iOS app's viewport) the floated button
+   crowds the wrapped text and the icon sits on top of the words, in Arabic
+   especially (Reem, 2026-09-16: "العلامات تغطي الكلام"). Same brand panel
+   as cart.css — mist background, accent bar on the reading side, no
+   floating parts — with the core icon removed and the button on its own
+   line. `body` leads each selector to beat WooCommerce's (0,1,0) rules
+   without !important; logical properties so RTL needs no second copy. */
+body .woocommerce-message,
+body .woocommerce-info,
+body .woocommerce-error {
+  position: relative;
+  list-style: none;
+  margin: 0 0 var(--sp-5);
+  padding: var(--sp-4);
+  border: 0;
+  border-inline-start: 3px solid var(--sky);
+  background: var(--mist);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  word-wrap: break-word;
+}
+
+body .woocommerce-error { border-inline-start-color: var(--danger); }
+
+body .woocommerce-message::before,
+body .woocommerce-info::before,
+body .woocommerce-error::before {
+  content: none;
+}
+
+body .woocommerce-error li { margin: 0 0 6px; }
+body .woocommerce-error li:last-child { margin-block-end: 0; }
+
+body .woocommerce-message .button,
+body .woocommerce-info .button {
+  float: none;
+  display: inline-flex;
+  align-items: center;
+  margin-block-start: var(--sp-3);
+  margin-inline: 0;
+  border: 1px solid var(--navy);
+  background: none;
+  color: var(--navy);
+  font-size: var(--fs-body-sm);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 10px var(--sp-5);
+  text-decoration: none;
+  transition: .2s;
+}
+
+body .woocommerce-message .button:hover,
+body .woocommerce-info .button:hover {
+  background: var(--navy);
+  color: var(--paper);
+}
+
+/* Once the button is inline-flex the notice text must come first — WooCommerce
+   prints the button before the text, so order it visually after. */
+body .woocommerce-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+body .woocommerce-message .button { order: 2; }
+
+/* ---- Arabic / RTL typography ------------------------------------------- */
+/* Structural RTL (mirroring) lives in rtl.css. This is the font swap only, and
+   is keyed off [lang] so it applies in both the Polylang /ar/ tree and any
+   Arabic string rendered inside an English page. */
+:lang(ar),
+[lang="ar"] { font-family: var(--arabic); }
+
+:lang(ar) h1, :lang(ar) h2, :lang(ar) h3,
+:lang(ar) h4, :lang(ar) h5, :lang(ar) h6,
+[lang="ar"] h1, [lang="ar"] h2, [lang="ar"] h3,
+[lang="ar"] h4, [lang="ar"] h5, [lang="ar"] h6 {
+  font-family: var(--arabic);
+  letter-spacing: 0;
+}
+
+/* ---- Motion preference -------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+}

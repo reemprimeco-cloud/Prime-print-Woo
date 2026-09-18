@@ -1,0 +1,31 @@
+/*
+Theme Name:         Prime Printing
+Theme URI:          https://primeprint.com.kw/
+Author:             Prime Printing Co.
+Author URI:         https://primeprint.com.kw/
+Description:        Custom WooCommerce theme for Prime Printing Co. — a creative printing boutique in Kuwait. Bilingual (EN/AR), built around the navy/sky brand system with Jost, Inter and IBM Plex Sans Arabic.
+Version:            0.1.91
+Requires at least:  6.4
+Tested up to:       6.7
+Requires PHP:       8.1
+License:            GNU General Public License v2 or later
+License URI:        http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain:        prime-printing
+Tags:               e-commerce, custom-menu, translation-ready, rtl-language-support
+*/
+
+/*
+ * No styles live in this file.
+ *
+ * The stylesheet is split into cascading layers under assets/css/ and enqueued
+ * from inc/enqueue.php in this order:
+ *
+ *   tokens.css   design tokens only (colors, type, spacing) — single source of truth
+ *   base.css     resets, typography, buttons, form controls, shared utilities
+ *   layout.css   header, topbar, mobile menu, footer
+ *
+ * Page-specific stylesheets (home.css, shop.css, product.css, checkout.css,
+ * account.css) are enqueued conditionally, also from inc/enqueue.php.
+ *
+ * RTL rules live in rtl.css, which WordPress loads automatically when is_rtl().
+ */

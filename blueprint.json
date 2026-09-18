@@ -1,0 +1,76 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "preferredVersions": {
+    "php": "8.2",
+    "wp": "latest"
+  },
+  "features": {
+    "networking": true
+  },
+  "landingPage": "/",
+  "steps": [
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "wordpress.org/plugins",
+        "slug": "woocommerce"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "wordpress.org/plugins",
+        "slug": "polylang"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "activateTheme",
+      "themeFolderName": "prime-printing"
+    },
+    {
+      "step": "setSiteOptions",
+      "options": {
+        "blogname": "Prime Printing Co.",
+        "blogdescription": "Creative printing boutique — Kuwait",
+        "permalink_structure": "/%postname%/",
+        "woocommerce_store_country": "KW:KU",
+        "woocommerce_currency": "KWD",
+        "woocommerce_price_num_decimals": "3",
+        "woocommerce_default_country": "KW:KU",
+        "woocommerce_store_city": "Kuwait City",
+        "woocommerce_onboarding_profile": {
+          "skipped": true
+        },
+        "woocommerce_currency_pos": "right_space",
+        "woocommerce_price_thousand_sep": ",",
+        "woocommerce_price_decimal_sep": ".",
+        "woocommerce_coming_soon": "no",
+        "woocommerce_store_pages_only": "no",
+        "woocommerce_allowed_countries": "specific",
+        "woocommerce_specific_allowed_countries": [
+          "KW"
+        ],
+        "woocommerce_ship_to_countries": "base"
+      }
+    },
+    {
+      "step": "defineWpConfigConsts",
+      "consts": {
+        "WP_DEBUG": true,
+        "WP_DEBUG_LOG": true,
+        "WP_DEBUG_DISPLAY": false,
+        "SCRIPT_DEBUG": true
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php\nrequire '/wordpress/wp-load.php';\nswitch_theme( 'prime-printing' );\n// wp-playground-cli's installPlugin \"activate\": true has proven\n// unreliable for a SECOND plugin in the same blueprint run (WooCommerce\n// activates fine every time; Polylang's files download correctly but\n// activation silently does not happen, no PHP error logged either) —\n// activated explicitly here instead of trusting that flag.\nif ( file_exists( WP_PLUGIN_DIR . '/polylang/polylang.php' ) && ! is_plugin_active( 'polylang/polylang.php' ) ) {\n  require_once ABSPATH . 'wp-admin/includes/plugin.php';\n  activate_plugin( 'polylang/polylang.php' );\n}\nupdate_option( 'blogname', 'Prime Printing Co.' );\nupdate_option( 'blogdescription', 'Creative printing boutique — Kuwait' );\nupdate_option( 'permalink_structure', '/%postname%/' );\nif ( function_exists( 'update_option' ) ) {\n  update_option( 'woocommerce_store_country', 'KW:KU' );\n  update_option( 'woocommerce_default_country', 'KW:KU' );\n  update_option( 'woocommerce_currency', 'KWD' );\n  update_option( 'woocommerce_price_num_decimals', '3' );\n  update_option( 'woocommerce_currency_pos', 'right_space' );\n  update_option( 'woocommerce_price_thousand_sep', ',' );\n  update_option( 'woocommerce_price_decimal_sep', '.' );\n  update_option( 'woocommerce_coming_soon', 'no' );\n  update_option( 'woocommerce_store_pages_only', 'no' );\n  update_option( 'woocommerce_onboarding_profile', array( 'skipped' => true ) );\n}\n// WooCommerce creates Cart/Checkout as block-based pages by\n// default. This theme's Phase 5 checkout targets the CLASSIC\n// shortcode system (woocommerce_checkout_fields and the template\n// overrides in woocommerce/checkout/*.php do not apply to the\n// block version at all) so both pages are forced back to their\n// classic shortcodes here, every boot.\n$cart_id = wc_get_page_id( 'cart' );\n$checkout_id = wc_get_page_id( 'checkout' );\nif ( $cart_id > 0 ) {\n  wp_update_post( array( 'ID' => $cart_id, 'post_content' => '[woocommerce_cart]' ) );\n}\nif ( $checkout_id > 0 ) {\n  wp_update_post( array( 'ID' => $checkout_id, 'post_content' => '[woocommerce_checkout]' ) );\n}\nflush_rewrite_rules();\necho 'prime-backstop: theme=' . get_option('template') . ' title=' . get_option('blogname');\n"
+    }
+  ]
+}

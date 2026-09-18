@@ -1,0 +1,36 @@
+{
+  "appId": "com.primeprintco.app",
+  "appName": "Prime Printing",
+  "webDir": "www",
+  "backgroundColor": "#10254A",
+  "server": {
+    "url": "https://primeprint.com.kw",
+    "androidScheme": "https",
+    "allowNavigation": [
+      "primeprint.com.kw",
+      "*.primeprint.com.kw"
+    ]
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#10254A",
+    "webContentsDebuggingEnabled": true,
+    "allowsLinkPreview": false,
+    "packageManager": "SPM",
+    "appendUserAgent": "PrimePrintingApp/1.0"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#10254A",
+      "showSpinner": false
+    },
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    }
+  }
+}
