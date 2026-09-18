@@ -135,6 +135,39 @@
 }
 
 /*
+ * The per-item specs (Shape, Size, Pieces, Sheets, Lamination — whatever the
+ * product's calculator added via woocommerce_get_item_data). WooCommerce
+ * prints them as a <dl> of alternating dt/dd, which in normal flow reads as a
+ * run-on paragraph with the values orphaned on their own lines. A two-column
+ * grid pairs each label with its value on one line, stacked (Reem,
+ * 2026-09-18: "التفاصيل مرتبه كل نوع بسطر تحت بعض").
+ */
+.woocommerce-cart .prime-prose table.cart td.product-name dl.variation {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 3px;
+  margin: 8px 0 0;
+  font-size: var(--fs-body-sm);
+  line-height: 1.4;
+}
+
+.woocommerce-cart .prime-prose table.cart td.product-name dl.variation dt {
+  grid-column: 1;
+  margin: 0;
+  font-weight: var(--fw-normal);
+  color: var(--ink-faint);
+}
+
+.woocommerce-cart .prime-prose table.cart td.product-name dl.variation dd {
+  grid-column: 2;
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.woocommerce-cart .prime-prose table.cart td.product-name dl.variation dd p { margin: 0; }
+
+/*
  * WooCommerce prints `.coupon` (the input + Apply coupon button) and
  * `button[name=update_cart]` as siblings inside one `<td class="actions">` —
  * left un-styled, WooCommerce's own default CSS floats them, which wraps
@@ -527,4 +560,81 @@
 
   .woocommerce-cart .prime-prose table.cart td.product-remove { justify-content: flex-end; }
   .woocommerce-cart .prime-prose table.cart td.product-remove::before { content: none; }
+
+  /*
+   * The item row itself, as a product listing rather than a stack of labelled
+   * table cells: the picture on the inline-start at a size you can actually
+   * recognise the job by, its name and specs in the column beside it, and the
+   * money rows underneath (Reem, 2026-09-18, screenshot: "خل صوره المنتج من
+   * اليسار و حجمها شوي اكبر و مقابلها التفاصيل"). Scoped to the item rows by
+   * their own class on purpose — the coupon/update row below them is a single
+   * colspan cell and must keep the full width the block rules give it.
+   */
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    column-gap: var(--sp-4);
+    align-items: start;
+    padding-block: var(--sp-4) var(--sp-3);
+  }
+
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item > td {
+    display: block;
+    padding: 0;
+    /*
+     * WooCommerce's own woocommerce-smallscreen.css sets
+     * `text-align: right !important` on every responsive-table cell below
+     * 768px — which is what threw the specs to the far edge of the row in
+     * the screenshot. Only an !important of higher specificity takes it
+     * back; this selector carries five classes to WooCommerce's two.
+     */
+    text-align: start !important;
+  }
+
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-remove {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: flex;
+    justify-content: flex-end;
+    margin-block-end: var(--sp-2);
+  }
+
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-thumbnail {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-thumbnail::before,
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-name::before { content: none; }
+
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-thumbnail img {
+    inline-size: 96px;
+    block-size: 96px;
+  }
+
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-name {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-name a {
+    display: block;
+    font-size: var(--fs-body-lg);
+    line-height: 1.3;
+  }
+
+  /* Price, quantity and subtotal keep their labelled full-width rows below
+     the two columns. */
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-price,
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-quantity,
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-subtotal {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin-block-start: var(--sp-3);
+  }
+
+  .woocommerce-cart .prime-prose table.cart tr.woocommerce-cart-form__cart-item td.product-price { margin-block-start: var(--sp-4); }
 }

@@ -2,9 +2,13 @@
 /**
  * App mode — the compact top bar.
  *
- * Home screen: wordmark + search. Every other screen: back, a short title,
- * and (on a product) a share button that assets/js/app.js unhides when the
- * WebView supports the Web Share API.
+ * Home screen: the wordmark centred, with search on the end — the home
+ * screen's own search field was removed (Reem, 2026-09-18: "امسح البار مال
+ * البحث. يكفي البحث من الايقونه عاليمين فوق"), so this icon is the only way
+ * into search from home and the bar keeps the same three-column shape as
+ * every other screen. Every other screen: back, a short title, and (on a
+ * product) a share button that assets/js/app.js unhides when the WebView
+ * supports the Web Share API.
  *
  * @package PrimePrinting
  */
@@ -19,6 +23,8 @@ $prime_shop_url = prime_has_woocommerce() && wc_get_page_id( 'shop' ) > 0
 
 <header class="prime-app-bar <?php echo $prime_is_home ? 'prime-app-bar--home' : 'prime-app-bar--inner'; ?>">
 	<?php if ( $prime_is_home ) : ?>
+		<?php /* Balances the search button on the other end so the logo sits on the bar's true centre. */ ?>
+		<span class="prime-app-bar__btn" aria-hidden="true"></span>
 		<?php prime_logo(); ?>
 		<a class="prime-app-bar__btn" href="<?php echo esc_url( $prime_shop_url ); ?>" aria-label="<?php esc_attr_e( 'Search', 'prime-printing' ); ?>">
 			<?php echo prime_app_icon( 'search' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG set. ?>

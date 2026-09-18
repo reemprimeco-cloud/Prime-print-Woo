@@ -13,15 +13,18 @@
  *   - body gets `.prime-app`; the web header/topbar/mobile menu/footer are
  *     not rendered at all (header.php / footer.php) and the page CSS in
  *     assets/css/app.css restyles what's left for a phone;
- *   - a compact top bar (template-parts/app/topbar.php): logo + search on
- *     the home screen, back + title (+ share on a product) everywhere else;
+ *   - a compact top bar (template-parts/app/topbar.php): the logo centred
+ *     with a search button on the home screen, back + title (+ share on a
+ *     product) everywhere else;
  *   - a fixed bottom tab bar (template-parts/app/tabbar.php): Home, Shop,
  *     Cart with a live count, Account;
- *   - the homepage is swapped for front-page-app.php (search, one banner,
- *     categories strip, popular products) instead of the long web landing;
+ *   - the homepage is swapped for front-page-app.php (a seasonal banner Reem
+ *     edits in the Customizer, a categories strip, popular products) instead
+ *     of the long web landing;
  *   - the shop archive shows category chips instead of the category grid
  *     (woocommerce/archive-product.php);
- *   - the language switcher moves to the Account tab.
+ *   - the language switcher, and the About/Contact/Privacy page links the
+ *     web footer normally carries, move to the Account tab.
  *
  * Everything ships from the server, so a change here reaches the installed
  * app immediately with no App Store review.
@@ -286,6 +289,195 @@ function prime_app_account_language() {
 }
 add_action( 'woocommerce_before_account_navigation', 'prime_app_account_language' );
 add_action( 'woocommerce_before_customer_login_form', 'prime_app_account_language' );
+
+/**
+ * The app home's promo banner — the one piece of merchandising on the home
+ * screen, and the only thing on it Reem changes by season.
+ *
+ * It started as a single line of text ("Delivery within 48 hours across
+ * Kuwait") borrowed from the web announcement bar, which meant a seasonal
+ * promotion — Ramadan, National Day, back-to-school, a new product — needed a
+ * developer. Every part of it is a Customizer setting now (inc/customizer.php,
+ * "App — home banner"): image, eyebrow, title, body, button label and the link
+ * it points at.
+ *
+ * Returns false when the banner is switched off or has nothing to say, so
+ * front-page-app.php can skip the whole block rather than print an empty box.
+ *
+ * @return array{image: string, image_id: int, eyebrow: string, title: string, text: string, cta: string, url: string}|false
+ */
+function prime_app_banner() {
+	if ( ! get_theme_mod( 'prime_app_banner_on', true ) ) {
+		return false;
+	}
+
+	$translate = static function ( $value ) {
+		return ( $value && function_exists( 'pll__' ) ) ? pll__( $value ) : $value;
+	};
+
+	$image_id = (int) get_theme_mod( 'prime_app_banner_image', 0 );
+	$title    = $translate( trim( (string) get_theme_mod( 'prime_app_banner_title', prime_app_banner_default_title() ) ) );
+	$eyebrow  = $translate( trim( (string) get_theme_mod( 'prime_app_banner_eyebrow', __( 'Fast delivery', 'prime-printing' ) ) ) );
+	$text     = $translate( trim( (string) get_theme_mod( 'prime_app_banner_text', '' ) ) );
+	$cta      = $translate( trim( (string) get_theme_mod( 'prime_app_banner_cta', __( 'Shop now', 'prime-printing' ) ) ) );
+	$url      = trim( (string) get_theme_mod( 'prime_app_banner_url', '' ) );
+
+	/*
+	 * An image on its own is a perfectly good seasonal banner — a designed
+	 * artwork with the offer already set in it needs no copy over the top.
+	 * Only a banner with neither image nor words is nothing to show.
+	 */
+	if ( '' === $title && '' === $text && '' === $eyebrow && ! $image_id ) {
+		return false;
+	}
+
+	if ( '' === $url ) {
+		$url = prime_has_woocommerce() && wc_get_page_id( 'shop' ) > 0
+			? add_query_arg( 'view', 'all', get_permalink( wc_get_page_id( 'shop' ) ) )
+			: home_url( '/' );
+	}
+
+	return array(
+		'image'    => $image_id ? (string) wp_get_attachment_image_url( $image_id, 'large' ) : '',
+		'image_id' => $image_id,
+		'eyebrow'  => $eyebrow,
+		'title'    => $title,
+		'text'     => $text,
+		'cta'      => $cta,
+		'url'      => $url,
+	);
+}
+
+/**
+ * The banner title's default, shared by the setting in inc/customizer.php and
+ * the get_theme_mod() fallback above — the two must be the same string or a
+ * fresh install (where the setting has never been saved) silently shows
+ * something the Customizer control doesn't admit to.
+ *
+ * @return string
+ */
+function prime_app_banner_default_title() {
+	return __( 'Delivery within 48 hours across Kuwait', 'prime-printing' );
+}
+
+/**
+ * The app's own page links — About, Contact, Privacy policy — at the foot of
+ * the Account screen.
+ *
+ * The web footer that normally carries them is not rendered in app mode, and
+ * the tab bar has room for four destinations only, so without this they are
+ * unreachable from inside the app (Reem, 2026-09-18). Top-level published
+ * pages, minus the ones that are already a tab or a screen of their own.
+ *
+ * @return WP_Post[]
+ */
+function prime_app_account_pages() {
+	$exclude = prime_system_page_ids();
+
+	$front = (int) get_option( 'page_on_front' );
+
+	if ( $front > 0 ) {
+		$exclude[] = $front;
+	}
+
+	if ( prime_has_woocommerce() ) {
+		$shop = wc_get_page_id( 'shop' );
+
+		if ( $shop > 0 ) {
+			$exclude[] = $shop;
+		}
+	}
+
+	$pages = get_pages(
+		array(
+			'parent'      => 0,
+			'sort_column' => 'menu_order,post_title',
+			'exclude'     => $exclude,
+		)
+	);
+
+	return is_array( $pages ) ? $pages : array();
+}
+
+/**
+ * Render those links, at the bottom of the Account screen.
+ *
+ * Dashboard and login form only — the endpoint screens (Orders, Addresses,
+ * Account details) are a task in progress, not a place to wander off to
+ * Privacy policy from.
+ */
+function prime_app_account_links() {
+	if ( ! prime_is_native_app_request() ) {
+		return;
+	}
+
+	$pages = prime_app_account_pages();
+
+	if ( ! $pages ) {
+		return;
+	}
+	?>
+	<nav class="prime-app-links" aria-label="<?php esc_attr_e( 'About Prime Printing', 'prime-printing' ); ?>">
+		<?php foreach ( $pages as $page ) : ?>
+			<a class="prime-app-link" href="<?php echo esc_url( get_permalink( $page ) ); ?>">
+				<span><?php echo esc_html( get_the_title( $page ) ); ?></span>
+				<?php echo prime_app_icon( 'arrow' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG set. ?>
+			</a>
+		<?php endforeach; ?>
+
+		<?php if ( prime_contact( 'whatsapp' ) ) : ?>
+			<a class="prime-app-link" href="<?php echo esc_url( prime_contact( 'whatsapp' ) ); ?>" rel="noopener" target="_blank">
+				<span><?php esc_html_e( 'WhatsApp us', 'prime-printing' ); ?></span>
+				<?php echo prime_app_icon( 'arrow' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG set. ?>
+			</a>
+		<?php endif; ?>
+
+		<p class="prime-app-links__legal">
+			<?php
+			printf(
+				/* translators: 1: current year, 2: site name. */
+				esc_html__( '© %1$s %2$s', 'prime-printing' ),
+				esc_html( wp_date( 'Y' ) ),
+				esc_html( get_bloginfo( 'name', 'display' ) )
+			);
+			?>
+		</p>
+	</nav>
+	<?php
+}
+
+/**
+ * Account dashboard only — woocommerce_account_content fires on every account
+ * screen, and is_wc_endpoint_url() with no argument is what separates the
+ * dashboard from Orders/Addresses/Account details.
+ */
+function prime_app_account_links_dashboard() {
+	if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url() ) {
+		return;
+	}
+
+	prime_app_account_links();
+}
+add_action( 'woocommerce_account_content', 'prime_app_account_links_dashboard', 30 );
+add_action( 'woocommerce_after_customer_login_form', 'prime_app_account_links' );
+
+/**
+ * No "… has been added to your cart" notice inside the app.
+ *
+ * The tab bar's cart badge already counts up the moment the item lands
+ * (prime_app_cart_fragment()), so the notice is a second, slower answer to a
+ * question already answered — and on a phone it pushes the product the
+ * customer is still looking at off the screen (Reem, 2026-09-18). An empty
+ * string here means wc_add_to_cart_message() never reaches wc_add_notice() at
+ * all, rather than storing a blank notice that renders as an empty box.
+ *
+ * @param string $message The notice HTML.
+ * @return string
+ */
+function prime_app_silence_add_to_cart_message( $message ) {
+	return prime_is_native_app_request() ? '' : $message;
+}
+add_filter( 'wc_add_to_cart_message_html', 'prime_app_silence_add_to_cart_message', 20 );
 
 /**
  * Inline SVG icons for the app chrome. Stroke icons on currentColor, so the

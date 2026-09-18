@@ -4,9 +4,14 @@
  *
  * Served instead of front-page.php when the request comes from the iOS app
  * (inc/native-app-ui.php, prime_app_template()). An app home is a launcher,
- * not a landing page: search, one banner, a category strip, and the popular
- * products — the same featured-first list the web wall uses, so Reem curates
- * both from the one "featured" flag.
+ * not a landing page: one banner, a category strip, and the popular products
+ * — the same featured-first list the web wall uses, so Reem curates both from
+ * the one "featured" flag.
+ *
+ * There is no search field on this screen. It had one, directly under a top
+ * bar that already carries a search button; Reem removed it (2026-09-18,
+ * "امسح البار مال البحث. يكفي البحث من الايقونه عاليمين فوق") — the button in
+ * template-parts/app/topbar.php is the way into search.
  *
  * @package PrimePrinting
  */
@@ -18,27 +23,55 @@ get_header();
 $prime_has_shop  = prime_has_woocommerce() && wc_get_page_id( 'shop' ) > 0;
 $prime_shop_url  = $prime_has_shop ? get_permalink( wc_get_page_id( 'shop' ) ) : home_url( '/' );
 $prime_all_url   = $prime_has_shop ? add_query_arg( 'view', 'all', $prime_shop_url ) : home_url( '/' );
-$prime_announce  = get_theme_mod( 'prime_announcement', __( 'Delivery within 48 hours across Kuwait', 'prime-printing' ) );
+$prime_banner    = prime_app_banner();
 $prime_cats      = prime_product_categories( 10 );
 $prime_popular   = function_exists( 'prime_wall_products' ) ? prime_wall_products( 6 ) : array();
 ?>
 
 <main id="prime-content" class="prime-main prime-app-home">
 
-	<form class="prime-app-search prime-app-home__search" role="search" method="get" action="<?php echo esc_url( $prime_shop_url ); ?>">
-		<?php echo prime_app_icon( 'search' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG set. ?>
-		<label class="screen-reader-text" for="prime-app-home-search"><?php esc_html_e( 'Search', 'prime-printing' ); ?></label>
-		<input id="prime-app-home-search" type="search" name="s" placeholder="<?php esc_attr_e( 'Search products', 'prime-printing' ); ?>" enterkeyhint="search">
-		<input type="hidden" name="post_type" value="product">
-		<input type="hidden" name="view" value="all">
-	</form>
+	<?php if ( $prime_banner ) : ?>
+		<a class="prime-app-banner<?php echo $prime_banner['image'] ? ' prime-app-banner--media' : ''; ?>" href="<?php echo esc_url( $prime_banner['url'] ); ?>">
+			<?php if ( $prime_banner['image'] ) : ?>
+				<?php
+				// Decorative: the banner's own words carry the meaning, and an
+				// image-only banner is linked by the whole tile anyway.
+				echo wp_get_attachment_image(
+					$prime_banner['image_id'],
+					'large',
+					false,
+					array(
+						'class'    => 'prime-app-banner__img',
+						'alt'      => '',
+						'loading'  => 'eager',
+						'decoding' => 'async',
+					)
+				);
+				?>
+				<span class="prime-app-banner__scrim" aria-hidden="true"></span>
+			<?php endif; ?>
 
-	<?php if ( $prime_announce ) : ?>
-		<a class="prime-app-banner" href="<?php echo esc_url( $prime_all_url ); ?>">
-			<span class="prime-app-banner__eyebrow"><?php esc_html_e( 'Fast delivery', 'prime-printing' ); ?></span>
-			<span class="prime-app-banner__title"><?php echo esc_html( $prime_announce ); ?></span>
-			<span class="prime-app-banner__cta"><?php esc_html_e( 'Shop now', 'prime-printing' ); ?></span>
-			<span class="prime-app-banner__art" aria-hidden="true"></span>
+			<span class="prime-app-banner__body">
+				<?php if ( $prime_banner['eyebrow'] ) : ?>
+					<span class="prime-app-banner__eyebrow"><?php echo esc_html( $prime_banner['eyebrow'] ); ?></span>
+				<?php endif; ?>
+
+				<?php if ( $prime_banner['title'] ) : ?>
+					<span class="prime-app-banner__title"><?php echo esc_html( $prime_banner['title'] ); ?></span>
+				<?php endif; ?>
+
+				<?php if ( $prime_banner['text'] ) : ?>
+					<span class="prime-app-banner__text"><?php echo esc_html( $prime_banner['text'] ); ?></span>
+				<?php endif; ?>
+
+				<?php if ( $prime_banner['cta'] ) : ?>
+					<span class="prime-app-banner__cta"><?php echo esc_html( $prime_banner['cta'] ); ?></span>
+				<?php endif; ?>
+			</span>
+
+			<?php if ( ! $prime_banner['image'] ) : ?>
+				<span class="prime-app-banner__art" aria-hidden="true"></span>
+			<?php endif; ?>
 		</a>
 	<?php endif; ?>
 

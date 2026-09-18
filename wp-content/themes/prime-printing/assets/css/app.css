@@ -52,12 +52,12 @@ body.prime-app {
   border-block-end: 1px solid var(--line);
 }
 
-.prime-app-bar--home {
-  grid-template-columns: minmax(0, 1fr) 44px;
-  padding-inline: var(--wrap-pad) 8px;
-}
+/* Same three-column shape as every other screen: an empty 44px cell balances
+   the search button, so the wordmark sits on the bar's true centre rather
+   than hard against the start edge. */
+.prime-app-bar--home { grid-template-columns: 44px minmax(0, 1fr) 44px; }
 
-.prime-app-bar .prime-logo { display: block; line-height: 0; }
+.prime-app-bar .prime-logo { display: block; justify-self: center; line-height: 0; }
 .prime-app-bar .prime-logo .prime-logo__img { inline-size: 112px; block-size: auto; }
 
 .prime-app-bar__title {
@@ -266,18 +266,65 @@ body.prime-app {
 }
 
 /* ---- Home ------------------------------------------------------------------ */
-body.prime-app .prime-app-home { padding-block: var(--sp-4) var(--sp-8); }
+body.prime-app .prime-app-home { padding-block: var(--sp-5) var(--sp-8); }
 
-.prime-app-home__search { margin: 0 var(--wrap-pad) var(--sp-5); }
-
+/* ---- Home banner ------------------------------------------------------------
+ * The one seasonal slot on the home screen, every part of it a Customizer
+ * setting (prime_app_banner(), inc/native-app-ui.php). Two shapes: the plain
+ * navy card with the geometric art, and `--media`, where Reem's own artwork is
+ * the background and a scrim keeps the copy readable over it.
+ */
 .prime-app-banner {
   position: relative;
   display: block;
   overflow: hidden;
+  isolation: isolate;
   margin: 0 var(--wrap-pad) var(--sp-6);
   padding: 18px 18px 16px;
   background: var(--navy);
   color: var(--on-navy);
+}
+
+.prime-app-banner--media {
+  /* A photo needs room to read as one; the copy sits over its lower half. */
+  min-block-size: 190px;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--sp-5);
+}
+
+.prime-app-banner__img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+/* Bottom-weighted, because that is where the copy is — a flat tint over the
+   whole image would dull the artwork for no gain. */
+.prime-app-banner__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to top,
+    rgba(8, 19, 42, .82) 0%,
+    rgba(8, 19, 42, .55) 45%,
+    rgba(8, 19, 42, .12) 100%
+  );
+}
+
+.prime-app-banner__body { display: block; position: relative; }
+
+.prime-app-banner__text {
+  display: block;
+  max-inline-size: 260px;
+  margin-block-start: 6px;
+  font-size: var(--fs-body-sm);
+  line-height: 1.45;
+  color: var(--on-navy-soft);
 }
 
 .prime-app-banner__eyebrow {
@@ -309,6 +356,10 @@ body.prime-app .prime-app-home { padding-block: var(--sp-4) var(--sp-8); }
 }
 
 :lang(ar) .prime-app-banner__title { font-weight: var(--fw-normal); font-size: 18px; }
+
+/* Nothing to flow around on a photo banner — the art sits on the other side
+   only in the plain navy one. */
+.prime-app-banner--media .prime-app-banner__title { max-inline-size: 280px; }
 
 .prime-app-banner__cta {
   display: inline-block;
@@ -518,6 +569,53 @@ body.prime-app .prime-cart-head { display: none; }
 .prime-app-lang .prime-seg a.is-on {
   background: var(--navy);
   color: var(--on-navy);
+}
+
+/* ---- Account: the pages the app has nowhere else to put --------------------
+ * About, Contact, Privacy policy — the web footer that carries them is not
+ * rendered in app mode and the tab bar has four slots, so they live at the
+ * foot of the Account screen (Reem, 2026-09-18). A plain settings-style list:
+ * one row each, label at the start, chevron at the end.
+ */
+.prime-app-links {
+  margin-block-start: var(--sp-8);
+  border-block-start: 1px solid var(--line);
+}
+
+.prime-app-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-block: 15px;
+  border-block-end: 1px solid var(--line);
+  font-size: var(--fs-body);
+  color: var(--navy);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.prime-app-link svg {
+  flex: none;
+  inline-size: 17px;
+  block-size: 17px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--ink-faint);
+}
+
+[dir="rtl"] .prime-app-link svg { transform: scaleX(-1); }
+
+.prime-app-links__legal {
+  margin-block: var(--sp-5) 0;
+  font-size: var(--fs-sm);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-align: center;
 }
 
 /* ---- Notices: keep clear of the fixed bars --------------------------------- */

@@ -271,6 +271,153 @@ function prime_customize_register( $wp_customize ) {
 			'choices'     => prime_product_choices(),
 		)
 	);
+
+	/* ---- App home banner -------------------------------------------------- */
+
+	/*
+	 * The app home screen's one piece of merchandising. It used to be the
+	 * `prime_announcement` line reused from the web header, which made a
+	 * seasonal promotion — Ramadan, National Day, a new product — a code
+	 * change. Everything about it is a setting here now (Reem, 2026-09-18:
+	 * "خل مكانه قابل للتعديل عن طريق الادمن يمكن مثل بانر اعلن عن اي منتج حسب
+	 * الموسم"), read back by prime_app_banner() in inc/native-app-ui.php.
+	 */
+	$wp_customize->add_section(
+		'prime_app_banner',
+		array(
+			'title'       => __( 'App — home banner', 'prime-printing' ),
+			'description' => __( 'The banner at the top of the app home screen. Change it each season to promote whatever product you like — the app picks it up immediately, with no App Store update.', 'prime-printing' ),
+			'panel'       => 'prime_panel',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'prime_app_banner_on',
+		array(
+			'default'           => true,
+			'sanitize_callback' => 'prime_sanitize_checkbox',
+		)
+	);
+
+	$wp_customize->add_control(
+		'prime_app_banner_on',
+		array(
+			'label'       => __( 'Show the banner', 'prime-printing' ),
+			'description' => __( 'Turn off to hide it entirely — the home screen then starts at the categories.', 'prime-printing' ),
+			'section'     => 'prime_app_banner',
+			'type'        => 'checkbox',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'prime_app_banner_image',
+		array(
+			'default'           => 0,
+			'sanitize_callback' => 'absint',
+		)
+	);
+
+	$wp_customize->add_control(
+		new WP_Customize_Media_Control(
+			$wp_customize,
+			'prime_app_banner_image',
+			array(
+				'label'       => __( 'Background image', 'prime-printing' ),
+				'description' => __( 'Optional. A wide image works best — roughly 1200 × 600. The text below is printed over it on a dark tint, so it stays readable on any photo. Leave empty for the plain navy banner.', 'prime-printing' ),
+				'section'     => 'prime_app_banner',
+				'mime_type'   => 'image',
+			)
+		)
+	);
+
+	$wp_customize->add_setting(
+		'prime_app_banner_eyebrow',
+		array(
+			'default'           => __( 'Fast delivery', 'prime-printing' ),
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+
+	$wp_customize->add_control(
+		'prime_app_banner_eyebrow',
+		array(
+			'label'       => __( 'Small line above the title', 'prime-printing' ),
+			'description' => __( 'For example: New, Ramadan offer, Back to school. Leave empty to hide it.', 'prime-printing' ),
+			'section'     => 'prime_app_banner',
+			'type'        => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'prime_app_banner_title',
+		array(
+			'default'           => prime_app_banner_default_title(),
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+
+	$wp_customize->add_control(
+		'prime_app_banner_title',
+		array(
+			'label'   => __( 'Title', 'prime-printing' ),
+			'section' => 'prime_app_banner',
+			'type'    => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'prime_app_banner_text',
+		array(
+			'default'           => '',
+			'sanitize_callback' => 'sanitize_textarea_field',
+		)
+	);
+
+	$wp_customize->add_control(
+		'prime_app_banner_text',
+		array(
+			'label'       => __( 'Supporting line', 'prime-printing' ),
+			'description' => __( 'Optional — one short sentence under the title.', 'prime-printing' ),
+			'section'     => 'prime_app_banner',
+			'type'        => 'textarea',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'prime_app_banner_cta',
+		array(
+			'default'           => __( 'Shop now', 'prime-printing' ),
+			'sanitize_callback' => 'sanitize_text_field',
+		)
+	);
+
+	$wp_customize->add_control(
+		'prime_app_banner_cta',
+		array(
+			'label'       => __( 'Button label', 'prime-printing' ),
+			'description' => __( 'Leave empty to show no button — the whole banner is tappable either way.', 'prime-printing' ),
+			'section'     => 'prime_app_banner',
+			'type'        => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'prime_app_banner_url',
+		array(
+			'default'           => '',
+			'sanitize_callback' => 'esc_url_raw',
+		)
+	);
+
+	$wp_customize->add_control(
+		'prime_app_banner_url',
+		array(
+			'label'       => __( 'Where it goes', 'prime-printing' ),
+			'description' => __( 'Paste the link of the product or category you are promoting. Leave empty to send customers to all products.', 'prime-printing' ),
+			'section'     => 'prime_app_banner',
+			'type'        => 'url',
+		)
+	);
 }
 add_action( 'customize_register', 'prime_customize_register' );
 
@@ -289,6 +436,18 @@ function prime_sanitize_heading( $value ) {
 			'strong' => array(),
 		)
 	);
+}
+
+/**
+ * Checkbox settings: WordPress hands the Customizer's checkbox back as '1' or
+ * '' (and an unsaved setting as its default bool), so cast rather than trust
+ * the shape.
+ *
+ * @param mixed $value Raw setting value.
+ * @return bool
+ */
+function prime_sanitize_checkbox( $value ) {
+	return (bool) $value;
 }
 
 /**
@@ -335,12 +494,16 @@ function prime_register_polylang_strings() {
 	}
 
 	$strings = array(
-		'prime_announcement' => __( 'Announcement bar', 'prime-printing' ),
-		'prime_footer_blurb' => __( 'Footer description', 'prime-printing' ),
-		'prime_hero_eyebrow' => __( 'Hero — small line above the headline', 'prime-printing' ),
-		'prime_hero_heading' => __( 'Hero headline', 'prime-printing' ),
-		'prime_hero_text'    => __( 'Hero paragraph', 'prime-printing' ),
-		'prime_services'     => __( 'Service ticker', 'prime-printing' ),
+		'prime_announcement'       => __( 'Announcement bar', 'prime-printing' ),
+		'prime_footer_blurb'       => __( 'Footer description', 'prime-printing' ),
+		'prime_hero_eyebrow'       => __( 'Hero — small line above the headline', 'prime-printing' ),
+		'prime_hero_heading'       => __( 'Hero headline', 'prime-printing' ),
+		'prime_hero_text'          => __( 'Hero paragraph', 'prime-printing' ),
+		'prime_services'           => __( 'Service ticker', 'prime-printing' ),
+		'prime_app_banner_eyebrow' => __( 'App banner — small line above the title', 'prime-printing' ),
+		'prime_app_banner_title'   => __( 'App banner — title', 'prime-printing' ),
+		'prime_app_banner_text'    => __( 'App banner — supporting line', 'prime-printing' ),
+		'prime_app_banner_cta'     => __( 'App banner — button label', 'prime-printing' ),
 	);
 
 	foreach ( $strings as $key => $label ) {
