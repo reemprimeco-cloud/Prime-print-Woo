@@ -35,6 +35,34 @@ body.prime-app {
 }
 
 
+/* ---- Navigation progress bar -----------------------------------------------
+ * Every tab/link is a real full page load — there is no client-side router to
+ * animate a transition with. This is the tap's only acknowledgement until the
+ * new page's own markup replaces it outright. A classic two-stage "fake"
+ * progress: races to ~72% quickly (the tap felt heard), then a slower creep
+ * toward 90% while the real network wait continues, and stops there — the
+ * bar never claims 100% for a load this page cannot actually observe the end
+ * of. assets/js/app.js adds `.is-active` on tap; nothing removes it on
+ * success because success means this whole document is gone.
+ */
+.prime-app-progress {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: calc(var(--z-nav) + 1);
+  inline-size: 0;
+  block-size: 2px;
+  background: var(--sky);
+  opacity: 0;
+  transition: inline-size .2s linear, opacity .15s linear;
+}
+
+.prime-app-progress.is-active {
+  inline-size: 72%;
+  opacity: 1;
+  transition: inline-size 3.2s cubic-bezier(.1, .6, .2, 1), opacity .15s linear;
+}
+
 /* ---- Top bar -------------------------------------------------------------- */
 .prime-app-bar {
   position: sticky;

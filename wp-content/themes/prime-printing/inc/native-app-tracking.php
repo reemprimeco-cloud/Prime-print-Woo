@@ -130,6 +130,24 @@ function prime_strip_ad_trackers( $html ) {
 		'#<script\b[^>]*>(?:(?!</script>).)*?\bpintrk\(.*?</script>#is',
 		'#<script\b[^>]*\bsrc=["\'][^"\']*s\.pinimg\.com[^"\']*["\'][^>]*>\s*</script>#is',
 		'#<noscript>(?:(?!</noscript>).)*?ct\.pinterest\.com(?:(?!</noscript>).)*?</noscript>#is',
+		// Found 2026-09-18 while investigating a slow-navigation report: the
+		// two patterns above assume Meta Pixel and Pinterest only ever load
+		// through their inline fbq()/pintrk() snippets or their third-party
+		// CDN hosts. In practice the "Official Facebook Pixel" plugin also
+		// enqueues its own bundled `facebook_signal.js` as a normal WordPress
+		// script tag (self-hosted, `wp-content/plugins/official-facebook-pixel/`
+		// — no `connect.facebook.net` in the URL, so the pattern above never
+		// matched it), and Pinterest's own snippet loads from
+		// `assets.pinterest.com`, not `s.pinimg.com`. Both survived every
+		// app-mode page load undetected — meaning the app was still shipping
+		// Meta's and Pinterest's own tracking libraries to every customer's
+		// phone despite Reem's 2026-09-05 call and the "does not track" App
+		// Privacy answer given to Apple. Matched by script id and by URL
+		// pattern respectively, since the plugin's own file path is stable
+		// but its `?ver=` query string is not.
+		'#<script\b[^>]*\bid=["\']facebook-signal-js["\'][^>]*>\s*</script>#is',
+		'#<script\b[^>]*\bsrc=["\'][^"\']*/official-facebook-pixel/[^"\']*["\'][^>]*>\s*</script>#is',
+		'#<script\b[^>]*\bsrc=["\'][^"\']*assets\.pinterest\.com[^"\']*["\'][^>]*>\s*</script>#is',
 	);
 
 	$scrubbed = preg_replace( $patterns, '', $html );

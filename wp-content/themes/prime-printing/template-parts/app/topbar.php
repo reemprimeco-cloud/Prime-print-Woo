@@ -21,6 +21,17 @@ $prime_shop_url = prime_has_woocommerce() && wc_get_page_id( 'shop' ) > 0
 	: home_url( '/' );
 ?>
 
+<?php
+/*
+ * Reem, 2026-09-18: "التنقل بين التاب و الصفحات بطيئ" — every tab and link
+ * is a real full page load (no client-side routing), so the wait is real;
+ * this bar is the tap's only acknowledgement until the new page arrives.
+ * Started/reset by assets/js/app.js on every same-origin link tap; a new
+ * page load replaces this element outright, which is what actually ends it.
+ */
+?>
+<div class="prime-app-progress" aria-hidden="true"></div>
+
 <header class="prime-app-bar <?php echo $prime_is_home ? 'prime-app-bar--home' : 'prime-app-bar--inner'; ?>">
 	<?php if ( $prime_is_home ) : ?>
 		<?php /* Balances the search button on the other end so the logo sits on the bar's true centre. */ ?>
