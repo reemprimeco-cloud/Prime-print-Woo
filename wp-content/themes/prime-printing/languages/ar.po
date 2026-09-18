@@ -795,3 +795,9 @@ msgstr "تسوق الآن"
 
 msgid "App navigation"
 msgstr "تنقل التطبيق"
+
+msgid "WhatsApp us"
+msgstr "تواصل معنا عبر واتساب"
+
+msgid "About Prime Printing"
+msgstr "عن برايم للطباعة"
