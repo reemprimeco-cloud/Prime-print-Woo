@@ -1,0 +1,16 @@
+{
+  "name": "@prime/binder-shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Design schema, geometry and validation shared by the binder editor and the render service. Pure TypeScript, no runtime dependencies.",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "template": "binder_inner",
+  "unit": "mm",
+  "dpi": 300,
+  "color": "CMYK (FOGRA39 / ISO Coated v2)",
+  "bleed_mm": 3.0,
+  "safe_margin_mm": 5.0,
+  "turn_in_mm": 0.0,
+  "trim_mm": {
+    "w": 645,
+    "h": 310
+  },
+  "canvas_with_bleed_mm": {
+    "w": 651.0,
+    "h": 316.0
+  },
+  "canvas_with_bleed_px": {
+    "w": 7689,
+    "h": 3732
+  },
+  "panels_relative_to_trim": [
+    {
+      "name": "inside_front",
+      "trim_mm": {
+        "x": 0,
+        "y": 0,
+        "w": 285,
+        "h": 310
+      },
+      "safe_mm": {
+        "x": 5.0,
+        "y": 5.0,
+        "w": 275.0,
+        "h": 300.0
+      }
+    },
+    {
+      "name": "spine",
+      "trim_mm": {
+        "x": 285,
+        "y": 0,
+        "w": 75,
+        "h": 310
+      },
+      "safe_mm": {
+        "x": 290.0,
+        "y": 5.0,
+        "w": 65.0,
+        "h": 300.0
+      }
+    },
+    {
+      "name": "inside_back",
+      "trim_mm": {
+        "x": 360,
+        "y": 0,
+        "w": 285,
+        "h": 310
+      },
+      "safe_mm": {
+        "x": 365.0,
+        "y": 5.0,
+        "w": 275.0,
+        "h": 300.0
+      }
+    }
+  ],
+  "fold_lines_x_mm_from_trim_left": [
+    285,
+    360
+  ],
+  "fold_lines_y_mm_from_trim_top": []
+}

@@ -104,7 +104,7 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
   corrected=0
   for k in $(seq 1 8); do
     sqlite3 "$db" ".timeout 5000" "UPDATE wp_options SET option_value='prime-printing' WHERE option_name IN ('template','stylesheet');" 2>>"$LOG"
-    sqlite3 "$db" ".timeout 5000" "UPDATE wp_options SET option_value='a:2:{i:0;s:27:\"woocommerce/woocommerce.php\";i:1;s:21:\"polylang/polylang.php\";}' WHERE option_name='active_plugins';" 2>>"$LOG"
+    sqlite3 "$db" ".timeout 5000" "UPDATE wp_options SET option_value='a:3:{i:0;s:27:\"woocommerce/woocommerce.php\";i:1;s:21:\"polylang/polylang.php\";i:2;s:47:\"prime-binder-designer/prime-binder-designer.php\";}' WHERE option_name='active_plugins';" 2>>"$LOG"
 
     state=$(sqlite3 "$db" ".timeout 3000" "SELECT option_value FROM wp_options WHERE option_name='template';" 2>/dev/null)
     active=$(sqlite3 "$db" ".timeout 3000" "SELECT option_value FROM wp_options WHERE option_name='active_plugins';" 2>/dev/null)

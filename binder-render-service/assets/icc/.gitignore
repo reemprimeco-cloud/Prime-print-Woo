@@ -1,0 +1,3 @@
+# Dev copy of Adobe "Coated FOGRA39" from this Mac. Production must ship the ECI profile (see README).
+*.icc
+!.gitkeep

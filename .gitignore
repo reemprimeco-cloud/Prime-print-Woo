@@ -20,3 +20,8 @@ dev/*.log
 .DS_Store
 Thumbs.db
 .claude/
+
+# Binder designer build output
+binder-editor/dist/
+binder-render-service/output/
+binder-render-service/dist/

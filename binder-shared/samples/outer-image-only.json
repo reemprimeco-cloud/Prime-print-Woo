@@ -1,0 +1,23 @@
+{
+  "template": "binder_outer",
+  "mode": "upload",
+  "canvas_mm": {
+    "w": 691.0,
+    "h": 356.0
+  },
+  "elements": [
+    {
+      "type": "image",
+      "src": "/samples/assets/bg-outer.jpg",
+      "x_mm": 0,
+      "y_mm": 0,
+      "w_mm": 691.0,
+      "h_mm": 356.0,
+      "rotation_deg": 0,
+      "source_px": {
+        "w": 8161,
+        "h": 4205
+      }
+    }
+  ]
+}

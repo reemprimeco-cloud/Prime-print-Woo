@@ -1,0 +1,78 @@
+{
+  "template": "binder_outer",
+  "unit": "mm",
+  "dpi": 300,
+  "color": "CMYK (FOGRA39 / ISO Coated v2)",
+  "bleed_mm": 3.0,
+  "safe_margin_mm": 5.0,
+  "turn_in_mm": 15.0,
+  "trim_mm": {
+    "w": 685.0,
+    "h": 350.0
+  },
+  "canvas_with_bleed_mm": {
+    "w": 691.0,
+    "h": 356.0
+  },
+  "canvas_with_bleed_px": {
+    "w": 8161,
+    "h": 4205
+  },
+  "panels_relative_to_trim": [
+    {
+      "name": "back_cover",
+      "trim_mm": {
+        "x": 15.0,
+        "y": 15.0,
+        "w": 290,
+        "h": 320
+      },
+      "safe_mm": {
+        "x": 20.0,
+        "y": 20.0,
+        "w": 280.0,
+        "h": 310.0
+      }
+    },
+    {
+      "name": "spine",
+      "trim_mm": {
+        "x": 305.0,
+        "y": 15.0,
+        "w": 75,
+        "h": 320
+      },
+      "safe_mm": {
+        "x": 310.0,
+        "y": 20.0,
+        "w": 65.0,
+        "h": 310.0
+      }
+    },
+    {
+      "name": "front_cover",
+      "trim_mm": {
+        "x": 380.0,
+        "y": 15.0,
+        "w": 290,
+        "h": 320
+      },
+      "safe_mm": {
+        "x": 385.0,
+        "y": 20.0,
+        "w": 280.0,
+        "h": 310.0
+      }
+    }
+  ],
+  "fold_lines_x_mm_from_trim_left": [
+    15.0,
+    305.0,
+    380.0,
+    670.0
+  ],
+  "fold_lines_y_mm_from_trim_top": [
+    15.0,
+    335.0
+  ]
+}

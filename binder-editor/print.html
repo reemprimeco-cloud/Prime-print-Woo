@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>binder print render</title>
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <style>
+      /* Pure artwork: no chrome, no guide overlay (§5.1). The page size itself is
+         set from spec.json at runtime (PrintCanvas injects the @page rule). */
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: transparent; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #root { position: relative; overflow: hidden; }
+      .el { position: absolute; margin: 0; padding: 0; }
+      .el-text {
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+        font-kerning: normal;
+        text-rendering: geometricPrecision;
+      }
+      img.el { display: block; object-fit: fill; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/print/main.tsx"></script>
+  </body>
+</html>

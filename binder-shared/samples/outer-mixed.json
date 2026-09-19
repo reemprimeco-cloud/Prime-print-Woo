@@ -1,0 +1,92 @@
+{
+  "template": "binder_outer",
+  "mode": "live",
+  "canvas_mm": {
+    "w": 691.0,
+    "h": 356.0
+  },
+  "elements": [
+    {
+      "type": "image",
+      "src": "/samples/assets/bg-outer.jpg",
+      "x_mm": 0,
+      "y_mm": 0,
+      "w_mm": 691.0,
+      "h_mm": 356.0,
+      "rotation_deg": 0,
+      "source_px": {
+        "w": 8161,
+        "h": 4205
+      }
+    },
+    {
+      "type": "image",
+      "src": "/samples/assets/logo.png",
+      "x_mm": 493.0,
+      "y_mm": 33.0,
+      "w_mm": 70.0,
+      "h_mm": 70.0,
+      "rotation_deg": 0,
+      "source_px": {
+        "w": 1200,
+        "h": 1200
+      }
+    },
+    {
+      "type": "text",
+      "text": "الصف السادس - رياضيات",
+      "font": "Tajawal",
+      "size_pt": 42,
+      "weight": "700",
+      "color_cmyk": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x_mm": 388.0,
+      "y_mm": 153.2,
+      "w_mm": 280.0,
+      "align": "center",
+      "rtl": true
+    },
+    {
+      "type": "text",
+      "text": "Prime Printing Co.",
+      "font": "Poppins",
+      "size_pt": 22,
+      "weight": "600",
+      "color_cmyk": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x_mm": 388.0,
+      "y_mm": 215.2,
+      "w_mm": 280.0,
+      "align": "center",
+      "rtl": false
+    },
+    {
+      "type": "text",
+      "text": "سجل ٤ حلقات",
+      "font": "Tajawal",
+      "size_pt": 26,
+      "weight": "700",
+      "color_cmyk": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x_mm": 190.5,
+      "y_mm": 172.0,
+      "w_mm": 310.0,
+      "align": "center",
+      "rtl": true,
+      "h_mm": 12,
+      "rotation_deg": 90
+    }
+  ]
+}

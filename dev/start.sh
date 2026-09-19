@@ -30,4 +30,5 @@ exec npx @wp-playground/cli server \
   --blueprint=blueprint.json \
   --mount-before-install="$ROOT/wp-content/themes/prime-printing:/wordpress/wp-content/themes/prime-printing" \
   --mount-before-install="$ROOT/dev/mu-plugins:/wordpress/wp-content/mu-plugins" \
+  --mount-before-install="$ROOT/wp-content/plugins/prime-binder-designer:/wordpress/wp-content/plugins/prime-binder-designer" \
   --login

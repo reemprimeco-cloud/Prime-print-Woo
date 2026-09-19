@@ -1,0 +1,64 @@
+{
+  "template": "binder_outer",
+  "mode": "live",
+  "canvas_mm": {
+    "w": 691.0,
+    "h": 356.0
+  },
+  "elements": [
+    {
+      "type": "text",
+      "text": "الصف السادس - رياضيات",
+      "font": "Tajawal",
+      "size_pt": 42,
+      "weight": "700",
+      "color_cmyk": [
+        0,
+        0,
+        0,
+        100
+      ],
+      "x_mm": 388.0,
+      "y_mm": 116.0,
+      "w_mm": 280.0,
+      "align": "center",
+      "rtl": true
+    },
+    {
+      "type": "text",
+      "text": "الاسم: محمد أحمد العتيبي\nالسنة الدراسية ٢٠٢٦ / 2026",
+      "font": "Tajawal",
+      "size_pt": 24,
+      "weight": "500",
+      "color_cmyk": [
+        0,
+        0,
+        0,
+        100
+      ],
+      "x_mm": 388.0,
+      "y_mm": 193.5,
+      "w_mm": 280.0,
+      "align": "center",
+      "rtl": true
+    },
+    {
+      "type": "text",
+      "text": "Mathematics — Grade 6",
+      "font": "Poppins",
+      "size_pt": 20,
+      "weight": "500",
+      "color_cmyk": [
+        0,
+        0,
+        0,
+        100
+      ],
+      "x_mm": 388.0,
+      "y_mm": 264.8,
+      "w_mm": 280.0,
+      "align": "center",
+      "rtl": false
+    }
+  ]
+}
