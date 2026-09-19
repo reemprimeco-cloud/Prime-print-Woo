@@ -52,13 +52,26 @@ function binderDevRoutes(): Plugin {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), binderDevRoutes()],
-  resolve: { alias: { '@binder/shared': resolve(shared, 'src/index.ts') } },
-  server: { port: 5180, fs: { allow: [here, shared] } },
-  preview: { port: 5180 },
-  build: {
-    outDir: 'dist',
-    rollupOptions: { input: { main: resolve(here, 'index.html'), print: resolve(here, 'print.html') } },
-  },
+/**
+ * Two builds, because they are deployed to different places:
+ *   --mode print   /print-render/<template>, served by the render service from
+ *                  the site root, so asset URLs are absolute (base '/');
+ *   --mode editor  the customer editor, dropped into the WordPress plugin under
+ *                  an arbitrary path, so every URL must be relative (base './').
+ */
+export default defineConfig(({ mode }) => {
+  const print = mode === 'print';
+
+  return {
+    base: print ? '/' : './',
+    plugins: [react(), binderDevRoutes()],
+    resolve: { alias: { '@binder/shared': resolve(shared, 'src/index.ts') } },
+    server: { port: 5180, fs: { allow: [here, shared] } },
+    preview: { port: 5180 },
+    build: {
+      outDir: print ? 'dist' : 'dist-editor',
+      emptyOutDir: true,
+      rollupOptions: { input: print ? resolve(here, 'print.html') : resolve(here, 'index.html') },
+    },
+  };
 });

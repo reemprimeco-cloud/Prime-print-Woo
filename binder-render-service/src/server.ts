@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { validateDesign, validateRules, type DesignJSON, type Issue, type Spec } from '@binder/shared';
 import { loadConfig, type Config } from './config.ts';
 import { createAppRouter } from './app-router.ts';
-import { closeBrowser } from './pipeline/browser.ts';
+import { closeBrowser, renderPreviewPng } from './pipeline/browser.ts';
 import { renderDesign, type RenderedPdfs } from './pipeline/index.ts';
 import { AssetError, prepareAssets } from './pipeline/assets.ts';
 import { Storage } from './storage.ts';
@@ -199,6 +199,35 @@ export function createServer(cfg: Config): { app: express.Express; storage: Stor
       if (e instanceof RenderFailure) return res.status(e.status).json({ error: e.code, errors: e.issues, warnings: [] });
       console.error(JSON.stringify({ level: 'error', msg: 'render failed', design_id: rq.design_id, error: e instanceof Error ? e.message : String(e) }));
       res.status(500).json({ error: 'render_failed' });
+    }
+  });
+
+  /** Fast RGB PNG proof (§3.3 /preview). Same validation as /render; nothing is stored. */
+  app.post('/preview', requireSecret, async (req, res) => {
+    const v = validateRequest(cfg, req.body);
+    if (!v.ok) return res.status(v.status).json({ error: v.error, errors: v.errors, warnings: [] });
+    const { req: rq, spec } = v;
+    if (!rate.allow(`preview:${rq.session_token}`)) return res.status(429).json({ error: 'rate_limited' });
+
+    let assets;
+    try {
+      assets = await prepareAssets(cfg, rq.design_json);
+    } catch (e) {
+      if (e instanceof AssetError) return res.status(422).json({ error: e.code, errors: e.issues, warnings: [] });
+      throw e;
+    }
+    try {
+      const selfBase = `http://127.0.0.1:${req.socket.localPort ?? cfg.port}`;
+      const png = await limiter.run(() => renderPreviewPng(cfg, selfBase, spec, assets.design, assets));
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.send(png);
+    } catch (e) {
+      if (e instanceof QueueFullError) return res.status(503).setHeader('Retry-After', '15').json({ error: 'busy' });
+      console.error(JSON.stringify({ level: 'error', msg: 'preview failed', design_id: rq.design_id, error: e instanceof Error ? e.message : String(e) }));
+      res.status(500).json({ error: 'preview_failed' });
+    } finally {
+      await assets.cleanup();
     }
   });
 

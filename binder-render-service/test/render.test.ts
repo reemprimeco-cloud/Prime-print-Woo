@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createHmac } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { closeBrowser } from '../src/pipeline/browser.ts';
 import { validateDesign } from '@binder/shared';
@@ -237,6 +239,45 @@ describe('image inspection: the server checks the files, not the client\'s descr
     } finally {
       await host.close();
     }
+  });
+});
+
+describe('preview (fast RGB PNG proof)', () => {
+  it('returns a PNG of the right proportions with real text colours, and needs the secret', async () => {
+    const d = sample('outer-arabic-text');
+    const t = d.elements[0]!;
+    if (t.type === 'text') t.color_cmyk = [100, 0, 0, 0]; // cyan text must look cyan, not the print sentinel
+    const res = await fetch(`${svc.url}/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Binder-Secret': SECRET }, body: JSON.stringify(request(d)) });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('image/png');
+    const png = Buffer.from(await res.arrayBuffer());
+    expect(png.subarray(1, 4).toString()).toBe('PNG');
+    const w = png.readUInt32BE(16);
+    const h = png.readUInt32BE(20);
+    expect(w).toBeGreaterThan(1500);
+    expect(w).toBeLessThan(1700);
+    expect(Math.abs(w / h - 691 / 356)).toBeLessThan(0.01);
+    // A cyan-ish pixel exists (R low, B high) and no pixel matches the print sentinel green.
+    const py = execFileSync('python3', ['-c', `
+import sys
+from PIL import Image
+im = Image.open(sys.argv[1]).convert('RGB'); px = im.load(); w, h = im.size
+cyan = sentinel = 0
+for y in range(0, h, 2):
+    for x in range(0, w, 2):
+        r, g, b = px[x, y]
+        if r < 60 and g > 150 and b > 200: cyan += 1
+        if g == 201 and b == 103: sentinel += 1
+print(cyan, sentinel)`, (() => { const f = join(tmpdir(), 'preview-check.png'); writeFileSync(f, png); return f; })()], { encoding: 'utf8' });
+    const [cyan, sentinel] = py.trim().split(' ').map(Number);
+    expect(cyan).toBeGreaterThan(50);
+    expect(sentinel).toBe(0);
+    expect((await fetch(`${svc.url}/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status).toBe(401);
+  }, 60_000);
+
+  it('refuses the same bad designs as /render', async () => {
+    const res = await fetch(`${svc.url}/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Binder-Secret': SECRET }, body: JSON.stringify(request(sample('outer-lowres'))) });
+    expect(res.status).toBe(422);
   });
 });
 

@@ -9,7 +9,7 @@ defined( 'ABSPATH' ) || exit;
 
 class Binder_DB {
 
-	const DB_VERSION      = '1';
+	const DB_VERSION      = '2';
 	const VERSION_OPTION  = 'binder_db_version';
 
 	/**
@@ -67,6 +67,8 @@ class Binder_DB {
   pdf_url varchar(500) DEFAULT NULL,
   pdf_cmyk_url varchar(500) DEFAULT NULL,
   validation_warnings longtext DEFAULT NULL,
+  render_job_id varchar(64) DEFAULT NULL,
+  render_error longtext DEFAULT NULL,
   created_at datetime NOT NULL,
   updated_at datetime NOT NULL,
   PRIMARY KEY  (id),
@@ -87,6 +89,57 @@ class Binder_DB {
 		if ( get_option( self::VERSION_OPTION ) !== self::DB_VERSION ) {
 			self::create_table();
 		}
+	}
+
+	/**
+	 * Current UTC time in the column format.
+	 *
+	 * @return string
+	 */
+	public static function now() {
+		return gmdate( 'Y-m-d H:i:s' );
+	}
+
+	/**
+	 * Insert a design row.
+	 *
+	 * @param array $data Column => value; created_at/updated_at are added.
+	 * @return int Row id, or 0 on failure.
+	 */
+	public static function insert( array $data ) {
+		global $wpdb;
+
+		$now = self::now();
+		$ok  = $wpdb->insert( self::table(), array_merge( $data, array( 'created_at' => $now, 'updated_at' => $now ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		return $ok ? (int) $wpdb->insert_id : 0;
+	}
+
+	/**
+	 * Update columns of one design row.
+	 *
+	 * @param int   $id   Row id.
+	 * @param array $data Column => value; updated_at is refreshed.
+	 * @return bool
+	 */
+	public static function update( $id, array $data ) {
+		global $wpdb;
+
+		return false !== $wpdb->update( self::table(), array_merge( $data, array( 'updated_at' => self::now() ) ), array( 'id' => (int) $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	}
+
+	/**
+	 * One design row, or null.
+	 *
+	 * @param int $id Row id.
+	 * @return array|null
+	 */
+	public static function get( $id ) {
+		global $wpdb;
+
+		$row = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . self::table() . ' WHERE id = %d', (int) $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared
+
+		return $row ? $row : null;
 	}
 
 	/**

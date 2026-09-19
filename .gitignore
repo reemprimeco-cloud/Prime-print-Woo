@@ -25,3 +25,8 @@ Thumbs.db
 binder-editor/dist/
 binder-render-service/output/
 binder-render-service/dist/
+dist-editor/
+
+# Built editor (scripts/build-binder-plugin-assets.sh)
+wp-content/plugins/prime-binder-designer/assets/dist/*
+!wp-content/plugins/prime-binder-designer/assets/dist/.gitkeep

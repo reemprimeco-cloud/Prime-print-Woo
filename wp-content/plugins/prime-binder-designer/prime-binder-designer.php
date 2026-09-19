@@ -24,6 +24,9 @@ define( 'PRIME_BINDER_URL', plugin_dir_url( __FILE__ ) );
 
 require_once PRIME_BINDER_DIR . 'includes/class-db.php';
 require_once PRIME_BINDER_DIR . 'includes/class-templates.php';
+require_once PRIME_BINDER_DIR . 'includes/class-settings.php';
+require_once PRIME_BINDER_DIR . 'includes/class-files.php';
+require_once PRIME_BINDER_DIR . 'includes/class-uploads.php';
 require_once PRIME_BINDER_DIR . 'includes/class-rest-api.php';
 require_once PRIME_BINDER_DIR . 'includes/class-product-meta.php';
 require_once PRIME_BINDER_DIR . 'includes/class-order-integration.php';
@@ -37,6 +40,8 @@ register_deactivation_hook( __FILE__, array( 'Binder_DB', 'deactivate' ) );
  */
 function prime_binder_boot() {
 	Binder_DB::maybe_upgrade();
+	Binder_Settings::init();
+	Binder_Files::init();
 	Binder_Rest_API::init();
 	Binder_Product_Meta::init();
 	Binder_Order_Integration::init();

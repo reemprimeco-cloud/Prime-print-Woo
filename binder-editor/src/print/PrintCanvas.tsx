@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
-import { planTextColors, type DesignElement, type DesignJSON, type Spec, type TextElement } from '@binder/shared';
+import { cmykToRgbCss, planTextColors, type DesignElement, type DesignJSON, type Spec, type TextElement } from '@binder/shared';
 
 export interface MeasuredText {
   index: number;
@@ -32,7 +32,7 @@ function transformFor(el: DesignElement): CSSProperties {
     : {};
 }
 
-function textStyle(el: TextElement, sentinel: [number, number, number]): CSSProperties {
+function textStyle(el: TextElement, sentinel: [number, number, number], proof: boolean): CSSProperties {
   return {
     left: L(el.x_mm),
     top: L(el.y_mm),
@@ -44,7 +44,7 @@ function textStyle(el: TextElement, sentinel: [number, number, number]): CSSProp
     lineHeight: el.line_height ?? 1.2,
     textAlign: el.align,
     // Sentinel RGB, replaced by the design's exact CMYK in the PDF (see @binder/shared colors.ts).
-    color: `rgb(${sentinel[0]}, ${sentinel[1]}, ${sentinel[2]})`,
+    color: proof ? cmykToRgbCss(el.color_cmyk) : `rgb(${sentinel[0]}, ${sentinel[1]}, ${sentinel[2]})`,
     ...transformFor(el),
   };
 }
@@ -55,6 +55,8 @@ interface Props {
   /** Called once fonts are loaded, images decoded, layout settled. */
   onReady: (measured: MeasuredText[]) => void;
   onError: (message: string) => void;
+  /** Paint real-looking colours (the on-screen preview) instead of print sentinels. */
+  proof?: boolean;
 }
 
 /**
@@ -63,7 +65,7 @@ interface Props {
  * at its mm position; raster images keep their native resolution because the
  * PDF stores the original pixels and only a transform matrix.
  */
-export function PrintCanvas({ spec, design, onReady, onError }: Props) {
+export function PrintCanvas({ spec, design, onReady, onError, proof = false }: Props) {
   const root = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -148,7 +150,7 @@ export function PrintCanvas({ spec, design, onReady, onError }: Props) {
               data-text-index={i}
               lang={e.rtl ? 'ar' : 'en'}
               dir={e.rtl ? 'rtl' : 'ltr'}
-              style={textStyle(e, plan.entries[plan.byElement.get(i) ?? 0]!.sentinel)}
+              style={textStyle(e, plan.entries[plan.byElement.get(i) ?? 0]!.sentinel, proof)}
             >
               {e.text}
             </div>

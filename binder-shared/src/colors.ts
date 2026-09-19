@@ -53,3 +53,14 @@ export function planTextColors(design: DesignJSON): ColorPlan {
 
   return { entries, byElement };
 }
+
+/**
+ * Plain CMYK (percent) to sRGB for ON-SCREEN use only: the preview render and
+ * the editor's text swatches. Print output never uses this; it carries the
+ * design's exact CMYK numbers (see planTextColors above).
+ */
+export function cmykToRgbCss([c, m, y, k]: Cmyk): string {
+  const kk = 1 - k / 100;
+  const ch = (v: number) => Math.round(255 * (1 - v / 100) * kk);
+  return `rgb(${ch(c)}, ${ch(m)}, ${ch(y)})`;
+}

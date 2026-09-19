@@ -111,3 +111,54 @@ export async function renderRgbPdf(
     await context.close();
   }
 }
+
+
+/**
+ * A fast on-screen proof: the same print route, real-looking colours, captured
+ * as a PNG about `width` px wide. RGB only; never the production file.
+ */
+export async function renderPreviewPng(
+  cfg: Config,
+  baseUrl: string,
+  spec: Spec,
+  design: DesignJSON,
+  assets?: Pick<PreparedAssets, 'files'>,
+  width = 1600,
+): Promise<Buffer> {
+  const b = await getBrowser(cfg);
+  const { w, h } = spec.canvas_with_bleed_mm;
+  const vw = cssPx(w);
+  const vh = cssPx(h);
+  const context = await b.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: width / vw });
+  const baseOrigin = new URL(baseUrl).origin;
+
+  try {
+    await context.route('**/*', (route) => {
+      const url = new URL(route.request().url());
+      const asset = assets?.files.get(url.href);
+      if (asset) return route.fulfill({ path: asset.path, contentType: asset.mime });
+      return url.origin === baseOrigin ? route.continue() : route.abort('blockedbyclient');
+    });
+    await context.addInitScript((d) => {
+      (window as unknown as { __BINDER_DESIGN__: unknown }).__BINDER_DESIGN__ = d;
+    }, design);
+
+    const page = await context.newPage();
+    await page.goto(`${baseUrl}/print-render/${spec.template}?proof=1`, { waitUntil: 'load', timeout: cfg.renderTimeoutMs });
+    await page.waitForFunction(
+      () => {
+        const win = window as unknown as { __RENDER_READY__?: boolean; __RENDER_ERROR__?: string };
+        return win.__RENDER_READY__ === true || !!win.__RENDER_ERROR__;
+      },
+      undefined,
+      { timeout: cfg.renderTimeoutMs },
+    );
+    const error = await page.evaluate(() => (window as unknown as { __RENDER_ERROR__?: string }).__RENDER_ERROR__);
+    if (error) throw new Error(`Print route failed: ${error}`);
+
+    // White paper behind transparent areas, like a proof on a sheet.
+    return await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: vw, height: vh }, omitBackground: false });
+  } finally {
+    await context.close();
+  }
+}

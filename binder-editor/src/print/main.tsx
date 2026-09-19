@@ -59,6 +59,7 @@ async function boot(): Promise<void> {
         window.__RENDER_READY__ = true;
       }}
       onError={fail}
+      proof={new URLSearchParams(location.search).get('proof') === '1'}
     />,
   );
 }
