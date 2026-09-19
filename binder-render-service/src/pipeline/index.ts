@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { planTextColors, type DesignJSON, type Spec } from '@binder/shared';
+import { planColors, type DesignJSON, type Spec } from '@binder/shared';
 import type { Config } from '../config.ts';
 import { renderRgbPdf, type MeasuredText } from './browser.ts';
 import { applyTextColors } from './colors.ts';
@@ -38,8 +38,8 @@ export async function renderDesign(
     mark = Date.now();
   };
 
-  const plan = planTextColors(design);
-  const textCount = design.elements.filter((e) => e.type === 'text').length;
+  const plan = planColors(design);
+  const colouredCount = design.elements.filter((e) => e.type !== 'image').length;
 
   const { pdf: chromiumPdf, measured } = await renderRgbPdf(cfg, baseUrl, spec, design, assets);
   lap('browser');
@@ -48,8 +48,8 @@ export async function renderDesign(
   const rgbText = await applyTextColors(chromiumPdf, plan, 'rgb');
   // Every text element paints with a sentinel; if none were found the pipeline would silently
   // hand Ghostscript RGB black and print a rich black. Fail instead.
-  if (textCount > 0 && (cmykText.replaced === 0 || rgbText.replaced === 0)) {
-    throw new Error('Text colour rewrite found no sentinel colours in the PDF — refusing to produce a print file.');
+  if (colouredCount > 0 && (cmykText.replaced === 0 || rgbText.replaced === 0)) {
+    throw new Error('Colour rewrite found no sentinel colours in the PDF — refusing to produce a print file.');
   }
   lap('colors');
 

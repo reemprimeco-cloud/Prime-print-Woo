@@ -104,3 +104,25 @@ progress { inline-size: 100%; block-size: 6px; accent-color: var(--navy); }
 .binder-tick { inline-size: 3rem; block-size: 3rem; display: grid; place-items: center; background: var(--good); color: #fff; font-size: 1.5rem; border-radius: 50%; }
 @keyframes binder-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .binder-spinner { animation-duration: 3s; } }
+
+/* ---- Live mode ------------------------------------------------------------------------------------ */
+.binder-livebar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; font-size: 0.78rem; }
+.binder-livestage { width: 100%; max-width: 100%; background: #eef1f4; box-shadow: 0 1px 0 var(--line), 0 10px 30px rgba(8, 19, 42, 0.12); position: relative; overflow: hidden; }
+.binder-livestage .polotno-workspace-container, .binder-livestage > div { height: 100%; }
+.binder-row--tight { gap: 0.35rem; }
+.binder-btn--small { padding: 0.4rem 0.7rem; font-size: 0.78rem; flex: 0 0 auto !important; }
+.binder-btn--danger { color: var(--danger); }
+.binder-field { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.78rem; color: var(--ink-soft); min-width: 0; }
+.binder-field--grow { flex: 1 1 0; }
+.binder-field textarea, .binder-field select, .binder-field input[type='number'] { border: 1px solid var(--line); background: var(--paper); padding: 0.55rem 0.6rem; font-size: 0.9rem; color: var(--ink); width: 100%; border-radius: 0; }
+.binder-field textarea { resize: vertical; min-height: 4.2rem; }
+.binder-seg { display: flex; border: 1px solid var(--line); }
+.binder-seg button { flex: 1; border: 0; background: var(--paper); padding: 0.55rem 0.3rem; font-size: 0.78rem; cursor: pointer; color: var(--ink); }
+.binder-seg button + button { border-inline-start: 1px solid var(--line); }
+.binder-seg button.is-on { background: var(--navy); color: #fff; }
+.binder-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(1.9rem, 1fr)); gap: 0.35rem; }
+.binder-swatch { appearance: none; aspect-ratio: 1; border: 1px solid var(--line); cursor: pointer; padding: 0; }
+.binder-swatch.is-on { outline: 2px solid var(--navy); outline-offset: 2px; }
+.binder-swatch--none { background: repeating-linear-gradient(45deg, #fff, #fff 4px, #e4e8ec 4px, #e4e8ec 8px); }
+.binder-linkish { all: unset; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.binder-linkish:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }

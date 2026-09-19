@@ -1,20 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, FabricImage } from 'fabric';
-import {
-  effectiveDpi,
-  THRESHOLDS,
-  validateDesign,
-  type DesignJSON,
-  type ImageElement,
-  type Issue,
-} from '@binder/shared';
-import { ApiError, createApi, type DesignRecord, type TemplateInfo } from './api';
+import { effectiveDpi, THRESHOLDS, validateDesign, type DesignJSON, type ImageElement } from '@binder/shared';
+import { ApiError, createApi, type TemplateInfo } from './api';
 import type { EditorConfig } from './config';
-import { fillElement, fitElement, elementToFabric, fabricToElement, movedElement, rotatedElement, scaledElement, type ImageSource } from './design';
-import { issueText, makeT } from './i18n';
-
-type Phase = 'edit' | 'approving' | 'done' | 'failed';
-type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+import {
+  elementToFabric,
+  fabricToElement,
+  fillElement,
+  fitElement,
+  movedElement,
+  rotatedElement,
+  scaledElement,
+  type ImageSource,
+} from './design';
+import { makeT } from './i18n';
+import { Actions, FailureCard, IssueList, StatusCard } from './Panels';
+import { notify, useDesignSession, type Snapshot } from './session';
+import { Legend } from './Legend';
 
 interface Source extends ImageSource {
   /** What the canvas displays: a downsized proxy when the server made one. */
@@ -23,22 +25,8 @@ interface Source extends ImageSource {
 }
 
 const MAX_WORK_PX = 1600;
-/** The colours and names printed on the template's own legend. Values shown come from spec.json. */
-const LEGEND: Array<{ key: string; color: string; mm?: 'bleed' | 'safe' | 'turnin' }> = [
-  { key: 'legend_bleed', color: '#F2836B', mm: 'bleed' },
-  { key: 'legend_trim', color: '#000000' },
-  { key: 'legend_fold', color: '#00AEEF' },
-  { key: 'legend_safe', color: '#EC008C', mm: 'safe' },
-  { key: 'legend_miter', color: '#F7941D' },
-  { key: 'legend_turnin', color: '#BDBDBD', mm: 'turnin' },
-];
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-function notify(cfg: EditorConfig, message: Record<string, unknown>): void {
-  if (window.parent !== window) window.parent.postMessage({ source: 'binder-editor', template: cfg.template, mode: cfg.mode, ...message }, window.location.origin);
-}
-
+/** Upload mode (§4.1): one finished image, positioned inside the locked template. */
 export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
   const api = useMemo(() => createApi(cfg), [cfg]);
   const t = useMemo(() => makeT(cfg.lang), [cfg.lang]);
@@ -49,11 +37,6 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
   const [el, setEl] = useState<ImageElement | null>(null);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState('');
-  const [designId, setDesignId] = useState<number | undefined>(cfg.designId);
-  const [saveState, setSaveState] = useState<SaveState>('idle');
-  const [phase, setPhase] = useState<Phase>('edit');
-  const [failure, setFailure] = useState<{ message: string; issues: Issue[] } | null>(null);
-  const [proofUrl, setProofUrl] = useState('');
   const [stageWidth, setStageWidth] = useState(0);
   const [dragging, setDragging] = useState(false);
 
@@ -62,8 +45,6 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const fabric = useRef<Canvas | null>(null);
   const image = useRef<FabricImage | null>(null);
-  const saving = useRef<Promise<number | undefined> | null>(null);
-  const idRef = useRef<number | undefined>(cfg.designId);
   const elRef = useRef<ImageElement | null>(null);
   elRef.current = el;
 
@@ -88,6 +69,8 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
   const workW = Math.max(280, Math.min(stageWidth || 800, MAX_WORK_PX));
   const pxPerMm = canvasMm ? workW / canvasMm.w : 1;
   const workH = canvasMm ? Math.round(workW * (canvasMm.h / canvasMm.w)) : 0;
+  const pxPerMmRef = useRef(pxPerMm);
+  pxPerMmRef.current = pxPerMm;
 
   // ---- Design + checks ---------------------------------------------------------------------
   const design: DesignJSON | null = useMemo(
@@ -96,6 +79,24 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
   );
   const result = useMemo(() => (design && spec ? validateDesign(design, spec) : null), [design, spec]);
   const dpi = el ? Math.round(effectiveDpi(el)) : 0;
+
+  const getSnapshot = useCallback((): Snapshot | null => {
+    const d = designRef.current;
+    const r = resultRef.current;
+    return d && r ? { design: d, warnings: r.warnings, ok: r.ok } : null;
+  }, []);
+  const designRef = useRef(design);
+  designRef.current = design;
+  const resultRef = useRef(result);
+  resultRef.current = result;
+
+  const session = useDesignSession(cfg, api, t, getSnapshot);
+
+  // Autosave after every change while editing.
+  useEffect(() => {
+    if (el && session.phase === 'edit') session.markDirty();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [el, session.phase]);
 
   // ---- Fabric canvas -----------------------------------------------------------------------------
   useEffect(() => {
@@ -125,6 +126,9 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
     c.requestRenderAll();
   }, [workW, workH]);
 
+  const sourceRef = useRef<Source | null>(null);
+  sourceRef.current = source;
+
   const fromFabric = useCallback(() => {
     const o = image.current;
     const s = sourceRef.current;
@@ -138,10 +142,15 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
     );
   }, []);
 
-  const sourceRef = useRef<Source | null>(null);
-  sourceRef.current = source;
-  const pxPerMmRef = useRef(pxPerMm);
-  pxPerMmRef.current = pxPerMm;
+  const applyToFabric = useCallback((e: ImageElement) => {
+    const o = image.current;
+    const c = fabric.current;
+    if (!o || !c) return;
+    const f = elementToFabric(e, { width: o.width, height: o.height }, pxPerMmRef.current);
+    o.set({ left: f.left, top: f.top, scaleX: f.scaleX, scaleY: f.scaleY, angle: f.angle });
+    o.setCoords();
+    c.requestRenderAll();
+  }, []);
 
   // Load the picture into Fabric when the source changes.
   useEffect(() => {
@@ -176,8 +185,7 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
       img.on('scaling', live);
       img.on('rotating', live);
       img.on('modified', fromFabric);
-      // Position from the current design element (set before the bitmap existed).
-      if (elRef.current) applyToFabric(elRef.current);
+      if (elRef.current) applyToFabric(elRef.current); // position from the element set before the bitmap existed
       c.requestRenderAll();
     });
 
@@ -187,51 +195,10 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, tpl]);
 
-  const applyToFabric = useCallback((e: ImageElement) => {
-    const o = image.current;
-    const c = fabric.current;
-    if (!o || !c) return;
-    const f = elementToFabric(e, { width: o.width, height: o.height }, pxPerMmRef.current);
-    o.set({ left: f.left, top: f.top, scaleX: f.scaleX, scaleY: f.scaleY, angle: f.angle });
-    o.setCoords();
-    c.requestRenderAll();
-  }, []);
-
   // Element state -> Fabric (buttons, slider, resize).
   useEffect(() => {
     if (el) applyToFabric(el);
   }, [el, pxPerMm, applyToFabric]);
-
-  // ---- Saving ------------------------------------------------------------------------------------------
-  const save = useCallback(async (): Promise<number | undefined> => {
-    const current = elRef.current;
-    if (!current || !spec) return idRef.current;
-    const d: DesignJSON = { template: spec.template, mode: 'upload', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [current] };
-    const warnings = validateDesign(d, spec).warnings;
-
-    const run = (async () => {
-      setSaveState('saving');
-      try {
-        const rec = await api.saveDesign(d, warnings, idRef.current);
-        idRef.current = rec.id;
-        setDesignId(rec.id);
-        setSaveState('saved');
-        return rec.id;
-      } catch (e) {
-        setSaveState('error');
-        throw e;
-      }
-    })();
-    saving.current = run;
-    return run;
-  }, [api, spec]);
-
-  // Autosave 0.9 s after the last change.
-  useEffect(() => {
-    if (!el || phase !== 'edit') return;
-    const h = window.setTimeout(() => void save().catch(() => undefined), 900);
-    return () => window.clearTimeout(h);
-  }, [el, phase, save]);
 
   // ---- Upload -----------------------------------------------------------------------------------------------
   const upload = useCallback(
@@ -264,91 +231,28 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
   // ---- Reopen a saved design -----------------------------------------------------------------------------------
   useEffect(() => {
     if (!cfg.designId || !spec) return;
-    api.getDesign(cfg.designId).then((rec) => {
-      const first = rec.design_json?.elements?.[0];
-      if (first?.type === 'image') {
-        setSource({ src: first.src, displaySrc: first.src, source_px: first.source_px, name: '' });
-        setEl(first);
-      }
-      if (rec.status === 'ready') {
-        setProofUrl(rec.proof_url);
-        setPhase('done');
-      } else if (rec.status === 'rendering') {
-        void poll(rec.id);
-      }
-    }).catch(() => undefined);
+    api
+      .getDesign(cfg.designId)
+      .then((rec) => {
+        const first = rec.design_json?.elements?.[0];
+        if (first?.type === 'image') {
+          setSource({ src: first.src, displaySrc: first.src, source_px: first.source_px, name: '' });
+          setEl(first);
+        }
+        session.resume(rec);
+      })
+      .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cfg.designId, spec]);
 
-  // ---- Approve -----------------------------------------------------------------------------------------------------
-  const describe = useCallback(
-    (e: unknown): { message: string; issues: Issue[] } => {
-      if (e instanceof ApiError) {
-        if (e.status === 422) return { message: t('err_rejected'), issues: e.errors };
-        if (e.status === 429 || e.status === 503) return { message: t('err_busy'), issues: [] };
-        if (e.status === 502 || e.code === 'binder_not_configured') return { message: t('err_unavailable'), issues: [] };
-        if (e.status === 0) return { message: t('err_network'), issues: [] };
-      }
-      return { message: t('err_generic'), issues: [] };
-    },
-    [t],
-  );
-
-  const finishDone = (rec: DesignRecord) => {
-    setProofUrl(rec.proof_url);
-    setPhase('done');
-    notify(cfg, { type: 'design-ready', designId: rec.id, proofUrl: rec.proof_url });
-  };
-
-  const poll = useCallback(
-    async (id: number) => {
-      setPhase('approving');
-      const deadline = Date.now() + 5 * 60_000;
-      let delay = 1500;
-      while (Date.now() < deadline) {
-        await sleep(delay);
-        delay = Math.min(delay + 500, 4000);
-        try {
-          const rec = await api.status(id);
-          if (rec.status === 'ready') return finishDone(rec);
-          if (rec.status === 'failed') {
-            setFailure({ message: t('err_failed'), issues: rec.errors ?? [] });
-            return setPhase('failed');
-          }
-        } catch (e) {
-          if (e instanceof ApiError && e.status !== 0 && e.status < 500) break; // a real refusal, not a blip
-        }
-      }
-      setFailure({ message: t('err_generic'), issues: [] });
-      setPhase('failed');
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [api, t],
-  );
-
-  const approve = async () => {
-    if (!result?.ok) return;
-    setFailure(null);
-    setPhase('approving');
-    try {
-      const id = await save();
-      if (!id) throw new Error('no id');
-      const rec = await api.finalize(id);
-      if (rec.status === 'ready') return finishDone(rec);
-      await poll(id);
-    } catch (e) {
-      setFailure(describe(e));
-      setPhase('failed');
-    }
-  };
-
   // ---- Toolbar actions ------------------------------------------------------------------------------------------------
   const rotation = el?.rotation_deg ?? 0;
-  const fillNow = () => spec && source && setEl(fillElement(spec, source, Math.abs(rotation) === 90 ? rotation : 0));
-  const fitNow = () => spec && source && setEl(fitElement(spec, source, Math.abs(rotation) === 90 ? rotation : 0));
+  const quarter = Math.abs(rotation) === 90 ? rotation : 0;
+  const fillNow = () => spec && source && setEl(fillElement(spec, source, quarter));
+  const fitNow = () => spec && source && setEl(fitElement(spec, source, quarter));
   const centerNow = () => canvasMm && el && setEl(movedElement(el, { x: canvasMm.w / 2, y: canvasMm.h / 2 }));
   const turn = (by: number) => el && setEl(rotatedElement(el, by));
-  const fillWidth = spec && source ? fillElement(spec, source, Math.abs(rotation) === 90 ? rotation : 0).w_mm : 1;
+  const fillWidth = spec && source ? fillElement(spec, source, quarter).w_mm : 1;
   const zoom = el ? el.w_mm / fillWidth : 1;
 
   const nudge = (ev: React.KeyboardEvent) => {
@@ -365,10 +269,10 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
   if (loadError) return <div className="binder-app binder-center" role="alert">{t('load_failed')}</div>;
   if (!tpl || !spec) return <div className="binder-app binder-center">{t('loading')}</div>;
 
-  const mm = { bleed: spec.bleed_mm, safe: spec.safe_margin_mm, turnin: spec.turn_in_mm };
   const quality = !el ? '' : dpi < THRESHOLDS.blockDpi ? 'low' : dpi < THRESHOLDS.warnDpi ? 'ok' : 'good';
   const issues = [...(result?.errors ?? []), ...(result?.warnings ?? [])];
-  const busy = phase === 'approving';
+  const status = <StatusCard session={session} t={t} cfg={cfg} />;
+  const busy = session.phase === 'approving' || session.phase === 'done';
 
   return (
     <div className="binder-app" dir={cfg.lang === 'ar' ? 'rtl' : 'ltr'} lang={cfg.lang}>
@@ -408,41 +312,14 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
               )}
             </div>
           </div>
-
-          <div className="binder-legend" aria-label={t('legend')}>
-            {LEGEND.map((l) => (
-              <span key={l.key}>
-                <i style={{ background: l.color }} />
-                {t(l.key, l.mm ? { mm: mm[l.mm] } : {})}
-              </span>
-            ))}
-            <small>{t('legend_note')}</small>
-          </div>
+          <Legend spec={spec} t={t} />
         </section>
 
         <aside className="binder-panel" aria-live="polite">
           <input ref={fileInput} type="file" hidden accept="image/jpeg,image/png,image/webp" onChange={(e) => { pick(e.target.files); e.target.value = ''; }} />
 
-          {phase === 'done' ? (
-            <div className="binder-card binder-done" role="status">
-              <div className="binder-tick" aria-hidden="true">✓</div>
-              <h2>{t('ready_title')}</h2>
-              <p>{t('ready_text')}</p>
-              {proofUrl && (
-                <a className="binder-btn binder-btn--ghost" href={proofUrl} target="_blank" rel="noopener">
-                  {t('proof')}
-                </a>
-              )}
-              <button type="button" className="binder-btn" onClick={() => notify(cfg, { type: 'close' })}>
-                {t('done')}
-              </button>
-            </div>
-          ) : busy ? (
-            <div className="binder-card binder-wait" role="status">
-              <div className="binder-spinner" aria-hidden="true" />
-              <h2>{t('approving')}</h2>
-              <p>{t('approving_hint')}</p>
-            </div>
+          {busy ? (
+            status
           ) : (
             <>
               <div className="binder-card">
@@ -487,37 +364,12 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
                 ) : issues.length === 0 ? (
                   <p className="binder-msg binder-msg--ok">{t('checks_ok')}</p>
                 ) : (
-                  <ul className="binder-issues">
-                    {issues.map((i, n) => (
-                      <li key={n} className={i.severity === 'error' ? 'is-error' : 'is-warn'}>
-                        {issueText(t, i)}
-                      </li>
-                    ))}
-                  </ul>
+                  <IssueList issues={issues} t={t} />
                 )}
               </div>
 
-              {failure && (
-                <div className="binder-card binder-fail" role="alert">
-                  <p>{failure.message}</p>
-                  {failure.issues.length > 0 && (
-                    <ul className="binder-issues">
-                      {failure.issues.map((i, n) => (
-                        <li key={n} className="is-error">{issueText(t, i)}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-
-              <div className="binder-actions">
-                <span className={`binder-save binder-save--${saveState}`}>
-                  {saveState === 'saving' ? t('saving') : saveState === 'saved' ? `✓ ${t('saved')}` : saveState === 'error' ? t('save_failed') : ''}
-                </span>
-                <button type="button" className="binder-btn binder-btn--primary" onClick={() => void approve()} disabled={!result?.ok || !el}>
-                  {phase === 'failed' ? t('try_again') : t('approve')}
-                </button>
-              </div>
+              <FailureCard session={session} t={t} />
+              <Actions session={session} t={t} canApprove={!!result?.ok && !!el} />
             </>
           )}
         </aside>

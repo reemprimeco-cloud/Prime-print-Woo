@@ -10,11 +10,13 @@ import {
   imageCovers,
   mmToPx,
   panelsInCanvas,
+  planColors,
   trimBox,
   validateDesign,
   visibleBox,
   type DesignJSON,
   type ImageElement,
+  type RectElement,
   type Spec,
   type TextElement,
 } from '../src/index.ts';
@@ -236,3 +238,51 @@ describe('§4.5.3 empty bleed (warning)', () => {
 function spec300(spec: Spec): number {
   return spec.dpi;
 }
+
+describe('rectangles: solid CMYK fills (background colour)', () => {
+  const rect = (spec: Spec, over: Partial<RectElement> = {}): RectElement => ({
+    type: 'rect',
+    x_mm: 0,
+    y_mm: 0,
+    w_mm: spec.canvas_with_bleed_mm.w,
+    h_mm: spec.canvas_with_bleed_mm.h,
+    color_cmyk: [100, 70, 20, 40],
+    ...over,
+  });
+
+  it('a full-canvas rectangle is a background: clean, and exempt from the turn-in / safe rules', () => {
+    const r = validateDesign(design(outer, [rect(outer)]), outer);
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toEqual([]);
+  });
+
+  it('a rectangle that does not reach the bleed warns, like an image would', () => {
+    const t = trimBox(outer);
+    const r = validateDesign(design(outer, [rect(outer, { x_mm: t.x, y_mm: t.y, w_mm: t.w, h_mm: t.h })]), outer);
+    expect(r.ok).toBe(true);
+    expect(r.warnings.map((w) => w.code)).toContain('bleed.empty');
+  });
+
+  it('a small rectangle in the turn-in zone is content, and is blocked', () => {
+    const v = visibleBox(outer);
+    const r = validateDesign(design(outer, [rect(outer), rect(outer, { x_mm: v.x - 8, y_mm: v.y + 30, w_mm: 20, h_mm: 20 })]), outer);
+    expect(r.errors.map((e) => e.code)).toContain('turnin.violation');
+  });
+
+  it('shape: bad colour, missing height', () => {
+    const bad = { ...rect(outer), color_cmyk: [0, 0, 0, 200] } as unknown as RectElement;
+    expect(validateDesign(design(outer, [bad]), outer).errors.map((e) => e.code)).toContain('shape.color');
+    const noH = { ...rect(outer) } as Partial<RectElement>;
+    delete noH.h_mm;
+    expect(validateDesign(design(outer, [noH as RectElement]), outer).errors.map((e) => e.code)).toContain('shape.range');
+  });
+
+  it('rectangles are colour-planned exactly like text', () => {
+    const d = design(outer, [rect(outer), rect(outer, { color_cmyk: [0, 0, 0, 100] })]);
+    const plan = planColors(d);
+    expect(plan.entries.map((e) => e.cmyk)).toEqual([[100, 70, 20, 40], [0, 0, 0, 100]]);
+    expect(plan.byElement.get(0)).toBe(0);
+    expect(plan.byElement.get(1)).toBe(1);
+    expect(new Set(plan.entries.map((e) => e.sentinel.join(','))).size).toBe(2);
+  });
+});

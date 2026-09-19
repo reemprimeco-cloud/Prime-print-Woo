@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
-import { cmykToRgbCss, planTextColors, type DesignElement, type DesignJSON, type Spec, type TextElement } from '@binder/shared';
+import { cmykToRgbCss, planColors, type DesignElement, type DesignJSON, type Spec, type TextElement } from '@binder/shared';
 
 export interface MeasuredText {
   index: number;
@@ -121,7 +121,7 @@ export function PrintCanvas({ spec, design, onReady, onError, proof = false }: P
   }, [spec, design, onReady, onError]);
 
   const { w, h } = spec.canvas_with_bleed_mm;
-  const plan = planTextColors(design);
+  const plan = planColors(design);
 
   return (
     <>
@@ -133,7 +133,21 @@ export function PrintCanvas({ spec, design, onReady, onError, proof = false }: P
         style={{ position: 'absolute', left: 0, top: 0, width: L(w), height: L(h), overflow: 'hidden', transform: `scale(${1 / LAYOUT_SCALE})`, transformOrigin: '0 0' }}
       >
         {design.elements.map((e, i) =>
-          e.type === 'image' ? (
+          e.type === 'rect' ? (
+            <div
+              key={i}
+              className="el"
+              style={{
+                left: L(e.x_mm),
+                top: L(e.y_mm),
+                width: L(e.w_mm),
+                height: L(e.h_mm),
+                // Sentinel RGB, replaced by the exact CMYK in the PDF; real-looking colour for the on-screen proof.
+                background: proof ? cmykToRgbCss(e.color_cmyk) : `rgb(${plan.entries[plan.byElement.get(i) ?? 0]!.sentinel.join(', ')})`,
+                ...transformFor(e),
+              }}
+            />
+          ) : e.type === 'image' ? (
             <img
               key={i}
               className="el"

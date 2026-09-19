@@ -23,6 +23,7 @@ SPECS = {'binder_outer': 'binder-outer-spec.json', 'binder_inner': 'binder-inner
 
 pdf_path, template = sys.argv[1], sys.argv[2]
 k_only = '--k-only' in sys.argv
+expect_cmyk = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == '--expect-cmyk']
 png = sys.argv[sys.argv.index('--png') + 1] if '--png' in sys.argv else None
 rgb_expected = '--rgb' in sys.argv   # proof PDF: RGB is expected, CMYK checks are skipped
 
@@ -82,6 +83,10 @@ else:
     check(not rgb_ops, 'no RGB colour operators in page content', str(rgb_ops[:3]))
     check(not gray_ops, 'no DeviceGray colour operators in page content', str(gray_ops[:3]))
     print('INFO  CMYK operators:', cmyk_ops[:6])
+    for want in expect_cmyk:
+        # Ghostscript stores DeviceCMYK in 16-bit fixed point, so 0.7 comes back as 0.6992: compare to 0.3% ink.
+        near = lambda a, b: len(a) == len(b) and all(abs(float(x) - float(y)) <= 0.003 for x, y in zip(a, b))
+        check(any(near(op.split()[:4], want.split()[:4]) for op in cmyk_ops), f'CMYK colour present (within 0.3% ink): {want}', str(cmyk_ops[:6]))
 
 all_images = list({i[0]: i for i in page.get_images(full=True)}.values())   # de-duplicate by object number
 smask_xrefs = {img[1] for img in all_images if img[1]}   # soft-mask (alpha) images are DeviceGray by design

@@ -1,4 +1,4 @@
-import type { Box, DesignElement, ImageElement, PanelSpec, Spec } from './types.ts';
+import type { Box, DesignElement, ImageElement, PanelSpec, RectElement, Spec } from './types.ts';
 
 export const MM_PER_INCH = 25.4;
 
@@ -76,7 +76,7 @@ export function estimateTextHeightMm(el: Extract<DesignElement, { type: 'text' }
 
 /** Element box before rotation. */
 export function elementBox(el: DesignElement): Box {
-  const h = el.type === 'image' ? el.h_mm : (el.h_mm ?? estimateTextHeightMm(el));
+  const h = el.type === 'text' ? (el.h_mm ?? estimateTextHeightMm(el)) : el.h_mm;
   return { x: el.x_mm, y: el.y_mm, w: el.w_mm, h };
 }
 
@@ -106,10 +106,10 @@ export function boxInside(inner: Box, outer: Box, eps = EPS_MM): boolean {
 }
 
 /**
- * Whether an image element fully covers `target`, honouring rotation: every
- * corner of the target must fall inside the (rotated) image rectangle.
+ * Whether an image or rectangle element fully covers `target`, honouring
+ * rotation: every corner of the target must fall inside the (rotated) box.
  */
-export function imageCovers(el: ImageElement, target: Box, eps = EPS_MM): boolean {
+export function elementCovers(el: ImageElement | RectElement, target: Box, eps = EPS_MM): boolean {
   const cx = el.x_mm + el.w_mm / 2;
   const cy = el.y_mm + el.h_mm / 2;
   const a = -rad(el.rotation_deg ?? 0);
@@ -130,6 +130,9 @@ export function imageCovers(el: ImageElement, target: Box, eps = EPS_MM): boolea
     return Math.abs(lx) <= el.w_mm / 2 + eps && Math.abs(ly) <= el.h_mm / 2 + eps;
   });
 }
+
+/** Kept under its earlier name; images and rectangles are treated alike. */
+export const imageCovers = elementCovers;
 
 /** Effective print resolution of a placed image (§4.5.1). */
 export function effectiveDpi(el: ImageElement): number {

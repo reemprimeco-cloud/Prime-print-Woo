@@ -1,9 +1,9 @@
-import type { DesignJSON, TextElement } from './types.ts';
+import type { DesignJSON } from './types.ts';
 
 export type Cmyk = [number, number, number, number];
 
 /**
- * Exact CMYK for vector colours (§5.2 step 4).
+ * Exact CMYK for vector colours — text and solid rectangles (§5.2 step 4).
  *
  * Chromium cannot paint CMYK and writes every colour as RGB. Handing that to a
  * colour-managed RGB->CMYK conversion turns a customer's pure black text
@@ -33,14 +33,14 @@ export interface ColorPlan {
 /** Distinct, unnatural colours: red channel counts up, green/blue fixed. */
 const sentinelFor = (i: number): [number, number, number] => [i + 1, 201, 103];
 
-export function planTextColors(design: DesignJSON): ColorPlan {
+export function planColors(design: DesignJSON): ColorPlan {
   const entries: ColorPlanEntry[] = [];
   const byElement = new Map<number, number>();
   const seen = new Map<string, number>();
 
   design.elements.forEach((el, i) => {
-    if (el.type !== 'text') return;
-    const cmyk = (el as TextElement).color_cmyk;
+    if (el.type === 'image') return; // photographs are converted through the ICC profile, not by number
+    const cmyk = el.color_cmyk;
     const key = cmyk.join(',');
     let idx = seen.get(key);
     if (idx === undefined) {
@@ -53,6 +53,9 @@ export function planTextColors(design: DesignJSON): ColorPlan {
 
   return { entries, byElement };
 }
+
+/** Earlier name of planColors; rectangles are planned too now. */
+export const planTextColors = planColors;
 
 /**
  * Plain CMYK (percent) to sRGB for ON-SCREEN use only: the preview render and

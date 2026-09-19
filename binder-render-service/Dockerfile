@@ -11,7 +11,7 @@ COPY binder-shared ./binder-shared
 COPY binder-editor ./binder-editor
 COPY binder-render-service ./binder-render-service
 RUN cd binder-shared && npm ci
-RUN cd binder-editor && npm ci && npm run build
+RUN cd binder-editor && npm ci && npm run build:print
 RUN cd binder-render-service && npm ci && npm run build
 
 # Keep this tag equal to the "playwright" version in binder-render-service/package.json,

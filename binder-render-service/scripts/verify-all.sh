@@ -17,6 +17,7 @@ run() { # name template kflag
 run outer-image-only binder_outer
 run outer-arabic-text binder_outer --k-only
 run outer-mixed binder_outer
+run outer-rect-bg binder_outer
 run inner-mixed binder_inner
 echo
 [ "$FAILS" -eq 0 ] && echo "ALL SAMPLES OK" || { echo "$FAILS check(s) FAILED"; exit 1; }

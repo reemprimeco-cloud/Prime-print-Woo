@@ -167,6 +167,16 @@ def main():
     ]
     write('outer-mixed.json', design(outer, 'live', mixed))
 
+    # 3b. live design with a solid CMYK background (rect) + logo + white text — exact colours must survive.
+    navy = (100, 70, 20, 40)
+    write('outer-rect-bg.json', design(outer, 'live', [
+        {'type': 'rect', 'x_mm': 0, 'y_mm': 0, 'w_mm': outer['canvas_with_bleed_mm']['w'], 'h_mm': outer['canvas_with_bleed_mm']['h'], 'color_cmyk': list(navy)},
+        {'type': 'image', 'src': '/samples/assets/logo.png', 'x_mm': fc['x'] + (fc['w'] - logo_size) / 2, 'y_mm': fc['y'] + 10,
+         'w_mm': logo_size, 'h_mm': logo_size, 'rotation_deg': 0, 'source_px': {'w': logo[0], 'h': logo[1]}},
+        text('الصف السادس - رياضيات', {'x': fc['x'], 'y': fc['y'] + fc['h'] * 0.45, 'w': fc['w']}, 42, 'Tajawal', '700', True, cmyk=(0, 0, 0, 0)),
+        text('Prime Printing Co.', {'x': fc['x'], 'y': fc['y'] + fc['h'] * 0.65, 'w': fc['w']}, 22, 'Poppins', '600', False, cmyk=(0, 100, 100, 0)),
+    ]))
+
     # 4. deliberately bad: 600 px wide image stretched over the whole canvas (~22 DPI).
     write('outer-lowres.json', design(outer, 'upload', [full_image(outer, '/samples/assets/lowres.jpg', low)]))
 

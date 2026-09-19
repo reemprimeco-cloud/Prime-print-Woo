@@ -81,7 +81,23 @@ export interface TextElement {
   line_height?: number;
 }
 
-export type DesignElement = ImageElement | TextElement;
+/**
+ * A solid rectangle in one CMYK colour. This is how a background colour is
+ * expressed: a rectangle over the whole canvas (§4.5.4 speaks of "background
+ * fill"). Same coordinate contract as every other element.
+ */
+export interface RectElement {
+  type: 'rect';
+  x_mm: number;
+  y_mm: number;
+  w_mm: number;
+  h_mm: number;
+  rotation_deg?: number;
+  /** Percent, [C, M, Y, K], each 0..100. */
+  color_cmyk: [number, number, number, number];
+}
+
+export type DesignElement = ImageElement | TextElement | RectElement;
 
 export interface DesignJSON {
   template: TemplateKey;

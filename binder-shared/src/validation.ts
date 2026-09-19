@@ -16,7 +16,7 @@ import {
   canvasBox,
   effectiveDpi,
   elementBox,
-  imageCovers,
+  elementCovers,
   panelsInCanvas,
   visibleBox,
   EPS_MM,
@@ -26,6 +26,7 @@ import {
   type DesignElement,
   type DesignJSON,
   type ImageElement,
+  type RectElement,
   type Issue,
   type Spec,
   type TextElement,
@@ -179,8 +180,16 @@ export function validateShape(input: unknown, spec: Spec): Issue[] {
       if (raw.line_height !== undefined && (!isNum(raw.line_height) || raw.line_height < 0.5 || raw.line_height > 4)) {
         issues.push(err('shape.range', `Element ${i}: line_height must be between 0.5 and 4.`, at));
       }
+    } else if (raw.type === 'rect') {
+      if (!isNum(raw.h_mm) || raw.h_mm <= 0 || raw.h_mm > limitY) {
+        issues.push(err('shape.range', `Element ${i}: h_mm must be a positive number.`, at));
+      }
+      const col = raw.color_cmyk;
+      if (!Array.isArray(col) || col.length !== 4 || !col.every((n) => isNum(n) && n >= 0 && n <= 100)) {
+        issues.push(err('shape.color', `Element ${i}: color_cmyk must be four numbers from 0 to 100.`, at));
+      }
     } else {
-      issues.push(err('shape.type', `Element ${i}: type must be "image" or "text".`, at));
+      issues.push(err('shape.type', `Element ${i}: type must be "image", "text" or "rect".`, at));
     }
   });
 
@@ -196,12 +205,15 @@ export function validateShape(input: unknown, spec: Spec): Issue[] {
 
 /**
  * Is this element part of the artwork background rather than a "text/logo"
- * element? A full-bleed image, or the one image of an upload-mode design.
+ * element? The one image of an upload-mode design, or any image or colour
+ * rectangle that covers everything that stays visible on the finished piece
+ * (the trim area less the turn-in). Such a layer is by definition the
+ * background; whether it also reaches into the bleed is a separate warning.
  */
 export function isBackground(el: DesignElement, index: number, design: DesignJSON, spec: Spec): boolean {
-  if (el.type !== 'image') return false;
-  if (design.mode === 'upload' && index === 0) return true;
-  return imageCovers(el, canvasBox(spec));
+  if (el.type === 'text') return false;
+  if (el.type === 'image' && design.mode === 'upload' && index === 0) return true;
+  return elementCovers(el, visibleBox(spec));
 }
 
 /** Run the §4.5 rules on a structurally valid design. */
@@ -264,10 +276,10 @@ export function validateRules(design: DesignJSON, spec: Spec): Issue[] {
 
   // 3. Empty bleed (warning) --------------------------------------------------------
   const bottom = design.elements[0];
-  if (bottom && bottom.type === 'image') {
+  if (bottom && (bottom.type === 'image' || bottom.type === 'rect')) {
     const share = (bottom.w_mm * bottom.h_mm) / (canvas.w * canvas.h);
-    const intendedBackground = design.mode === 'upload' || share >= THRESHOLDS.backgroundShare;
-    if (intendedBackground && !imageCovers(bottom, canvas)) {
+    const intendedBackground = (design.mode === 'upload' && bottom.type === 'image') || share >= THRESHOLDS.backgroundShare;
+    if (intendedBackground && !elementCovers(bottom, canvas)) {
       issues.push(
         warn('bleed.empty', 'The background does not cover the whole canvas including the bleed — white may show at the edge after cutting.', {
           element: 0,
@@ -291,5 +303,5 @@ export function validateDesign(input: unknown, spec: Spec): ValidationResult {
   return { ok: errors.length === 0, errors, warnings };
 }
 
-export type { ImageElement, TextElement };
+export type { ImageElement, RectElement, TextElement };
 export { elementBox };
