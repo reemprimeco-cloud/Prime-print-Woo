@@ -2,6 +2,7 @@ import { chromium, type Browser } from 'playwright';
 import type { DesignJSON, Spec } from '@binder/shared';
 import { MM_PER_INCH } from '@binder/shared';
 import type { Config } from '../config.ts';
+import type { PreparedAssets } from './assets.ts';
 
 export interface MeasuredText {
   index: number;
@@ -40,19 +41,22 @@ export async function closeBrowser(): Promise<void> {
 /** CSS pixels (96 per inch) for a length in mm. */
 const cssPx = (mm: number): number => Math.ceil((mm / MM_PER_INCH) * 96);
 
-function hostAllowed(url: URL, baseOrigin: string, allowed: string[]): boolean {
-  if (url.origin === baseOrigin) return true;
-  return (url.protocol === 'https:' || url.protocol === 'http:') && allowed.includes(url.hostname.toLowerCase());
-}
-
 /**
  * Render a design in the print-only route and capture it as a PDF.
  *
- * Network access is limited to this service's own origin and the configured
- * image hosts: design `src` values come from customers, and an unrestricted
- * headless browser is a server-side request forgery gadget.
+ * The browser has no network of its own. It may load pages, scripts and fonts
+ * from this service's origin, and design images only as local files already
+ * fetched and checked by prepareAssets(): design `src` values come from
+ * customers, and an unrestricted headless browser is a server-side request
+ * forgery gadget.
  */
-export async function renderRgbPdf(cfg: Config, baseUrl: string, spec: Spec, design: DesignJSON): Promise<RgbRender> {
+export async function renderRgbPdf(
+  cfg: Config,
+  baseUrl: string,
+  spec: Spec,
+  design: DesignJSON,
+  assets?: Pick<PreparedAssets, 'files'>,
+): Promise<RgbRender> {
   const b = await getBrowser(cfg);
   const { w, h } = spec.canvas_with_bleed_mm;
 
@@ -65,7 +69,9 @@ export async function renderRgbPdf(cfg: Config, baseUrl: string, spec: Spec, des
   try {
     await context.route('**/*', (route) => {
       const url = new URL(route.request().url());
-      if (hostAllowed(url, baseOrigin, cfg.allowedImageHosts)) return route.continue();
+      const asset = assets?.files.get(url.href);
+      if (asset) return route.fulfill({ path: asset.path, contentType: asset.mime });
+      if (url.origin === baseOrigin) return route.continue();
       blocked.push(url.href);
       return route.abort('blockedbyclient');
     });

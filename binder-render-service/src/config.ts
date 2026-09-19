@@ -25,6 +25,20 @@ export interface Config {
   allowedImageHosts: string[];
   renderTimeoutMs: number;
   noSandbox: boolean;
+  /** Public base URL used in returned file links (defaults to the request's own origin). */
+  publicBaseUrl: string;
+  /** Simultaneous Chromium renders. Each can use several hundred MB with a 300 dpi image. */
+  concurrency: number;
+  /** Renders allowed to wait for a free slot before new requests get 503. */
+  maxQueue: number;
+  /** Renders per session_token per window (§5.3). */
+  rateLimitMax: number;
+  rateLimitWindowMs: number;
+  /** Hosts an async callback may be delivered to. */
+  allowedCallbackHosts: string[];
+  /** Hours generated files stay on disk. The WP plugin copies them out straight away. */
+  retentionHours: number;
+  production: boolean;
 }
 
 function firstExisting(...paths: string[]): string {
@@ -46,5 +60,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     allowedImageHosts: (env.ALLOWED_IMAGE_HOSTS ?? '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean),
     renderTimeoutMs: Number(env.RENDER_TIMEOUT_MS ?? 120_000),
     noSandbox: env.CHROMIUM_NO_SANDBOX === '1',
+    publicBaseUrl: (env.PUBLIC_BASE_URL ?? '').replace(/\/$/, ''),
+    concurrency: Math.max(1, Number(env.RENDER_CONCURRENCY ?? 1)),
+    maxQueue: Math.max(0, Number(env.RENDER_MAX_QUEUE ?? 20)),
+    rateLimitMax: Number(env.RATE_LIMIT_MAX ?? 8),
+    rateLimitWindowMs: Number(env.RATE_LIMIT_WINDOW_MS ?? 10 * 60_000),
+    allowedCallbackHosts: (env.ALLOWED_CALLBACK_HOSTS ?? '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean),
+    retentionHours: Number(env.RETENTION_HOURS ?? 24),
+    production: env.NODE_ENV === 'production',
   };
 }

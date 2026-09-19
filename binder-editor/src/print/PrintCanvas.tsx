@@ -98,12 +98,13 @@ export function PrintCanvas({ spec, design, onReady, onError }: Props) {
 
       const measured: MeasuredText[] = [];
       el.querySelectorAll<HTMLElement>('[data-text-index]').forEach((node) => {
-        const box = node.getBoundingClientRect();
-        // getBoundingClientRect includes rotation; use layout size instead.
+        // scrollHeight is the height of the text itself, even when the design
+        // declared a smaller h_mm (the box is then overflowed, not clipped). The
+        // server trusts this number, never the client's claim (§5.3).
         measured.push({
           index: Number(node.dataset.textIndex),
           w_mm: (node.offsetWidth * MM_PER_CSS_PX) / LAYOUT_SCALE,
-          h_mm: (Math.max(node.offsetHeight, box.height && !node.style.transform ? box.height * LAYOUT_SCALE : 0) * MM_PER_CSS_PX) / LAYOUT_SCALE,
+          h_mm: (Math.max(node.offsetHeight, node.scrollHeight) * MM_PER_CSS_PX) / LAYOUT_SCALE,
         });
       });
 

@@ -7,6 +7,7 @@ import { renderRgbPdf, type MeasuredText } from './browser.ts';
 import { applyTextColors } from './colors.ts';
 import { convertToCmyk } from './ghostscript.ts';
 import { stampBoxes } from './boxes.ts';
+import type { PreparedAssets } from './assets.ts';
 
 export interface RenderedPdfs {
   /** sRGB proof (real-looking colours), exact page boxes. For the customer. */
@@ -22,7 +23,14 @@ export interface RenderedPdfs {
  *   Chromium print route -> PDF (RGB, sentinel text colours)
  *   -> exact CMYK text colours -> Ghostscript FOGRA39 -> TrimBox/BleedBox.
  */
-export async function renderDesign(cfg: Config, baseUrl: string, spec: Spec, design: DesignJSON, title: string): Promise<RenderedPdfs> {
+export async function renderDesign(
+  cfg: Config,
+  baseUrl: string,
+  spec: Spec,
+  design: DesignJSON,
+  title: string,
+  assets?: Pick<PreparedAssets, 'files'>,
+): Promise<RenderedPdfs> {
   const t: RenderedPdfs['timingsMs'] = { browser: 0, colors: 0, ghostscript: 0, boxes: 0 };
   let mark = Date.now();
   const lap = (k: keyof typeof t) => {
@@ -33,7 +41,7 @@ export async function renderDesign(cfg: Config, baseUrl: string, spec: Spec, des
   const plan = planTextColors(design);
   const textCount = design.elements.filter((e) => e.type === 'text').length;
 
-  const { pdf: chromiumPdf, measured } = await renderRgbPdf(cfg, baseUrl, spec, design);
+  const { pdf: chromiumPdf, measured } = await renderRgbPdf(cfg, baseUrl, spec, design, assets);
   lap('browser');
 
   const cmykText = await applyTextColors(chromiumPdf, plan, 'cmyk');
