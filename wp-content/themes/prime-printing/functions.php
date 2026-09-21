@@ -39,7 +39,9 @@ define( 'PRIME_URI', get_template_directory_uri() );
  * armada            Armada Delivery live fee quotes (inc/checkout-shipping.php uses it)
  * checkout-admin    delivery pin + gift recipient on the admin order screen
  * i18n              Phase 6 — Polylang language registration
+ * i18n-products    one product shown in both languages (replaces per-language duplicates)
  * i18n-product-import Phase 6 — one-time bulk Arabic product creation (Tools → Import Arabic Products)
+ * i18n-product-merge  one-time merge of those duplicates back into one product (Tools → Merge Arabic Products)
  * invoice           Phase 7 — bilingual PDF invoices (Dompdf, vendored — see vendor/autoload.php)
  * account           Phase 8 — customer account page (my-account/ overrides, Files tab, reorder)
  * push-notifications Phase 13 — APNs push for the iOS app: token registration, order-status pushes, admin announcements
@@ -71,7 +73,9 @@ $prime_modules = array(
 	'checkout-payment',
 	'checkout-admin',
 	'i18n',
+	'i18n-products',
 	'i18n-product-import',
+	'i18n-product-merge',
 	'invoice',
 	'account',
 	'push-notifications',
