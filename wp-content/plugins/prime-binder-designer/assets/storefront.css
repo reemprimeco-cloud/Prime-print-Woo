@@ -1,0 +1,202 @@
+/*
+ * Binder product page. Colours and type come from the theme's tokens
+ * (fallbacks are the same values) so the panel reads as part of the product
+ * page, and logical properties keep it correct in Arabic (RTL).
+ */
+
+.binder-panel {
+	--b-navy: var(--navy, #10254A);
+	--b-sky: var(--sky, #7CA5C4);
+	--b-line: var(--line, rgba(16, 37, 74, .12));
+	--b-mist: var(--mist, #F4F7F9);
+	--b-ok: var(--ok, #1D7A4F);
+	--b-ok-wash: var(--ok-wash, #E8F4EE);
+	--b-warn: var(--warn, #B5730C);
+	--b-warn-wash: var(--warn-wash, #FBF2E3);
+	--b-soft: var(--ink-mid, rgba(8, 19, 42, .6));
+
+	width: 100%;
+	margin: 0 0 20px;
+	padding: 18px;
+	border: 1px solid var(--b-line);
+	border-radius: 14px;
+	background: var(--b-mist);
+	box-sizing: border-box;
+}
+
+.binder-panel__title {
+	margin: 0 0 4px;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--b-navy);
+}
+
+.binder-panel__lead,
+.binder-panel__hint {
+	margin: 0 0 14px;
+	font-size: 13.5px;
+	line-height: 1.5;
+	color: var(--b-soft);
+}
+
+.binder-panel__hint { margin: 12px 0 0; }
+.binder-panel__hint[hidden] { display: none; }
+
+.binder-row {
+	padding: 14px;
+	border: 1px solid var(--b-line);
+	border-radius: 10px;
+	background: #fff;
+}
+
+.binder-row + .binder-row { margin-top: 10px; }
+
+.binder-row__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.binder-row__label {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--b-navy);
+}
+
+.binder-row__state {
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 500;
+	background: var(--b-warn-wash);
+	color: var(--b-warn);
+}
+
+.binder-row.is-ready .binder-row__state {
+	background: var(--b-ok-wash);
+	color: var(--b-ok);
+}
+
+.binder-row.is-ready .binder-row__state::before { content: '\2713\00a0'; }
+
+.binder-row__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.binder-btn {
+	appearance: none;
+	min-height: 44px;
+	padding: 0 18px;
+	border: 1.5px solid var(--b-navy);
+	border-radius: 999px;
+	background: #fff;
+	color: var(--b-navy);
+	font: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.binder-btn--primary {
+	background: var(--b-navy);
+	color: #fff;
+}
+
+.binder-btn:hover { filter: brightness(1.08); }
+.binder-btn:focus-visible,
+.binder-modal__close:focus-visible { outline: 2px solid var(--b-sky); outline-offset: 2px; }
+
+.binder-link {
+	padding: 0 6px;
+	font-size: 13.5px;
+	color: var(--b-navy);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.binder-link[hidden] { display: none; }
+
+/* The gated Add to Cart: obviously unavailable, not merely faded. */
+.single_add_to_cart_button.binder-gated {
+	opacity: .45;
+	cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------- modal */
+
+html.binder-modal-open,
+html.binder-modal-open body { overflow: hidden; }
+
+.binder-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	flex-direction: column;
+	background: #fff;
+	padding-top: env(safe-area-inset-top, 0);
+	padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.binder-modal__bar {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	height: 48px;
+	padding-inline: 16px 8px;
+	background: var(--navy, #10254A);
+	color: #fff;
+}
+
+.binder-modal__title {
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.binder-modal__close {
+	appearance: none;
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.binder-modal__close:hover { background: rgba(255, 255, 255, .14); }
+
+.binder-modal__frame {
+	flex: 1 1 auto;
+	width: 100%;
+	min-height: 0;
+	border: 0;
+	background: #fff;
+}
+
+@media (min-width: 900px) {
+	.binder-modal {
+		inset: 24px;
+		border-radius: 16px;
+		overflow: hidden;
+		box-shadow: 0 0 0 100vmax rgba(8, 19, 42, .55), 0 24px 60px rgba(8, 19, 42, .35);
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.binder-modal { animation: binder-rise .18s ease-out; }
+}
+
+@keyframes binder-rise {
+	from { opacity: 0; transform: translateY(8px); }
+	to { opacity: 1; transform: none; }
+}

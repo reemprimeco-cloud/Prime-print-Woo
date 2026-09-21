@@ -48,15 +48,18 @@ export function useDesignSession(cfg: EditorConfig, api: Api, t: T, getSnapshot:
     setSaveState('saving');
     try {
       const rec = await api.saveDesign(snap.design, snap.warnings, idRef.current);
+      const isNew = idRef.current !== rec.id;
       idRef.current = rec.id;
       setDesignId(rec.id);
       setSaveState('saved');
+      // Lets the product page reopen this draft if the customer closes the editor before approving.
+      if (isNew) notify(cfg, { type: 'draft', designId: rec.id });
       return rec.id;
     } catch (e) {
       setSaveState('error');
       throw e;
     }
-  }, [api]);
+  }, [api, cfg]);
 
   /** Call after every change; saves 0.9 s after the last one. */
   const markDirty = useCallback(() => {
@@ -136,11 +139,13 @@ export function useDesignSession(cfg: EditorConfig, api: Api, t: T, getSnapshot:
       if (rec.status === 'ready') {
         setProofUrl(rec.proof_url);
         setPhase('done');
+        // Approved while the customer was away (or rendering finished after they closed the editor).
+        notify(cfg, { type: 'design-ready', designId: rec.id, proofUrl: rec.proof_url });
       } else if (rec.status === 'rendering') {
         void poll(rec.id);
       }
     },
-    [poll],
+    [poll, cfg],
   );
 
   return { designId, saveState, phase, failure, proofUrl, markDirty, saveNow, approve, resume, setPhase, setFailure };
