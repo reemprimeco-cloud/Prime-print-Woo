@@ -133,3 +133,93 @@ function prime_disable_cod_gateway() {
 	update_option( 'woocommerce_cod_settings', $settings );
 }
 add_action( 'woocommerce_init', 'prime_disable_cod_gateway' );
+
+/**
+ * Does this order have anything to make and deliver?
+ *
+ * The same test WooCommerce core uses to decide whether a paid order still
+ * needs a human: an order of only virtual, downloadable items is finished the
+ * moment it is paid; anything else has to be printed and sent.
+ *
+ * @param WC_Order $order Order.
+ * @return bool
+ */
+function prime_order_needs_fulfilment( $order ) {
+	if ( ! $order instanceof WC_Order ) {
+		return false;
+	}
+
+	foreach ( $order->get_items() as $item ) {
+		$product = $item instanceof WC_Order_Item_Product ? $item->get_product() : null;
+
+		if ( ! $product || ! $product->is_virtual() || ! $product->is_downloadable() ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * A paid order becomes Processing, never Completed.
+ *
+ * Reem, 2026-09-21: "why the new orders comes showing completed? it must be
+ * processing once they place it. then once its ready i click complete." Paid
+ * orders were arriving already Completed, so nothing was left on the shop's
+ * queue and the customer was told their order had shipped before it had been
+ * printed.
+ *
+ * WooCommerce's own default here is already 'processing' for a physical order,
+ * so this is not overriding core — it is overriding a gateway that asks for
+ * 'completed' on payment (the UPayments plugin's own setting, which this does
+ * not depend on being found and changed). Where the order genuinely has
+ * nothing to fulfil, core's answer is left alone.
+ *
+ * @param string   $status   Status the gateway asked for.
+ * @param int      $order_id Order ID.
+ * @param WC_Order $order    Order.
+ * @return string
+ */
+function prime_paid_order_status( $status, $order_id, $order = null ) {
+	$order = $order instanceof WC_Order ? $order : wc_get_order( $order_id );
+
+	return prime_order_needs_fulfilment( $order ) ? 'processing' : $status;
+}
+add_filter( 'woocommerce_payment_complete_order_status', 'prime_paid_order_status', 20, 3 );
+
+/**
+ * The same rule, for a gateway that sets the status itself.
+ *
+ * Not every gateway goes through payment_complete() — some call
+ * `$order->update_status( 'completed' )` from their payment callback, which no
+ * filter above can reach. What gives that away is the jump: an order going
+ * straight from unpaid to Completed without ever passing through Processing,
+ * with nobody signed in who could have clicked it.
+ *
+ * That last part is what keeps this out of Reem's way. When she marks an order
+ * Completed herself — in wp-admin or from the WooCommerce app — she is signed
+ * in and able to edit orders, so her click is left exactly as she made it.
+ *
+ * @param int      $order_id Order ID.
+ * @param string   $from     Previous status.
+ * @param string   $to       New status.
+ * @param WC_Order $order    Order.
+ */
+function prime_keep_paid_orders_in_processing( $order_id, $from, $to, $order = null ) {
+	if ( 'completed' !== $to || ! in_array( $from, array( 'pending', 'failed', 'on-hold', 'cancelled' ), true ) ) {
+		return;
+	}
+
+	if ( current_user_can( 'edit_shop_orders' ) ) {
+		return;
+	}
+
+	$order = $order instanceof WC_Order ? $order : wc_get_order( $order_id );
+
+	if ( ! prime_order_needs_fulfilment( $order ) ) {
+		return;
+	}
+
+	$order->update_status( 'processing', __( 'Payment received. Held in Processing until the order is printed and ready.', 'prime-printing' ) );
+}
+add_action( 'woocommerce_order_status_changed', 'prime_keep_paid_orders_in_processing', 20, 4 );

@@ -117,3 +117,30 @@ add_action(
 		wp_send_json( array( 'completed' => (bool) $order, 'notified_again' => (bool) get_option( 'binder_dev_notified' ) ) );
 	}
 );
+
+/**
+ * DEV ONLY: /?binder_dev_test=<name> runs dev/mu-plugins/tests/<name>.php against this
+ * fully-configured site (WooCommerce + Polylang + the theme) and prints the result.
+ * The tests/ subdirectory is not auto-loaded by WordPress, so nothing there runs on its own.
+ */
+add_action(
+	'wp_loaded',
+	static function () {
+		if ( empty( $_GET['binder_dev_test'] ) ) { // phpcs:ignore
+			return;
+		}
+		$name = sanitize_file_name( wp_unslash( $_GET['binder_dev_test'] ) ); // phpcs:ignore
+		$file = __DIR__ . '/tests/' . $name . '.php';
+		header( 'Content-Type: text/plain; charset=utf-8' );
+		if ( ! is_readable( $file ) ) {
+			exit( 'no such test: ' . esc_html( $name ) );
+		}
+		try {
+			require $file;
+		} catch ( Throwable $e ) {
+			echo 'FAIL  uncaught: ' . esc_html( $e->getMessage() ) . ' at ' . esc_html( $e->getFile() ) . ':' . (int) $e->getLine() . "\n";
+		}
+		exit;
+	},
+	5
+);

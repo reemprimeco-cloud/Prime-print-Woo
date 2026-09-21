@@ -20,6 +20,7 @@ rm -f "$ROOT/dev/binder-tests/out-${NAME}.txt"
 cd "$ROOT"
 npx @wp-playground/cli run-blueprint --blueprint="$BP" \
   --mount-before-install="$ROOT/wp-content/plugins/prime-binder-designer:/wordpress/wp-content/plugins/prime-binder-designer" \
+  --mount-before-install="$ROOT/wp-content/themes/prime-printing:/wordpress/wp-content/themes/prime-printing" \
   --mount-before-install="$ROOT/dev/binder-tests:/binder-tests" > "$ROOT/dev/binder-tests/last-run.log" 2>&1
 rm -f "$BP"
 echo "----- results -----"

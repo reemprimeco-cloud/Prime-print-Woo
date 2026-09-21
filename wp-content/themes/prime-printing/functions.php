@@ -30,6 +30,7 @@ define( 'PRIME_URI', get_template_directory_uri() );
  * product-admin    the product edit screen's pricing-model + add-ons builder
  * product-addons   Phase 4a — simple add-ons, captured through to the order
  * product-pricing  Phase 4c — custom-formula pricing, enforced server-side
+ * product-sync     stock/price shared between a product's Polylang translations
  * checkout-data     Kuwait governorates, areas, shipping rates (Phase 5)
  * checkout-shipping governorate-based WC_Shipping_Method (Phase 5)
  * checkout-pickup   local pickup shipping option + the order-confirmation map
@@ -57,6 +58,7 @@ $prime_modules = array(
 	'product-admin',
 	'product-addons',
 	'product-pricing',
+	'product-sync',
 	'uv-dtf-calculator',
 	'paper-sticker-calculator',
 	'pp-sticker-calculator',
