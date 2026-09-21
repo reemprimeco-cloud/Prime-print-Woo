@@ -99,6 +99,30 @@ class Binder_Files {
 		return 'rgb' === $kind ? add_query_arg( 't', $design['session_token'], self::base_url( $id, $kind ) ) : '';
 	}
 
+	/**
+	 * A time-limited link the shop can open without logging in (used in the
+	 * WhatsApp message to the shop's own phone). It is a bearer secret: anyone
+	 * holding it can download that one file until it expires.
+	 *
+	 * @param int    $id   Design id.
+	 * @param string $kind 'rgb' | 'cmyk'.
+	 * @param int    $ttl  Seconds it stays valid.
+	 * @return string '' when there is no such file.
+	 */
+	public static function signed_url( $id, $kind, $ttl = 7 * DAY_IN_SECONDS ) {
+		if ( ! self::exists( $id, $kind ) ) {
+			return '';
+		}
+
+		$exp = time() + (int) $ttl;
+
+		return add_query_arg( array( 'exp' => $exp, 'sig' => self::sign( $id, $kind, $exp ) ), self::base_url( $id, $kind ) );
+	}
+
+	private static function sign( $id, $kind, $exp ) {
+		return hash_hmac( 'sha256', "binder-dl|{$id}|{$kind}|{$exp}", wp_salt( 'auth' ) );
+	}
+
 	public static function is_shop_staff() {
 		return current_user_can( 'edit_shop_orders' ) || current_user_can( 'manage_woocommerce' ) || current_user_can( 'manage_options' );
 	}
@@ -122,7 +146,10 @@ class Binder_Files {
 		$allowed = false;
 
 		if ( $design ) {
-			if ( self::is_shop_staff() ) {
+			if ( isset( $_GET['sig'], $_GET['exp'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+				$exp     = absint( wp_unslash( $_GET['exp'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+				$allowed = $exp >= time() && hash_equals( self::sign( $id, $kind, $exp ), sanitize_text_field( wp_unslash( $_GET['sig'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			} elseif ( self::is_shop_staff() ) {
 				$allowed = isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), "binder_dl_{$id}_{$kind}" ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 			} elseif ( 'rgb' === $kind && isset( $_GET['t'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$allowed = hash_equals( (string) $design['session_token'], sanitize_text_field( wp_unslash( $_GET['t'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification

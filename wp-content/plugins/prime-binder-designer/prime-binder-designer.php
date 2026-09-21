@@ -31,6 +31,7 @@ require_once PRIME_BINDER_DIR . 'includes/class-rest-api.php';
 require_once PRIME_BINDER_DIR . 'includes/class-product-meta.php';
 require_once PRIME_BINDER_DIR . 'includes/class-storefront.php';
 require_once PRIME_BINDER_DIR . 'includes/class-order-integration.php';
+require_once PRIME_BINDER_DIR . 'includes/class-notifier.php';
 require_once PRIME_BINDER_DIR . 'includes/class-render-client.php';
 
 register_activation_hook( __FILE__, array( 'Binder_DB', 'activate' ) );
@@ -47,5 +48,6 @@ function prime_binder_boot() {
 	Binder_Product_Meta::init();
 	Binder_Storefront::init();
 	Binder_Order_Integration::init();
+	Binder_Notifier::init();
 }
 add_action( 'plugins_loaded', 'prime_binder_boot' );
