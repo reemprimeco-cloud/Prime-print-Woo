@@ -60,6 +60,26 @@ function prime_single_post_types() {
 }
 
 /**
+ * Is the catalogue in single-product mode yet?
+ *
+ * Everything below stays dormant until it is. Deploying this file to a site
+ * whose products Polylang still translates must change nothing at all: the old
+ * duplicate-post model keeps serving customers exactly as before, and the new
+ * routing, links and text only take over when Tools → Merge Arabic Products
+ * throws the switch. That way the upload and the migration are two separate
+ * events, and the first one is not able to break the shop.
+ *
+ * @return bool
+ */
+function prime_single_product_mode() {
+	if ( ! function_exists( 'pll_is_translated_post_type' ) ) {
+		return false;
+	}
+
+	return ! pll_is_translated_post_type( 'product' );
+}
+
+/**
  * Is the page currently being served in Arabic?
  *
  * Read from Polylang rather than from is_rtl(), because the answer is needed
@@ -68,6 +88,18 @@ function prime_single_post_types() {
  * @return bool
  */
 function prime_is_arabic() {
+	// wp-admin always shows the English source text: the product list, the
+	// order screen and Quick Edit are where the shop works, and a title that
+	// silently changed language there would be a trap. The Arabic text is
+	// edited in its own box on the product screen instead.
+	if ( is_admin() && ! wp_doing_ajax() ) {
+		return false;
+	}
+
+	if ( ! prime_single_product_mode() ) {
+		return false;
+	}
+
 	if ( function_exists( 'pll_current_language' ) ) {
 		$current = pll_current_language();
 
@@ -104,6 +136,10 @@ function prime_lang_prefix( $lang ) {
  * which is how the Arabic category pages ended up on a random product page.
  */
 function prime_add_language_rewrites() {
+	if ( ! prime_single_product_mode() ) {
+		return;
+	}
+
 	$langs = function_exists( 'pll_languages_list' ) ? (array) pll_languages_list() : array();
 
 	foreach ( $langs as $lang ) {
@@ -152,6 +188,7 @@ function prime_permalink_base( $which ) {
 function prime_maybe_flush_language_rewrites() {
 	$signature = wp_json_encode(
 		array(
+			prime_single_product_mode(),
 			prime_permalink_base( 'product' ),
 			prime_permalink_base( 'category' ),
 			prime_permalink_base( 'tag' ),
@@ -190,6 +227,10 @@ function prime_slug_spellings( $slug ) {
  * @return array
  */
 function prime_resolve_arabic_product_slug( $query_vars ) {
+	if ( ! prime_single_product_mode() ) {
+		return $query_vars;
+	}
+
 	if ( empty( $query_vars['name'] ) || empty( $query_vars['post_type'] ) || 'product' !== $query_vars['post_type'] ) {
 		return $query_vars;
 	}
@@ -233,7 +274,7 @@ add_filter( 'request', 'prime_resolve_arabic_product_slug' );
  * @return string|false
  */
 function prime_keep_language_url( $redirect ) {
-	return prime_is_product_context() ? false : $redirect;
+	return ( prime_single_product_mode() && prime_is_product_context() ) ? false : $redirect;
 }
 add_filter( 'redirect_canonical', 'prime_keep_language_url', 20 );
 add_filter( 'pll_check_canonical_url', 'prime_keep_language_url', 20 );
@@ -491,7 +532,7 @@ add_filter( 'get_term', 'prime_translate_term' );
  * two languages, rather than two competing pages.
  */
 function prime_product_hreflang() {
-	if ( ! is_singular( 'product' ) || ! function_exists( 'pll_languages_list' ) ) {
+	if ( ! prime_single_product_mode() || ! is_singular( 'product' ) || ! function_exists( 'pll_languages_list' ) ) {
 		return;
 	}
 
@@ -513,7 +554,7 @@ add_action( 'wp_head', 'prime_product_hreflang', 1 );
  * the English URL on the Arabic page. Ours, above, replaces it.
  */
 function prime_drop_core_canonical() {
-	if ( is_singular( 'product' ) ) {
+	if ( prime_single_product_mode() && is_singular( 'product' ) ) {
 		remove_action( 'wp_head', 'rel_canonical' );
 	}
 }

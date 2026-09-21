@@ -50,8 +50,7 @@ t_eq( get_post_meta( $en_id, PRIME_AR_TITLE, true ), 'أكواب رمضان', 't
 t_eq( rawurldecode( get_post_meta( $en_id, PRIME_AR_SLUG, true ) ), 'اكواب-رمضان', 'the Arabic URL slug moved too' );
 t_eq( get_post_meta( $en_id, PRIME_AR_EXCERPT, true ), 'أكواب.', 'the Arabic short description moved' );
 t_eq( get_post_meta( $en_id, PRIME_AR_CONTENT, true ), '<p>أكواب ورقية.</p>', 'the Arabic description moved' );
-t_eq( get_post_status( $ar_id ), 'draft', 'the duplicate is a draft, not deleted' );
-t_ok( null !== get_post( $ar_id ), 'the duplicate post still exists, so old orders keep their record' );
+t_eq( get_post_status( $ar_id ), 'publish', 'copying the text changes nothing a customer can see' );
 
 // ---- the old Arabic URL still finds the product ----------------------------------------
 $resolved = prime_resolve_arabic_product_slug( array( 'post_type' => 'product', 'name' => 'اكواب-رمضان' ) );
@@ -93,11 +92,22 @@ $o = $before;
 $o['post_types'] = array( 'product' );
 $o['taxonomies'] = array( 'product_cat' );
 update_option( 'polylang', $o );
-t_ok( prime_stop_translating_products(), 'the switch reports a change' );
+$switched = prime_stop_translating_products();
+t_ok( $switched['changed'], 'the switch reports a change' );
+t_ok( $switched['retired'] >= 1, 'and retires the duplicates', wp_json_encode( $switched ) );
+t_eq( get_post_status( $ar_id ), 'draft', 'the duplicate is a draft, not deleted' );
+t_ok( null !== get_post( $ar_id ), 'the duplicate post still exists, so old orders keep their record' );
 $after = get_option( 'polylang', array() );
 t_ok( ! in_array( 'product', (array) $after['post_types'], true ), 'products are no longer translated by Polylang' );
 t_ok( ! in_array( 'product_cat', (array) $after['taxonomies'], true ), 'nor are product categories' );
-t_ok( ! prime_stop_translating_products(), 'running it again reports nothing to change' );
+$again2 = prime_stop_translating_products();
+t_ok( ! $again2['changed'] && 0 === $again2['retired'], 'running it again changes nothing' );
+
+// ---- the way back ------------------------------------------------------------------------------
+t_ok( prime_undo_switch() >= 1, 'undo restores the duplicates' );
+t_eq( get_post_status( $ar_id ), 'publish', 'the duplicate is published again' );
+t_ok( pll_is_translated_post_type( 'product' ) || in_array( 'product', (array) get_option( 'polylang' )['post_types'], true ), 'and Polylang translates products again' );
+t_eq( get_post_meta( $en_id, PRIME_AR_TITLE, true ), 'أكواب رمضان', 'the copied Arabic text survives the undo' );
 update_option( 'polylang', $before );
 
 // ---- clean up ----------------------------------------------------------------------------------

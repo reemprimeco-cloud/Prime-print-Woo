@@ -12,11 +12,17 @@
  *
  *   1. copies the Arabic title, short description, description and — crucially
  *      — its slug onto the English product;
- *   2. retires the duplicate to Draft. Not deleted: an order placed from the
- *      Arabic side still points at that post ID, and a draft keeps that order's
- *      record whole. Reem, 2026-09-21, was willing to delete them; drafting
- *      costs nothing extra and can be undone, so deletion can wait until the
- *      new shape has been live long enough to trust.
+ * and step 3 then retires every duplicate to Draft. Not deleted: an order
+ * placed from the Arabic side still points at that post ID, and a draft keeps
+ * that order's record whole. Reem, 2026-09-21, was willing to delete them;
+ * drafting costs nothing extra and can be undone, so deletion can wait until
+ * the new shape has been live long enough to trust.
+ *
+ * Copying (step 2) and switching (step 3) are separate on purpose. Step 2
+ * changes nothing a customer can see — the duplicates keep serving the Arabic
+ * site exactly as before — so it can be run, checked, and re-run in safety.
+ * Only step 3 changes what is served, and it does the whole changeover at
+ * once rather than leaving the shop half-migrated.
  *
  * Because the Arabic slug moves to the live product, every Arabic URL Google
  * has indexed keeps working and keeps showing the same page — no redirects, no
@@ -33,7 +39,8 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Where the merge is up to, for the admin screen and for a re-run.
  */
-const PRIME_MERGE_OPTION = 'prime_ar_merge_log';
+const PRIME_MERGE_OPTION   = 'prime_ar_merge_log';
+const PRIME_RETIRED_OPTION = 'prime_ar_retired_products';
 
 /**
  * Register the Tools screen.
@@ -160,11 +167,7 @@ function prime_merge_one_product( $english_id, $arabic_id, $dry_run = false ) {
 		}
 	}
 
-	if ( ! $dry_run && 'draft' !== $arabic->post_status ) {
-		wp_update_post( array( 'ID' => $arabic_id, 'post_status' => 'draft' ) );
-	}
-
-	return array( 'moved' => $moved, 'note' => $dry_run ? 'preview only' : 'merged, duplicate set to draft' );
+	return array( 'moved' => $moved, 'note' => $dry_run ? 'preview only' : 'Arabic text copied onto the product' );
 }
 
 /**
@@ -177,6 +180,12 @@ function prime_merge_one_product( $english_id, $arabic_id, $dry_run = false ) {
  * @return bool True when the setting changed.
  */
 function prime_stop_translating_products() {
+	global $wpdb;
+
+	// Read the pairs while Polylang still links them — after the switch below
+	// it no longer answers questions about a product's language.
+	$duplicates = wp_list_pluck( prime_find_arabic_duplicates(), 'arabic_id' );
+
 	$options = get_option( 'polylang', array() );
 	$single  = prime_single_post_types();
 	$before  = wp_json_encode( array( $options['post_types'] ?? array(), $options['taxonomies'] ?? array() ) );
@@ -184,10 +193,79 @@ function prime_stop_translating_products() {
 	$options['post_types'] = array_values( array_diff( (array) ( $options['post_types'] ?? array() ), $single['post_types'] ) );
 	$options['taxonomies'] = array_values( array_diff( (array) ( $options['taxonomies'] ?? array() ), $single['taxonomies'] ) );
 
-	update_option( 'polylang', $options );
-	delete_option( 'prime_lang_rewrite_signature' ); // Force the rewrite rules to be rebuilt.
+	$changed = $before !== wp_json_encode( array( $options['post_types'], $options['taxonomies'] ) );
 
-	return $before !== wp_json_encode( array( $options['post_types'], $options['taxonomies'] ) );
+	// The switch itself: one option write, after which each product serves both
+	// languages. Done first so the Arabic site is never missing its products.
+	update_option( 'polylang', $options );
+
+	// Then retire the duplicates. A direct status update rather than
+	// wp_update_post(): this runs over ~122 products in one request, and a
+	// status change needs none of the product-save machinery each of those
+	// calls would fire.
+	$retired = array();
+
+	foreach ( $duplicates as $duplicate_id ) {
+		if ( 'draft' === get_post_status( $duplicate_id ) ) {
+			continue;
+		}
+
+		$wpdb->update( $wpdb->posts, array( 'post_status' => 'draft' ), array( 'ID' => (int) $duplicate_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		clean_post_cache( (int) $duplicate_id );
+		$retired[] = (int) $duplicate_id;
+	}
+
+	if ( $retired ) {
+		// Kept so the change can be undone, and so it is on record which posts
+		// were retired when — these are the ones that may be deleted later.
+		update_option( PRIME_RETIRED_OPTION, array( 'at' => gmdate( 'c' ), 'ids' => $retired ) );
+	}
+
+	if ( function_exists( 'wc_delete_product_transients' ) ) {
+		wc_delete_product_transients();
+	}
+
+	delete_option( 'prime_lang_rewrite_signature' ); // Force the rewrite rules to be rebuilt.
+	delete_transient( 'wc_products_onsale' );
+
+	return array( 'changed' => $changed, 'retired' => count( $retired ) );
+}
+
+/**
+ * Put the retired duplicates back and let Polylang translate products again.
+ *
+ * The way back, if anything about the new shape turns out to be wrong on the
+ * live shop. It restores exactly the posts step 3 retired — the Arabic text
+ * copied onto the products is left in place, so re-running the switch later
+ * needs no second merge.
+ *
+ * @return int How many products were restored.
+ */
+function prime_undo_switch() {
+	global $wpdb;
+
+	$log     = get_option( PRIME_RETIRED_OPTION, array() );
+	$ids     = isset( $log['ids'] ) ? (array) $log['ids'] : array();
+	$options = get_option( 'polylang', array() );
+	$single  = prime_single_post_types();
+
+	$options['post_types'] = array_values( array_unique( array_merge( (array) ( $options['post_types'] ?? array() ), $single['post_types'] ) ) );
+	$options['taxonomies'] = array_values( array_unique( array_merge( (array) ( $options['taxonomies'] ?? array() ), $single['taxonomies'] ) ) );
+	update_option( 'polylang', $options );
+
+	foreach ( $ids as $id ) {
+		$wpdb->update( $wpdb->posts, array( 'post_status' => 'publish' ), array( 'ID' => (int) $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		clean_post_cache( (int) $id );
+	}
+
+	delete_option( PRIME_RETIRED_OPTION );
+	delete_option( 'prime_lang_rewrite_signature' );
+
+	if ( function_exists( 'wc_delete_product_transients' ) ) {
+		wc_delete_product_transients();
+	}
+
+	return count( $ids );
 }
 
 /**
@@ -219,9 +297,20 @@ function prime_render_merge_page() {
 	}
 
 	if ( 'switch' === $action ) {
-		$report[] = prime_stop_translating_products()
-			? __( 'Products are no longer translated by Polylang. One product now serves both languages.', 'prime-printing' )
-			: __( 'Polylang was already set this way — nothing to change.', 'prime-printing' );
+		$result   = prime_stop_translating_products();
+		$report[] = sprintf(
+			/* translators: %d: number of duplicate products retired. */
+			__( 'Done. One product now serves both languages, and %d duplicates were set to Draft.', 'prime-printing' ),
+			$result['retired']
+		);
+	}
+
+	if ( 'undo' === $action ) {
+		$report[] = sprintf(
+			/* translators: %d: number of products restored. */
+			__( 'Undone. %d duplicates were published again and Polylang is translating products as before.', 'prime-printing' ),
+			prime_undo_switch()
+		);
 	}
 
 	$pairs   = prime_find_arabic_duplicates();
@@ -250,10 +339,18 @@ function prime_render_merge_page() {
 			<?php wp_nonce_field( 'prime_merge' ); ?>
 			<p>
 				<button class="button" name="prime_merge_action" value="preview"><?php esc_html_e( '1. Preview (changes nothing)', 'prime-printing' ); ?></button>
-				<button class="button button-primary" name="prime_merge_action" value="merge"><?php esc_html_e( '2. Merge', 'prime-printing' ); ?></button>
-				<button class="button" name="prime_merge_action" value="switch" <?php disabled( (bool) count( $pending ) ); ?>><?php esc_html_e( '3. Switch to one product per language', 'prime-printing' ); ?></button>
+				<button class="button button-primary" name="prime_merge_action" value="merge"><?php esc_html_e( '2. Copy the Arabic text onto the products', 'prime-printing' ); ?></button>
+				<button class="button" name="prime_merge_action" value="switch" <?php disabled( (bool) count( $pending ) ); ?>><?php esc_html_e( '3. Switch the shop over', 'prime-printing' ); ?></button>
 			</p>
-			<p class="description"><?php esc_html_e( 'Run them in order. Step 3 is only available once every pair has been merged, because the pairs can only be read while Polylang still links them.', 'prime-printing' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Run them in order. Steps 1 and 2 change nothing a customer can see — the Arabic site keeps working exactly as it does now, so they are safe to run and re-run. Step 3 is the changeover, and it is only available once every pair has been copied.', 'prime-printing' ); ?></p>
+
+			<?php if ( get_option( PRIME_RETIRED_OPTION ) ) : ?>
+				<hr>
+				<p>
+					<button class="button button-link-delete" name="prime_merge_action" value="undo"><?php esc_html_e( 'Undo the switch', 'prime-printing' ); ?></button>
+					<span class="description"><?php esc_html_e( 'Publishes the duplicates again and puts Polylang back as it was. The Arabic text stays copied, so step 3 can be run again afterwards.', 'prime-printing' ); ?></span>
+				</p>
+			<?php endif; ?>
 		</form>
 
 		<?php if ( $report ) : ?>
