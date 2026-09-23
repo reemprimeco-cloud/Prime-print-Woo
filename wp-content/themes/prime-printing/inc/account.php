@@ -174,6 +174,17 @@ function prime_get_customer_files( $user_id ) {
 }
 
 /**
+ * The URL being requested, for a round trip through the login screen.
+ *
+ * @return string
+ */
+function prime_current_url() {
+	$path = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- passed through esc_url_raw below.
+
+	return esc_url_raw( home_url( $path ) );
+}
+
+/**
  * Stream a customer's own uploaded file — the "Download" button on the
  * Files tab. The upload itself already lives outside the public uploads
  * tree with a `Deny from all` .htaccess (see prime_handle_addon_upload() in
@@ -194,15 +205,45 @@ function prime_serve_addon_file() {
 		return;
 	}
 
-	$attachment_id = absint( $_GET['prime_download_file'] );
+	$attachment_id = absint( $_GET['prime_download_file'] ); // phpcs:ignore WordPress.Security.NonceVerification -- identity, not a nonce, is the gate here; see below.
 
-	if ( ! $attachment_id || ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( wc_clean( wp_unslash( $_GET['_wpnonce'] ) ), 'prime_download_file_' . $attachment_id ) ) {
+	if ( ! $attachment_id ) {
 		wp_die( esc_html__( 'Invalid or expired link.', 'prime-printing' ), 403 );
 	}
 
+	/*
+	 * No nonce is required, deliberately.
+	 *
+	 * Reem, 2026-09-23: "الطلبات الجديد الي فيها ملفات مرفقه توصلني رابط لما
+	 * افتحه يطلعلي صفحه invalid or expired link". The link to a customer's
+	 * artwork is written into the order line item at checkout — in the
+	 * customer's own session — and a WordPress nonce is tied to the user who
+	 * generated it and dies within 24 hours. So the link the shop receives was
+	 * signed for the customer (user 0 for a guest) and had usually expired
+	 * before anyone opened it: the shop could never download the artwork it
+	 * had been sold.
+	 *
+	 * The check that actually protects the file is the one below — the file is
+	 * served only to the customer who owns it, or to shop staff. A nonce adds
+	 * nothing to that: this endpoint changes no state, so there is nothing for
+	 * a forged request to accomplish, and dropping it makes the URL useless to
+	 * anyone not already signed in as one of those two.
+	 *
+	 * Links already written into past orders carry a stale `_wpnonce`; it is
+	 * simply ignored, so every order placed before this fix starts working too.
+	 */
 	$owner_id = (int) get_post_meta( $attachment_id, '_prime_customer_id', true );
 
-	if ( ( ! $owner_id || ! is_user_logged_in() || get_current_user_id() !== $owner_id ) && ! current_user_can( 'edit_shop_orders' ) ) {
+	// Nobody signed in: the link almost certainly arrived by email or WhatsApp
+	// and was opened on a phone with no session. Send them to log in and come
+	// straight back to the file, rather than to a dead end that reads as the
+	// link being broken again.
+	if ( ! is_user_logged_in() ) {
+		wp_safe_redirect( wp_login_url( prime_current_url() ) );
+		exit;
+	}
+
+	if ( get_current_user_id() !== $owner_id && ! current_user_can( 'edit_shop_orders' ) ) {
 		wp_die( esc_html__( 'You do not have permission to download this file.', 'prime-printing' ), 403 );
 	}
 
@@ -222,16 +263,18 @@ function prime_serve_addon_file() {
 add_action( 'template_redirect', 'prime_serve_addon_file' );
 
 /**
- * Nonce'd download URL for one of a customer's own files.
+ * Download URL for one of a customer's own files.
+ *
+ * Carries no nonce and never expires — see prime_serve_addon_file(). It is not
+ * a key to the file; the file is released on who is signed in, which is why
+ * this URL is safe to write into an order, an invoice and the shop's own
+ * order-notification email, all of which outlive any nonce.
  *
  * @param int $attachment_id Attachment ID.
  * @return string
  */
 function prime_file_download_url( $attachment_id ) {
-	return wp_nonce_url(
-		add_query_arg( 'prime_download_file', $attachment_id, home_url( '/' ) ),
-		'prime_download_file_' . $attachment_id
-	);
+	return add_query_arg( 'prime_download_file', (int) $attachment_id, home_url( '/' ) );
 }
 
 /**
