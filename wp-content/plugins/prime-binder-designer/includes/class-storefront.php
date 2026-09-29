@@ -144,14 +144,12 @@ class Binder_Storefront {
 		}
 
 		$templates = Binder_Product_Meta::required_templates( $product_id );
-		$live      = (bool) apply_filters( 'binder_live_mode_enabled', Binder_Settings::live_editor_enabled(), $product_id );
 
 		$config = array(
 			'editor'  => PRIME_BINDER_URL . 'assets/dist/index.html',
 			'rest'    => untrailingslashit( (string) wp_parse_url( rest_url( 'binder/v1' ), PHP_URL_PATH ) ),
 			'product' => $product_id,
 			'lang'    => self::is_arabic() ? 'ar' : 'en',
-			'live'    => $live,
 			'close'   => self::copy( 'close' ),
 			'rows'    => array(),
 		);
@@ -209,9 +207,6 @@ class Binder_Storefront {
 						<button type="button" class="binder-btn binder-btn--primary" data-binder-open="upload"
 							data-label-new="<?php echo esc_attr( self::copy( 'upload' ) ); ?>"
 							data-label-change="<?php echo esc_attr( self::copy( 'change' ) ); ?>"><?php echo esc_html( self::copy( 'upload' ) ); ?></button>
-						<?php if ( $live ) : ?>
-							<button type="button" class="binder-btn" data-binder-open="live"><?php echo esc_html( self::copy( 'live' ) ); ?></button>
-						<?php endif; ?>
 						<a class="binder-link" data-binder-proof target="_blank" rel="noopener" hidden><?php echo esc_html( self::copy( 'proof' ) ); ?></a>
 					</div>
 					<input type="hidden" name="<?php echo esc_attr( self::FIELD_DESIGNS . '[' . $template . ']' ); ?>" value="" data-binder-input>

@@ -14,8 +14,6 @@ class Binder_Settings {
 
 	const OPT_URL    = 'binder_render_url';
 	const OPT_SECRET = 'binder_render_secret';
-	/** '1' shows the "Design online" (Polotno) editor next to Upload. Off until a Polotno license is in the build. */
-	const OPT_LIVE   = 'binder_live_editor';
 
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
@@ -58,22 +56,6 @@ class Binder_Settings {
 				'autoload'          => false,
 			)
 		);
-		register_setting(
-			'binder_designer',
-			self::OPT_LIVE,
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => static function ( $v ) {
-					return '1' === (string) $v ? '1' : '0';
-				},
-				'default'           => '0',
-			)
-		);
-	}
-
-	/** @return bool Whether the online (Polotno) editor is offered to customers. */
-	public static function live_editor_enabled() {
-		return '1' === (string) get_option( self::OPT_LIVE, '0' );
 	}
 
 	public static function test_connection() {
@@ -138,16 +120,6 @@ class Binder_Settings {
 						<td>
 							<input type="password" class="regular-text" id="binder_render_secret" name="<?php echo esc_attr( self::OPT_SECRET ); ?>" value="" autocomplete="new-password" <?php disabled( $secret_locked ); ?> placeholder="<?php echo $has_secret ? esc_attr__( '(saved — leave blank to keep)', 'prime-binder-designer' ) : ''; ?>">
 							<p class="description"><?php esc_html_e( 'Must equal BINDER_SECRET on the render service.', 'prime-binder-designer' ); ?></p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Online editor', 'prime-binder-designer' ); ?></th>
-						<td>
-							<label for="binder_live_editor">
-								<input type="checkbox" id="binder_live_editor" name="<?php echo esc_attr( self::OPT_LIVE ); ?>" value="1" <?php checked( self::live_editor_enabled() ); ?>>
-								<?php esc_html_e( 'Offer "Design online" next to "Upload a design"', 'prime-binder-designer' ); ?>
-							</label>
-							<p class="description"><?php esc_html_e( 'The online editor is built on Polotno and shows a "license key is missing" banner until a Polotno license key is compiled into the editor (VITE_POLOTNO_KEY in binder-editor/.env, then redeploy the plugin). Upload works without it.', 'prime-binder-designer' ); ?></p>
 						</td>
 					</tr>
 				</table>

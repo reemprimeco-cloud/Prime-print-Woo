@@ -207,8 +207,9 @@ before returning/mutating a design.
 ### 4.1 Stack
 
 - Vite + React + TypeScript.
-- **Live mode:** [Polotno SDK](https://polotno.com/) — commercial license required
-  (buy before going to production; free tier works for development).
+- **Live mode:** ~~Polotno SDK~~ — removed 2026-09-29 (commercial licence; Reem's
+  call). Being rebuilt on Fabric.js from the shop's own designer template; it
+  writes the same design JSON (§4.3), so the render pipeline is unchanged.
 - **Upload mode:** Fabric.js (free, MIT) — simpler task, doesn't need Polotno's
   full editor chrome. Keep this mode lightweight: one image, drag/scale/rotate
   inside a clip mask, nothing else.

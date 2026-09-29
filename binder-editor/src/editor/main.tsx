@@ -1,10 +1,7 @@
-import { lazy, StrictMode, Suspense } from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { readConfig } from './config';
 import { UploadEditor } from './UploadEditor';
-
-// Polotno and its canvas engine are heavy; only live mode pays for them.
-const LiveEditor = lazy(() => import('./live/LiveEditor'));
 import './styles.css';
 
 const cfg = readConfig();
@@ -12,14 +9,12 @@ const cfg = readConfig();
 document.documentElement.lang = cfg.lang;
 document.documentElement.dir = cfg.lang === 'ar' ? 'rtl' : 'ltr';
 
+// The online (design-it-here) editor is being rebuilt on Fabric.js from the
+// shop's own designer template; until it lands, every mode opens the upload
+// editor. The design JSON (@binder/shared) and the print pipeline already
+// handle text and colour elements, so nothing downstream changes.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {cfg.mode === 'live' ? (
-      <Suspense fallback={<div className="binder-app binder-center">…</div>}>
-        <LiveEditor cfg={cfg} />
-      </Suspense>
-    ) : (
-      <UploadEditor cfg={cfg} />
-    )}
+    <UploadEditor cfg={cfg} />
   </StrictMode>,
 );

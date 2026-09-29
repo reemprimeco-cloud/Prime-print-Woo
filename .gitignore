@@ -21,7 +21,7 @@ dev/*.log
 Thumbs.db
 .claude/
 
-# Binder designer: local secrets (VITE_POLOTNO_KEY) and build output
+# Binder designer: local env files and build output
 binder-editor/.env
 binder-editor/.env.*
 binder-editor/dist/

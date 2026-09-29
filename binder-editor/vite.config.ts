@@ -65,14 +65,9 @@ export default defineConfig(({ mode }) => {
   return {
     base: print ? '/' : './',
     plugins: [react(), binderDevRoutes()],
-    // npm nests an identical konva under both polotno and @polotno/core; two copies make Konva warn
-    // "Several Konva instances detected" and can split its global state. Force one.
     resolve: {
-      alias: {
-        '@binder/shared': resolve(shared, 'src/index.ts'),
-        konva: resolve(here, 'node_modules/polotno/node_modules/konva'),
-      },
-      dedupe: ['react', 'react-dom', 'mobx', 'mobx-react-lite', 'mobx-state-tree'],
+      alias: { '@binder/shared': resolve(shared, 'src/index.ts') },
+      dedupe: ['react', 'react-dom'],
     },
     server: { port: 5180, fs: { allow: [here, shared] } },
     preview: { port: 5180 },

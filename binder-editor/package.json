@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Prime Printing binder designer: the customer-facing editor (upload + live modes) and the print-only render route.",
+  "description": "Prime Printing designer: the customer-facing editor (Fabric.js) and the print-only render route.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build --mode print && vite build --mode editor",
@@ -13,13 +13,7 @@
     "build:editor": "vite build --mode editor"
   },
   "dependencies": {
-    "@blueprintjs/core": "^6.20.0",
-    "@blueprintjs/icons": "^6.14.1",
-    "@blueprintjs/select": "^6.3.6",
     "fabric": "^6.9.1",
-    "mobx": "^7.0.3",
-    "mobx-react-lite": "^5.0.3",
-    "polotno": "^4.13.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
