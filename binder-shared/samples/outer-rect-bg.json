@@ -2,7 +2,7 @@
   "template": "binder_outer",
   "mode": "live",
   "canvas_mm": {
-    "w": 691.0,
+    "w": 696.0,
     "h": 356.0
   },
   "elements": [
@@ -10,7 +10,7 @@
       "type": "rect",
       "x_mm": 0,
       "y_mm": 0,
-      "w_mm": 691.0,
+      "w_mm": 696.0,
       "h_mm": 356.0,
       "color_cmyk": [
         100,
@@ -22,7 +22,7 @@
     {
       "type": "image",
       "src": "/samples/assets/logo.png",
-      "x_mm": 493.0,
+      "x_mm": 498.0,
       "y_mm": 33.0,
       "w_mm": 70.0,
       "h_mm": 70.0,
@@ -44,7 +44,7 @@
         0,
         0
       ],
-      "x_mm": 388.0,
+      "x_mm": 393.0,
       "y_mm": 162.5,
       "w_mm": 280.0,
       "align": "center",
@@ -62,7 +62,7 @@
         100,
         0
       ],
-      "x_mm": 388.0,
+      "x_mm": 393.0,
       "y_mm": 224.5,
       "w_mm": 280.0,
       "align": "center",

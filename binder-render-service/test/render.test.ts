@@ -282,7 +282,8 @@ describe('preview (fast RGB PNG proof)', () => {
     const h = png.readUInt32BE(20);
     expect(w).toBeGreaterThan(1500);
     expect(w).toBeLessThan(1700);
-    expect(Math.abs(w / h - 691 / 356)).toBeLessThan(0.01);
+    const canvas = loadSpec(cfg, 'binder_outer')!.canvas_with_bleed_mm;
+    expect(Math.abs(w / h - canvas.w / canvas.h)).toBeLessThan(0.01);
     // A cyan-ish pixel exists (R low, B high) and no pixel matches the print sentinel green.
     const py = execFileSync('python3', ['-c', `
 import sys

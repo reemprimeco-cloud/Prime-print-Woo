@@ -2,7 +2,7 @@
   "template": "binder_inner",
   "mode": "live",
   "canvas_mm": {
-    "w": 651.0,
+    "w": 656.0,
     "h": 316.0
   },
   "elements": [
@@ -11,11 +11,11 @@
       "src": "/samples/assets/bg-inner.jpg",
       "x_mm": 0,
       "y_mm": 0,
-      "w_mm": 651.0,
+      "w_mm": 656.0,
       "h_mm": 316.0,
       "rotation_deg": 0,
       "source_px": {
-        "w": 7689,
+        "w": 7748,
         "h": 3732
       }
     },

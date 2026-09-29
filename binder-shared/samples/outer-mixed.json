@@ -2,7 +2,7 @@
   "template": "binder_outer",
   "mode": "live",
   "canvas_mm": {
-    "w": 691.0,
+    "w": 696.0,
     "h": 356.0
   },
   "elements": [
@@ -11,18 +11,18 @@
       "src": "/samples/assets/bg-outer.jpg",
       "x_mm": 0,
       "y_mm": 0,
-      "w_mm": 691.0,
+      "w_mm": 696.0,
       "h_mm": 356.0,
       "rotation_deg": 0,
       "source_px": {
-        "w": 8161,
+        "w": 8220,
         "h": 4205
       }
     },
     {
       "type": "image",
       "src": "/samples/assets/logo.png",
-      "x_mm": 493.0,
+      "x_mm": 498.0,
       "y_mm": 33.0,
       "w_mm": 70.0,
       "h_mm": 70.0,
@@ -44,7 +44,7 @@
         0,
         0
       ],
-      "x_mm": 388.0,
+      "x_mm": 393.0,
       "y_mm": 153.2,
       "w_mm": 280.0,
       "align": "center",
@@ -62,7 +62,7 @@
         0,
         0
       ],
-      "x_mm": 388.0,
+      "x_mm": 393.0,
       "y_mm": 215.2,
       "w_mm": 280.0,
       "align": "center",
@@ -80,7 +80,7 @@
         0,
         0
       ],
-      "x_mm": 190.5,
+      "x_mm": 193.0,
       "y_mm": 172.0,
       "w_mm": 310.0,
       "align": "center",

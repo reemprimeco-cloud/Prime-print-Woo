@@ -12,9 +12,12 @@ Template assets referenced below ship alongside this file in `/templates/`.
 ## 0. Context (don't skip)
 
 - Product: soft binder / كلاسير, sold as two printed panels:
-  - **Outer cover** — flat trim 685 × 350 mm (includes 15 mm turn-in wrap on all sides)
-  - **Inner liner** — flat trim 645 × 310 mm
-  - Both share the same spine width (75 mm) and panel layout (back — spine — front).
+  - **Outer cover** — flat trim 690 × 350 mm (includes 15 mm turn-in wrap on all sides)
+  - **Inner liner** — flat trim 650 × 310 mm
+  - Both share the same spine width (80 mm; was 75 mm in the first package,
+    changed 2026-09-29) and panel layout (back — spine — front). The whole
+    template package is generated from `scripts/make-templates.py`; change the
+    numbers there, never in the generated files.
 - All print files: **300 DPI, CMYK, 3 mm bleed, 5 mm safe margin.**
 - Two customer flows, same output pipeline:
   1. **Upload flow** — customer uploads a finished image, positions/scales it inside
@@ -55,15 +58,15 @@ Template assets referenced below ship alongside this file in `/templates/`.
   "bleed_mm": 3,
   "safe_margin_mm": 5,
   "turn_in_mm": 15,
-  "trim_mm": { "w": 685, "h": 350 },
-  "canvas_with_bleed_mm": { "w": 691, "h": 356 },
-  "canvas_with_bleed_px": { "w": 8161, "h": 4205 },
+  "trim_mm": { "w": 690, "h": 350 },
+  "canvas_with_bleed_mm": { "w": 696, "h": 356 },
+  "canvas_with_bleed_px": { "w": 8220, "h": 4205 },
   "panels_relative_to_trim": [
     { "name": "back_cover", "trim_mm": {...}, "safe_mm": {...} },
     { "name": "spine", "trim_mm": {...}, "safe_mm": {...} },
     { "name": "front_cover", "trim_mm": {...}, "safe_mm": {...} }
   ],
-  "fold_lines_x_mm_from_trim_left": [15, 305, 380, 670],
+  "fold_lines_x_mm_from_trim_left": [15, 305, 385, 675],
   "fold_lines_y_mm_from_trim_top": [15, 335]
 }
 ```
