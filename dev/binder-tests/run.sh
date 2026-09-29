@@ -4,7 +4,7 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 NAME="${1:?usage: run.sh <test-name, e.g. step1>}"
-BP="$(mktemp -t binder-bp).json"
+BP="$(mktemp "${TMPDIR:-/tmp}/binder-bp.XXXXXX").json"  # portable: macOS and Linux
 
 python3 - "$BP" "$NAME" <<'PY'
 import json, sys

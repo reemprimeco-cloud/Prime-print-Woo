@@ -180,6 +180,24 @@ function prime_product_id_matches( $candidate_id, $canonical_id ) {
 		return true;
 	}
 
+	// Pinned by hand on the product (Product data → General → "Price calculator").
+	if ( (int) get_post_meta( $candidate_id, PRIME_CALCULATOR_META, true ) === $canonical_id ) {
+		return true;
+	}
+
+	// Polylang's own translation group, read straight from its taxonomy. This
+	// keeps working after products stop being a translated post type (the
+	// single-product switch in inc/i18n-products.php), when pll_get_post()
+	// no longer answers for them.
+	if ( taxonomy_exists( 'post_translations' ) ) {
+		foreach ( (array) wp_get_object_terms( $candidate_id, 'post_translations' ) as $term ) {
+			$group = is_object( $term ) ? maybe_unserialize( $term->description ) : null;
+			if ( is_array( $group ) && in_array( $canonical_id, array_map( 'intval', $group ), true ) ) {
+				return true;
+			}
+		}
+	}
+
 	if ( ! function_exists( 'pll_get_post' ) ) {
 		return false;
 	}
@@ -194,6 +212,78 @@ function prime_product_id_matches( $candidate_id, $canonical_id ) {
 
 	return false;
 }
+
+/**
+ * Product meta that pins a product to one of the price calculators, by the
+ * calculator's own product ID. For a copy (another language, a duplicate)
+ * the automatic match cannot see.
+ */
+const PRIME_CALCULATOR_META = '_prime_calculator_of';
+
+/**
+ * The calculators a product can be pinned to: canonical product ID => label.
+ *
+ * @return array<int, string>
+ */
+function prime_calculator_choices() {
+	$choices = array();
+	foreach ( array(
+		'PRIME_PP_STICKER_PRODUCT_ID'    => 'PP sticker',
+		'PRIME_PAPER_STICKER_PRODUCT_ID' => 'Paper sticker',
+		'PRIME_UV_DTF_PRODUCT_ID'        => 'UV DTF sticker',
+		'PRIME_DIECUT_PRODUCT_ID'        => 'Die-cut cards',
+	) as $const => $label ) {
+		if ( defined( $const ) ) {
+			$choices[ (int) constant( $const ) ] = $label;
+		}
+	}
+
+	return $choices;
+}
+
+/**
+ * "Price calculator" select on the product's General tab.
+ */
+function prime_render_calculator_field() {
+	global $post;
+	if ( ! $post ) {
+		return;
+	}
+
+	$options = array( '' => __( 'Automatic (by product)', 'prime-printing' ) );
+	foreach ( prime_calculator_choices() as $id => $label ) {
+		$options[ (string) $id ] = $label;
+	}
+
+	echo '<div class="options_group">';
+	woocommerce_wp_select(
+		array(
+			'id'          => PRIME_CALCULATOR_META,
+			'label'       => __( 'Price calculator', 'prime-printing' ),
+			'options'     => $options,
+			'value'       => (string) get_post_meta( $post->ID, PRIME_CALCULATOR_META, true ),
+			'desc_tip'    => true,
+			'description' => __( 'Show a sticker price calculator (size, shape, quantity) on this product. Automatic works for the original products; pick one here if a copy of a product lost its calculator.', 'prime-printing' ),
+		)
+	);
+	echo '</div>';
+}
+add_action( 'woocommerce_product_options_general_product_data', 'prime_render_calculator_field' );
+
+/**
+ * @param int $post_id Product id.
+ */
+function prime_save_calculator_field( $post_id ) {
+	// WooCommerce has already checked the product-save nonce and capability.
+	$v = isset( $_POST[ PRIME_CALCULATOR_META ] ) ? absint( wp_unslash( $_POST[ PRIME_CALCULATOR_META ] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
+
+	if ( $v && isset( prime_calculator_choices()[ $v ] ) ) {
+		update_post_meta( $post_id, PRIME_CALCULATOR_META, $v );
+	} else {
+		delete_post_meta( $post_id, PRIME_CALCULATOR_META );
+	}
+}
+add_action( 'woocommerce_process_product_meta', 'prime_save_calculator_field' );
 
 /**
  * Assign the site's default language to every existing post/page.

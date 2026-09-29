@@ -23,7 +23,8 @@ class Binder_Storefront {
 	const ITEM_BINDING  = 'binder_binding';
 
 	public static function init() {
-		add_action( 'woocommerce_before_add_to_cart_button', array( __CLASS__, 'render_panel' ), 5 );
+		// After the theme's price calculators (priority 5): size and quantity first, then the design.
+		add_action( 'woocommerce_before_add_to_cart_button', array( __CLASS__, 'render_panel' ), 20 );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
 
 		add_filter( 'woocommerce_add_to_cart_validation', array( __CLASS__, 'validate' ), 10, 2 );
