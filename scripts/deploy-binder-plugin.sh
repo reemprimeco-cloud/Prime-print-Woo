@@ -76,7 +76,12 @@ trap 'rm -f "$BATCH"' EXIT
   done
 } > "$BATCH"
 
-sftp -b "$BATCH" "$USER_NAME@$HOST"
+# Commands go in on stdin rather than via -b: sftp's batch mode switches off
+# password prompting, and WordPress.com SFTP is password-only. The password
+# prompt comes through the terminal; the "-mkdir" lines ignore "already
+# exists", any failed "put" stops the run with a non-zero exit.
+echo "Enter the SFTP password when asked (from WP.com → Hosting Configuration)."
+sftp "$USER_NAME@$HOST" < "$BATCH"
 
 echo
 echo "Done. Plugin $VERSION is uploaded."
