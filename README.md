@@ -34,6 +34,16 @@ Cloudways migration (Phase 10). So the theme is live on production
 (primeprint.com.kw) ahead of Phase 10/11 as formally tracked above. Flatsome
 was deactivated but is left installed for rollback.
 
+How to deploy (from a machine with `sftp`; the cloud sessions can't reach port 22):
+- `scripts/deploy-theme.sh` — uploads the theme files changed since the last
+  deployed commit (`PRIME_LAST_DEPLOYED`), plus `style.css` for the cache bust.
+- `scripts/deploy-binder-plugin.sh` — builds the customer editor into the
+  plugin (`scripts/build-binder-plugin-assets.sh`) and uploads the whole
+  `prime-binder-designer` plugin. First time: activate it under Plugins, set
+  the render service URL + secret under Settings → Binder Designer, and tick
+  the design templates on each product that should show the designer.
+- Both need `export PRIME_SFTP_USER='...'` and prompt for the password.
+
 What was done to get there:
 - Theme uploaded via SFTP (`sftp.wp.com`, port 22) — WordPress.com's own
   "Push to Staging" sync repeatedly failed/hung, so this bypasses staging
