@@ -19,6 +19,7 @@
 # Remember: WordPress.com's edge cache serves stale CSS/JS at the same ?ver=,
 # so `style.css` (which carries Version:) is always uploaded too. See README.
 set -euo pipefail
+trap 'echo "deploy failed at line $LINENO (exit $?)" >&2' ERR
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 THEME_DIR="$ROOT/wp-content/themes/prime-printing"
@@ -79,7 +80,11 @@ trap 'rm -f "$BATCH"' EXIT
 # Create any directories the files live in; -p keeps sftp going if one exists.
 {
   echo "-mkdir $REMOTE"
-  echo "$FILES" | sed 's|/[^/]*$||' | grep '/' | sort -u | while read -r dir; do
+  # Parent directories of every file, deepest last. `|| true` keeps pipefail
+  # from killing the run when every file sits at the top level.
+  DIRS=$(echo "$FILES" | grep '/' | sed 's|/[^/]*$||' | sort -u || true)
+  echo "$DIRS" | while read -r dir; do
+    [ -n "$dir" ] || continue
     path="$REMOTE"
     IFS='/' read -ra parts <<< "$dir"
     for part in "${parts[@]}"; do
