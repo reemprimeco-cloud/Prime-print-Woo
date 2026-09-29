@@ -207,9 +207,11 @@ before returning/mutating a design.
 ### 4.1 Stack
 
 - Vite + React + TypeScript.
-- **Live mode:** ~~Polotno SDK~~ — removed 2026-09-29 (commercial licence; Reem's
-  call). Being rebuilt on Fabric.js from the shop's own designer template; it
-  writes the same design JSON (§4.3), so the render pipeline is unchanged.
+- **Live mode:** Fabric.js (MIT, free) — `src/editor/live/LiveEditor.tsx`.
+  Polotno was removed 2026-09-29 (commercial licence; Reem's call). Text,
+  pictures, CMYK background colour, layers, lock, duplicate, undo/redo; writes
+  the same design JSON (§4.3), so the render pipeline is unchanged. The pure
+  canvas <-> JSON mapping is `live/fabric-map.ts`, unit-tested.
 - **Upload mode:** Fabric.js (free, MIT) — simpler task, doesn't need Polotno's
   full editor chrome. Keep this mode lightweight: one image, drag/scale/rotate
   inside a clip mask, nothing else.

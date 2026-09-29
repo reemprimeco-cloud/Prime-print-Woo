@@ -18,7 +18,7 @@
 html, body, #root { height: 100%; margin: 0; }
 body { font-family: 'Poppins', 'Tajawal', system-ui, sans-serif; color: var(--ink); background: var(--mist); -webkit-font-smoothing: antialiased; }
 html[lang='ar'] body { font-family: 'Tajawal', 'Poppins', system-ui, sans-serif; }
-button, input { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
 
 .binder-app { min-height: 100%; display: flex; flex-direction: column; }
 .binder-center { align-items: center; justify-content: center; text-align: center; padding: 2rem; color: var(--ink-soft); }
@@ -107,8 +107,14 @@ progress { inline-size: 100%; block-size: 6px; accent-color: var(--navy); }
 
 /* ---- Live mode ------------------------------------------------------------------------------------ */
 .binder-livebar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; font-size: 0.78rem; }
-.binder-livestage { width: 100%; max-width: 100%; background: #eef1f4; box-shadow: 0 1px 0 var(--line), 0 10px 30px rgba(8, 19, 42, 0.12); position: relative; overflow: hidden; }
-.binder-livestage > div { height: 100%; }
+.binder-livestage { width: 100%; max-width: 100%; display: flex; justify-content: center; }
+.binder-layers { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.25rem; max-height: 14rem; overflow: auto; }
+.binder-layers li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; }
+.binder-layers li > button:first-child { flex: 1; text-align: start; border: 1px solid var(--line); background: var(--paper); padding: 0.45rem 0.6rem; cursor: pointer; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.binder-layers li.is-on > button:first-child { border-color: var(--navy); background: var(--mist); }
+.binder-layers li.is-locked > button:first-child { color: var(--ink-soft); }
+.binder-layers .binder-layer__kind { font-size: 0.7rem; color: var(--ink-soft); margin-inline-end: 0.35rem; }
+.binder-layers .binder-btn--small { padding: 0.35rem 0.5rem; }
 .binder-row--tight { gap: 0.35rem; }
 .binder-btn--small { padding: 0.4rem 0.7rem; font-size: 0.78rem; flex: 0 0 auto !important; }
 .binder-btn--danger { color: var(--danger); }

@@ -207,6 +207,7 @@ class Binder_Storefront {
 						<button type="button" class="binder-btn binder-btn--primary" data-binder-open="upload"
 							data-label-new="<?php echo esc_attr( self::copy( 'upload' ) ); ?>"
 							data-label-change="<?php echo esc_attr( self::copy( 'change' ) ); ?>"><?php echo esc_html( self::copy( 'upload' ) ); ?></button>
+						<button type="button" class="binder-btn" data-binder-open="live"><?php echo esc_html( self::copy( 'live' ) ); ?></button>
 						<a class="binder-link" data-binder-proof target="_blank" rel="noopener" hidden><?php echo esc_html( self::copy( 'proof' ) ); ?></a>
 					</div>
 					<input type="hidden" name="<?php echo esc_attr( self::FIELD_DESIGNS . '[' . $template . ']' ); ?>" value="" data-binder-input>
