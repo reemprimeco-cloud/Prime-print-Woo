@@ -109,6 +109,70 @@
 		return { w: w, h: h, shape: f.shape && f.shape.value ? f.shape.value : 'rectangle' };
 	}
 
+	/**
+	 * What the designer's "Your order" box shows: chips (shape, size, quantity,
+	 * sheets), the total and a per-sheet note, read from the page as it stands
+	 * when the editor opens. Display only — the price is computed server-side.
+	 */
+	function orderSummary( row ) {
+		var scope = form || document;
+		var text = function ( sel ) {
+			var el = sel ? document.querySelector( sel ) : null;
+			var t = el ? el.textContent.replace( /\s+/g, ' ' ).trim() : '';
+			return t && t !== '—' ? t : '';
+		};
+		var chips = [];
+		var total = '';
+		var note = '';
+
+		if ( 'sticker' === row.template ) {
+			var f = stickerFields();
+			var set = f && sticker.fields.filter( function ( s ) { return s.w === f.w.name; } )[ 0 ];
+			if ( f && f.shape && f.shape.selectedOptions && f.shape.selectedOptions[ 0 ] ) {
+				chips.push( f.shape.selectedOptions[ 0 ].textContent.trim() );
+			}
+			if ( f && f.w.value && f.h && f.h.value ) {
+				chips.push( f.w.value + ' × ' + f.h.value + ' cm' );
+			}
+			if ( set ) {
+				var qty = scope.querySelector( '[name="' + set.qty + '"]' );
+				if ( qty && qty.value ) {
+					chips.push( qty.value + ' ' + cfg.labels.pcs );
+				}
+				var sheets = text( set.sheets );
+				if ( sheets ) {
+					chips.push( sheets + ' ' + cfg.labels.sheets );
+				}
+				total = text( set.total );
+				var per = text( set.per_sheet );
+				if ( per ) {
+					note = per + ' ' + cfg.labels.per;
+				}
+			}
+		} else {
+			chips.push( row.el.querySelector( '.binder-row__label' ).textContent.trim() );
+			var chosen = binding && ( form || document ).querySelector( '[name="' + binding.field + '"]:checked' );
+			if ( chosen ) {
+				chips.push( chosen.parentNode.textContent.replace( /\s+/g, ' ' ).trim() );
+			}
+			var q = scope.querySelector( 'input[name="quantity"]' );
+			if ( q && q.value ) {
+				chips.push( q.value + ' ' + cfg.labels.pcs );
+			}
+			total = text( '.prime-product__summary .price, .summary .price' );
+		}
+
+		return { title: cfg.title, chips: chips, total: total, note: note };
+	}
+
+	// The calculators' own "attach your artwork" field is replaced by the designer.
+	Array.prototype.forEach.call( ( form || document ).querySelectorAll( 'input[type="file"][name$="_artwork"]' ), function ( input ) {
+		var field = input.closest( '.prime-field' );
+		if ( field ) {
+			field.hidden = true;
+		}
+	} );
+
 	function stickerKey( p ) {
 		return p ? p.w + 'x' + p.h + ':' + p.shape : '';
 	}
@@ -228,6 +292,10 @@
 		if ( 'sticker' !== row.template && row.binding ) {
 			q.push( [ 'binding', row.binding ] );
 		}
+
+		try {
+			q.push( [ 'order', JSON.stringify( orderSummary( row ) ) ] );
+		} catch ( e ) {}
 
 		return cfg.editor + '?' + q.map( function ( kv ) {
 			return encodeURIComponent( kv[ 0 ] ) + '=' + encodeURIComponent( kv[ 1 ] );

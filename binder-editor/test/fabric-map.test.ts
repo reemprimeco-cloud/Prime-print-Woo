@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { stickerSpec, validateDesign, type DesignJSON, type ImageElement, type Spec, type TextElement } from '@binder/shared';
 import {
+  isSpineRect,
+  shapeToProps,
+  spineBox,
   PX_PER_MM,
   backgroundProps,
   homePanel,
@@ -88,5 +91,30 @@ describe('helpers', () => {
   it('homePanel is the front cover on a binder and the only panel on a sticker', () => {
     expect(homePanel(outer).x).toBe(outer.bleed_mm + 385 + 5);
     expect(homePanel(sticker)).toEqual({ x: 3, y: 3, w: 46, h: 46 });
+  });
+});
+
+describe('shapes, opacity and the spine colour', () => {
+  it('a shape round-trips with its outline, colour, rotation and opacity', () => {
+    const el = { type: 'shape' as const, shape: 'star' as const, x_mm: 400, y_mm: 60, w_mm: 60, h_mm: 50, rotation_deg: 15, color_cmyk: [0, 25, 85, 10] as [number, number, number, number], opacity: 0.6 };
+    const p = shapeToProps(el);
+    expect(p.path.startsWith('M')).toBe(true);
+    const back = objectToElement(fab({ ...p, binder: p.binder }), outer);
+    expect(back).toEqual(el);
+  });
+  it('an image with opacity keeps it; full opacity is not written', () => {
+    const el: ImageElement = { type: 'image', src: 'https://x/a.jpg', x_mm: 20, y_mm: 18, w_mm: 200, h_mm: 150, rotation_deg: 0, source_px: { w: 4000, h: 3000 }, opacity: 0.5 };
+    const p = imageToProps(el, { width: 800, height: 600 });
+    expect(objectToElement(fab({ ...p, width: 800, height: 600, opacity: 0.5, binder: p.binder }), outer)).toEqual(el);
+    const { opacity: _o, ...opaque } = el;
+    expect(objectToElement(fab({ ...p, width: 800, height: 600, opacity: 1, binder: p.binder }), outer)).toEqual(opaque);
+  });
+  it('the spine strip spans the spine panel and the full height, and is recognised again', () => {
+    const b = spineBox(outer)!;
+    expect(b).toEqual({ x: outer.bleed_mm + 305, y: 0, w: 80, h: outer.canvas_with_bleed_mm.h });
+    const el = objectToElement(fab({ binder: { kind: 'spine', cmyk: [90, 0, 40, 10] } }), outer)!;
+    expect(el).toEqual({ type: 'rect', x_mm: b.x, y_mm: 0, w_mm: 80, h_mm: b.h, color_cmyk: [90, 0, 40, 10] });
+    expect(isSpineRect(el as never, outer)).toBe(true);
+    expect(spineBox(sticker)).toBeNull();
   });
 });

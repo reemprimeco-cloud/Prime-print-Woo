@@ -80,6 +80,9 @@ class Binder_Storefront {
 			'binding_missing' => array( 'Please choose English or Arabic for your binder.', 'الرجاء اختيار إنجليزي أو عربي للكلاسير.' ),
 			'binding_mismatch' => array( 'Your design was made for the other binder language. Please add it again.', 'تصميمك مُعدّ للغة الكلاسير الأخرى. الرجاء إضافته من جديد.' ),
 			'opens_from'  => array( 'Binder', 'الكلاسير' ),
+			'pcs'         => array( 'pcs', 'قطعة' ),
+			'sheets'      => array( 'sheets', 'ورقة' ),
+			'per_sheet'   => array( 'per sheet', 'في الورقة' ),
 		);
 
 		if ( ! isset( $strings[ $key ] ) ) {
@@ -151,6 +154,12 @@ class Binder_Storefront {
 			'rest'    => untrailingslashit( (string) wp_parse_url( rest_url( 'binder/v1' ), PHP_URL_PATH ) ),
 			'product' => $product_id,
 			'lang'    => self::is_arabic() ? 'ar' : 'en',
+			'title'   => wp_strip_all_tags( get_the_title( $product_id ) ),
+			'labels'  => array(
+				'pcs'    => self::copy( 'pcs' ),
+				'sheets' => self::copy( 'sheets' ),
+				'per'    => self::copy( 'per_sheet' ),
+			),
 			'close'   => self::copy( 'close' ),
 			'rows'    => array(),
 		);

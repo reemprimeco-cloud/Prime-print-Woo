@@ -152,11 +152,12 @@ class Binder_Sticker {
 	 * @return array<int, array{w: string, h: string, shape: string|null, unit: string}>
 	 */
 	public static function size_fields( $product_id ) {
+		// qty / total / sheets / per_sheet: what the designer's "Your order" box shows (read, never trusted for price).
 		$sets = array(
-			array( 'w' => 'paper_width', 'h' => 'paper_height', 'shape' => 'paper_shape', 'unit' => 'cm' ),
-			array( 'w' => 'pp_width', 'h' => 'pp_height', 'shape' => 'pp_shape', 'unit' => 'cm' ),
-			array( 'w' => 'uvdtf_width', 'h' => 'uvdtf_height', 'shape' => null, 'unit' => 'cm' ),
-			array( 'w' => 'diecut_width', 'h' => 'diecut_height', 'shape' => 'diecut_shape', 'unit' => 'cm' ),
+			array( 'w' => 'paper_width', 'h' => 'paper_height', 'shape' => 'paper_shape', 'unit' => 'cm', 'qty' => 'paper_quantity', 'total' => '[data-paper-total]', 'sheets' => '[data-paper-sheets]', 'per_sheet' => '[data-paper-per-sheet]' ),
+			array( 'w' => 'pp_width', 'h' => 'pp_height', 'shape' => 'pp_shape', 'unit' => 'cm', 'qty' => 'pp_quantity', 'total' => '[data-pp-total]', 'sheets' => '[data-pp-sheets]', 'per_sheet' => '[data-pp-per-sheet]' ),
+			array( 'w' => 'uvdtf_width', 'h' => 'uvdtf_height', 'shape' => null, 'unit' => 'cm', 'qty' => 'uvdtf_quantity', 'total' => '[data-uvdtf-total]', 'sheets' => null, 'per_sheet' => null ),
+			array( 'w' => 'diecut_width', 'h' => 'diecut_height', 'shape' => 'diecut_shape', 'unit' => 'cm', 'qty' => 'diecut_quantity', 'total' => '[data-diecut-total]', 'sheets' => '[data-diecut-sheets]', 'per_sheet' => '[data-diecut-yield]' ),
 		);
 
 		/**

@@ -14,7 +14,7 @@
  *   image               a FabricImage of the proxy bitmap, aspect locked to the original file
  *   text                a Textbox: fixed width, height from its lines, in-canvas editing
  */
-import { FONTS, WEIGHTS, type Cmyk, type DesignElement, type ImageElement, type RectElement, type Spec, type TextElement } from '@binder/shared';
+import { FONTS, SHAPE_KINDS, WEIGHTS, shapePath, svgPathData, type Cmyk, type DesignElement, type ImageElement, type RectElement, type ShapeElement, type ShapeKind, type Spec, type TextElement } from '@binder/shared';
 
 export const PX_PER_MM = 96 / 25.4;
 export const PX_PER_PT = 96 / 72;
@@ -44,7 +44,10 @@ export function isRtlText(text: string): boolean {
 
 /** What the editor keeps on a Fabric object besides Fabric's own props. */
 export interface BinderMeta {
-  kind: 'background' | 'image' | 'text';
+  /** background: whole-sheet colour · spine: the spine's colour, top to bottom · the rest are the customer's items. */
+  kind: 'background' | 'spine' | 'image' | 'text' | 'shape';
+  /** Shape outline. */
+  shape?: ShapeKind;
   /** Ink colour for text and the background rectangle. */
   cmyk?: Cmyk;
   /** Image: the uploaded original (the canvas shows a downsized proxy). */
@@ -52,6 +55,18 @@ export interface BinderMeta {
   source_px?: { w: number; h: number };
   /** Editor-only: the customer locked it against accidental moves. Not part of the design. */
   locked?: boolean;
+}
+
+/** SVG path data for a shape filling a w × h box (canvas px), as a Fabric Path is built from. */
+export function shapePathData(shape: ShapeKind, w: number, h: number): string {
+  return svgPathData(shapePath(shape, { x: 0, y: 0, w, h }));
+}
+
+/** The spine's colour strip: the spine panel's width, the canvas's full height (bleed and turn-in included). */
+export function spineBox(spec: Spec): { x: number; y: number; w: number; h: number } | null {
+  const p = spec.panels_relative_to_trim.find((q) => q.name === 'spine');
+  if (!p) return null;
+  return { x: p.trim_mm.x + spec.bleed_mm, y: 0, w: p.trim_mm.w, h: spec.canvas_with_bleed_mm.h };
 }
 
 /** The parts of a Fabric object these conversions read. Centre-origin, canvas px. */
@@ -63,6 +78,7 @@ export interface FabricLike {
   scaleX: number;
   scaleY: number;
   angle: number;
+  opacity?: number;
   binder: BinderMeta;
   // text only
   text?: string;
@@ -96,8 +112,32 @@ export function objectToElement(o: FabricLike, spec: Spec): DesignElement | null
     };
   }
 
+  if (m.kind === 'spine') {
+    const b = spineBox(spec);
+    if (!b) return null;
+    return { type: 'rect', x_mm: round(b.x), y_mm: 0, w_mm: round(b.w), h_mm: round(b.h), color_cmyk: m.cmyk ?? [0, 0, 0, 0] };
+  }
+
   const angle = normAngle(o.angle ?? 0);
   const w = (o.width * o.scaleX) / PX_PER_MM;
+  const opacity = typeof o.opacity === 'number' && o.opacity < 1 ? { opacity: round(Math.max(0, o.opacity), 2) } : {};
+
+  if (m.kind === 'shape') {
+    const h = (o.height * o.scaleY) / PX_PER_MM;
+    if (!m.shape || !SHAPE_KINDS.includes(m.shape)) return null;
+    const el: ShapeElement = {
+      type: 'shape',
+      shape: m.shape,
+      x_mm: round(o.left / PX_PER_MM - w / 2),
+      y_mm: round(o.top / PX_PER_MM - h / 2),
+      w_mm: round(w),
+      h_mm: round(h),
+      ...(angle ? { rotation_deg: angle } : {}),
+      color_cmyk: m.cmyk ?? [0, 0, 0, 100],
+      ...opacity,
+    };
+    return el;
+  }
 
   if (m.kind === 'image') {
     if (!m.src || !m.source_px) return null;
@@ -112,6 +152,7 @@ export function objectToElement(o: FabricLike, spec: Spec): DesignElement | null
       h_mm: round(h),
       rotation_deg: angle,
       source_px: { ...m.source_px },
+      ...opacity,
     };
   }
 
@@ -180,6 +221,28 @@ export function imageToProps(el: ImageElement, bitmap: { width: number; height: 
     angle: el.rotation_deg ?? 0,
     binder: { kind: 'image', src: el.src, source_px: { ...el.source_px } },
   };
+}
+
+/** Fabric props for a shape element: a Path of the outline in its own box. */
+export function shapeToProps(el: ShapeElement): { left: number; top: number; width: number; height: number; angle: number; opacity: number; path: string; binder: BinderMeta } {
+  const w = el.w_mm * PX_PER_MM;
+  const h = el.h_mm * PX_PER_MM;
+  return {
+    left: el.x_mm * PX_PER_MM + w / 2,
+    top: el.y_mm * PX_PER_MM + h / 2,
+    width: w,
+    height: h,
+    angle: el.rotation_deg ?? 0,
+    opacity: el.opacity ?? 1,
+    path: shapePathData(el.shape, w, h),
+    binder: { kind: 'shape', shape: el.shape, cmyk: el.color_cmyk },
+  };
+}
+
+/** Is this rect element the spine colour (as opposed to the whole-sheet background)? */
+export function isSpineRect(el: RectElement, spec: Spec): boolean {
+  const b = spineBox(spec);
+  return !!b && Math.abs(el.x_mm - b.x) < 0.05 && Math.abs(el.w_mm - b.w) < 0.05 && el.y_mm < 0.05 && Math.abs(el.h_mm - b.h) < 0.05;
 }
 
 export function backgroundProps(spec: Spec, cmyk: Cmyk): { left: number; top: number; width: number; height: number; binder: BinderMeta } {

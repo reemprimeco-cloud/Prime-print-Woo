@@ -17,6 +17,31 @@ export interface EditorConfig {
   sticker?: StickerParams;
   /** Binder covers: which way the binder opens, chosen on the product page (binding=ltr|rtl on the URL). */
   binding?: Binding;
+  /** What the product page shows about the order (display only): product name, chips, total, per-sheet note. */
+  order?: OrderSummary;
+}
+
+export interface OrderSummary {
+  title: string;
+  chips: string[];
+  total: string;
+  note: string;
+}
+
+function readOrder(raw: string | null): OrderSummary | undefined {
+  if (!raw) return undefined;
+  try {
+    const o = JSON.parse(raw) as Partial<OrderSummary>;
+    const str = (v: unknown, max = 120) => (typeof v === 'string' ? v.slice(0, max) : '');
+    return {
+      title: str(o.title),
+      chips: Array.isArray(o.chips) ? o.chips.slice(0, 8).map((c) => str(c, 60)).filter(Boolean) : [],
+      total: str(o.total, 40),
+      note: str(o.note, 60),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 const KEY = 'binder_session';
@@ -60,5 +85,6 @@ export function readConfig(search = window.location.search): EditorConfig {
     ...(q.get('design') ? { designId: Number(q.get('design')) } : {}),
     ...(sticker ? { sticker } : {}),
     ...(template !== 'sticker' && isBinding(binding) ? { binding } : {}),
+    ...(readOrder(q.get('order')) ? { order: readOrder(q.get('order'))! } : {}),
   };
 }

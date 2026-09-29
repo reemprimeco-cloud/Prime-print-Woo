@@ -1,46 +1,69 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, FabricImage, Rect, Textbox, type FabricObject } from 'fabric';
-import { cmykToRgbCss, effectiveDpi, THRESHOLDS, validateDesign, type Cmyk, type DesignElement, type DesignJSON, type Spec } from '@binder/shared';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { Canvas, FabricImage, Path, Rect, Textbox, type FabricObject, type TPointerEventInfo } from 'fabric';
+import {
+  cmykToRgbCss,
+  effectiveDpi,
+  FONT_LIST,
+  panelsInCanvas,
+  SHAPE_KINDS,
+  stickerOutlines,
+  svgPathData,
+  THRESHOLDS,
+  validateDesign,
+  type Cmyk,
+  type DesignElement,
+  type DesignJSON,
+  type ShapeKind,
+  type Spec,
+} from '@binder/shared';
 import { ApiError, createApi, overlayUrlFor, type TemplateInfo } from '../api';
 import type { EditorConfig } from '../config';
 import { makeT, type T } from '../i18n';
 import { Legend } from '../Legend';
-import { Actions, FailureCard, IssueList, StatusCard } from '../Panels';
+import { FailureCard, IssueList, StatusCard } from '../Panels';
 import { notify, useDesignSession, type Snapshot } from '../session';
-import { PALETTE, sameCmyk } from './palette';
+import { cmykToHex, hexToCmyk, QUICK_COLOURS, rgbToHex, sameCmyk } from './color';
 import {
   PX_PER_MM,
-  backgroundOf,
   backgroundProps,
   homePanel,
   imageToProps,
   isRtlText,
+  isSpineRect,
   objectsToElements,
   ptToPx,
+  shapePathData,
+  shapeToProps,
+  spineBox,
   textToProps,
   type BinderMeta,
   type FabricLike,
 } from './fabric-map';
+import { STARTERS } from './templates';
 
 /** A Fabric object with the editor's own bookkeeping on it. */
 type BObject = FabricObject & { binder?: BinderMeta };
+type Tool = 'text' | 'image' | 'shapes' | 'colours' | 'templates';
+type PickTarget = 'selected' | 'background' | 'spine';
 
-const FONT_FAMILIES = ['Tajawal', 'Poppins'] as const;
 const TEXT_WEIGHTS = ['400', '500', '700'] as const;
-const MAX_WORK_PX = 1600;
+const MAX_VIEW_PX = 1400;
 const HISTORY_LIMIT = 60;
-
 const CONTROL_STYLE = {
   transparentCorners: false,
-  cornerColor: '#10254A',
-  cornerStrokeColor: '#ffffff',
-  cornerSize: 12,
-  borderColor: '#7CA5C4',
-  borderScaleFactor: 2,
+  cornerColor: '#ffffff',
+  cornerStrokeColor: '#10254A',
+  cornerSize: 11,
+  borderColor: '#2A7DE1',
+  borderScaleFactor: 1.5,
   padding: 0,
 } as const;
 
-/** Live design mode (§4.1): text, pictures and a colour on the locked template — Fabric.js, no licence. */
+/**
+ * The designer (binders and stickers, upload and design alike): a tool rail and
+ * its panel on the start side, the sheet in the middle, the order, the
+ * selected item and the layers on the end side. Fabric.js, no licence.
+ */
 export default function LiveEditor({ cfg }: { cfg: EditorConfig }) {
   const api = useMemo(() => createApi(cfg), [cfg]);
   const t = useMemo(() => makeT(cfg.lang), [cfg.lang]);
@@ -54,51 +77,67 @@ export default function LiveEditor({ cfg }: { cfg: EditorConfig }) {
   if (loadError) return <div className="binder-app binder-center" role="alert">{t('load_failed')}</div>;
   if (!tpl) return <div className="binder-app binder-center">{t('loading')}</div>;
 
-  return <Inner cfg={cfg} api={api} t={t} tpl={tpl} />;
+  return <Studio cfg={cfg} api={api} t={t} tpl={tpl} />;
 }
 
 type Api = ReturnType<typeof createApi>;
 
-function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: TemplateInfo }) {
+function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: TemplateInfo }) {
   const spec = tpl.spec;
-  const W = spec.canvas_with_bleed_mm.w * PX_PER_MM; // working px
+  const W = spec.canvas_with_bleed_mm.w * PX_PER_MM; // working px (96 per inch)
   const H = spec.canvas_with_bleed_mm.h * PX_PER_MM;
+  const isBinder = !spec.sticker;
 
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasEl = useRef<HTMLCanvasElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const fabric = useRef<Canvas | null>(null);
-  const applying = useRef(false); // true while a design is being loaded onto the canvas (no history, no autosave)
+  const applying = useRef(false);
   const history = useRef<{ past: DesignJSON[]; future: DesignJSON[] }>({ past: [], future: [] });
+  const firstUpload = useRef(cfg.mode === 'upload');
 
+  const [tool, setTool] = useState<Tool>(cfg.mode === 'upload' ? 'image' : 'text');
   const [stageWidth, setStageWidth] = useState(0);
-  const [snap, setSnap] = useState<{ design: DesignJSON; indexOf: number[] }>({ design: emptyDesign(spec), indexOf: [] });
+  const [snap, setSnap] = useState<{ design: DesignJSON; indexOf: number[] }>({ design: emptyDesign(spec, cfg), indexOf: [] });
   const [selected, setSelected] = useState<BObject | null>(null);
-  const [tick, setTick] = useState(0); // bumps when the selected object changes on the canvas
+  const [, setTick] = useState(0);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState('');
+  const [dragging, setDragging] = useState(false);
   const [fontsReady, setFontsReady] = useState(false);
+  const [picking, setPicking] = useState<PickTarget | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const pickingRef = useRef<PickTarget | null>(null);
+  pickingRef.current = picking;
+  const bump = () => setTick((n) => n + 1);
 
-  // ---- Fonts: measured text must use the real faces ------------------------------------------------
+  // ---- Fonts ------------------------------------------------------------------------------------------------
   useEffect(() => {
-    const loads: Promise<unknown>[] = [];
-    for (const f of FONT_FAMILIES) for (const w of TEXT_WEIGHTS) loads.push(document.fonts.load(`${w} 24px "${f}"`, 'Aa الصف'));
+    const loads = [document.fonts.load('700 24px "Tajawal"', 'Aa الصف'), document.fonts.load('700 24px "Poppins"', 'Aa')];
     Promise.allSettled(loads).then(() => setFontsReady(true));
   }, []);
+  const ensureFont = async (family: string, weight: string, sample: string) => {
+    try {
+      await document.fonts.load(`${weight} 24px "${family}"`, sample || 'Aa الصف');
+    } catch {
+      /* the fallback face is used */
+    }
+  };
 
-  // ---- Design snapshot from the canvas -------------------------------------------------------------------
+  // ---- Design snapshot ------------------------------------------------------------------------------------------
   const readDesign = useCallback((): { design: DesignJSON; indexOf: number[] } => {
-    const c = fabric.current;
-    const objects = (c?.getObjects() ?? []) as BObject[];
+    const objects = (fabric.current?.getObjects() ?? []) as BObject[];
     const { elements, indexOf } = objectsToElements(objects as unknown as FabricLike[], spec);
-    return { design: { ...emptyDesign(spec), elements }, indexOf };
-  }, [spec]);
+    const d = emptyDesign(spec, cfg);
+    const onlyImage = elements.length === 1 && elements[0]!.type === 'image';
+    return { design: { ...d, mode: cfg.mode === 'upload' && onlyImage ? 'upload' : 'live', elements }, indexOf };
+  }, [spec, cfg]);
 
   const commit = useCallback(
     (record = true) => {
       const next = readDesign();
       setSnap((prev) => {
-        if (record && !applying.current && JSON.stringify(prev.design) !== JSON.stringify(next.design)) {
+        if (record && !applying.current && JSON.stringify(prev.design.elements) !== JSON.stringify(next.design.elements)) {
           history.current.past.push(prev.design);
           if (history.current.past.length > HISTORY_LIMIT) history.current.past.shift();
           history.current.future = [];
@@ -112,53 +151,56 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
   // ---- Canvas -------------------------------------------------------------------------------------------------------
   useEffect(() => {
     if (!canvasEl.current) return;
-    const c = new Canvas(canvasEl.current, {
-      width: W,
-      height: H,
-      backgroundColor: '#ffffff',
-      preserveObjectStacking: true,
-      selection: true,
-      enableRetinaScaling: true,
-      controlsAboveOverlay: true,
-    });
+    const c = new Canvas(canvasEl.current, { width: W, height: H, backgroundColor: '#ffffff', preserveObjectStacking: true, selection: false, enableRetinaScaling: true });
     fabric.current = c;
 
     const onSel = () => {
       const o = (c.getActiveObject() as BObject | undefined) ?? null;
-      setSelected(o && o.binder?.kind !== 'background' ? o : null);
+      setSelected(o && o.binder && o.binder.kind !== 'background' && o.binder.kind !== 'spine' ? o : null);
     };
     c.on('selection:created', onSel);
     c.on('selection:updated', onSel);
     c.on('selection:cleared', () => setSelected(null));
-
     c.on('object:modified', (e) => {
       const o = e.target as BObject;
-      // A corner-scaled text box: keep the text crisp by folding the scale into font size and width.
       if (o.binder?.kind === 'text' && (o.scaleX !== 1 || o.scaleY !== 1)) {
         const tb = o as Textbox;
         tb.set({ fontSize: tb.fontSize * o.scaleY, width: tb.width * o.scaleX, scaleX: 1, scaleY: 1 });
         tb.setCoords();
       }
-      setTick((n) => n + 1);
+      bump();
       commit();
     });
     c.on('text:changed', (e) => {
-      const tb = e.target as Textbox & BObject;
+      const tb = e.target as Textbox;
       tb.set({ direction: isRtlText(tb.text) ? 'rtl' : 'ltr' });
-      setTick((n) => n + 1);
+      bump();
       commit(false);
     });
     c.on('text:editing:exited', () => commit());
+    c.on('mouse:down', (opt: TPointerEventInfo) => {
+      const target = pickingRef.current;
+      if (!target) return;
+      const pt = c.getViewportPoint(opt.e);
+      const r = c.getRetinaScaling();
+      const px = c.lowerCanvasEl.getContext('2d')?.getImageData(Math.round(pt.x * r), Math.round(pt.y * r), 1, 1).data;
+      setPicking(null);
+      c.skipTargetFind = false;
+      if (px) applyColourRef.current(target, hexToCmyk(rgbToHex(px[0]!, px[1]!, px[2]!)));
+    });
 
     return () => {
       void c.dispose();
       fabric.current = null;
     };
-    // The canvas exists once per template.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spec]);
 
-  // ---- Fit the canvas to the stage: zoom only, the working units never change --------------------------------
+  useEffect(() => {
+    if (fabric.current) fabric.current.skipTargetFind = !!picking;
+  }, [picking]);
+
+  // ---- Fit to the stage (zoom only) ------------------------------------------------------------------------------------
   useEffect(() => {
     const node = stageRef.current;
     if (!node || typeof ResizeObserver === 'undefined') return;
@@ -167,20 +209,22 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
     setStageWidth(Math.floor(node.getBoundingClientRect().width));
     return () => ro.disconnect();
   }, []);
-
-  const viewW = Math.max(280, Math.min(stageWidth || 800, MAX_WORK_PX));
+  const maxH = typeof window !== 'undefined' ? Math.max(260, window.innerHeight - 260) : 700;
+  // Stage padding plus the sheet's frame padding on both sides.
+  const chrome = (stageWidth || 800) < 700 ? 40 : 72;
+  const viewW = Math.max(220, Math.min((stageWidth || 800) - chrome, MAX_VIEW_PX, (maxH * W) / H));
   const zoom = viewW / W;
   const viewH = Math.round(H * zoom);
   useEffect(() => {
     const c = fabric.current;
     if (!c) return;
-    c.setDimensions({ width: viewW, height: viewH });
+    c.setDimensions({ width: Math.round(viewW), height: viewH });
     c.setZoom(zoom);
     c.requestRenderAll();
   }, [viewW, viewH, zoom]);
 
-  // ---- Building objects ------------------------------------------------------------------------------------------------
-  const styleControls = (o: BObject, kind: BinderMeta['kind']) => {
+  // ---- Building objects ------------------------------------------------------------------------------------------------------
+  const style = (o: BObject, kind: BinderMeta['kind']) => {
     o.set({ ...CONTROL_STYLE, originX: 'center', originY: 'center', lockScalingFlip: true });
     if (kind === 'image') {
       o.set({ lockUniScaling: true });
@@ -189,60 +233,84 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
       o.setControlsVisibility({ mt: false, mb: false });
     }
   };
+  const applyLock = (o: BObject) => {
+    const locked = !!o.binder?.locked;
+    o.set({ lockMovementX: locked, lockMovementY: locked, lockRotation: locked, lockScalingX: locked, lockScalingY: locked, hasControls: !locked });
+    if (o.binder?.kind === 'text') (o as Textbox).set({ editable: !locked });
+  };
 
-  const addTextObject = (el: Extract<DesignElement, { type: 'text' }>): Textbox & BObject => {
+  const addText = async (el: Extract<DesignElement, { type: 'text' }>) => {
+    await ensureFont(el.font, el.weight, el.text);
     const p = textToProps(el);
     const tb = new Textbox(el.text, {
-      left: p.left,
-      top: p.top,
-      width: p.width,
-      angle: p.angle,
-      fontFamily: p.fontFamily,
-      fontWeight: p.fontWeight,
-      fontSize: p.fontSize,
-      textAlign: p.textAlign,
-      lineHeight: p.lineHeight,
-      direction: p.direction,
-      fill: cmykToRgbCss(el.color_cmyk),
-      editable: true,
+      left: p.left, top: p.top, width: p.width, angle: p.angle, fontFamily: p.fontFamily, fontWeight: p.fontWeight,
+      fontSize: p.fontSize, textAlign: p.textAlign, lineHeight: p.lineHeight, direction: p.direction, fill: cmykToRgbCss(el.color_cmyk),
     }) as Textbox & BObject;
     tb.binder = p.binder;
-    styleControls(tb, 'text');
+    style(tb, 'text');
     fabric.current?.add(tb);
     return tb;
   };
-
-  const addImageObject = async (el: Extract<DesignElement, { type: 'image' }>, displaySrc: string): Promise<FabricImage & BObject> => {
+  const addImage = async (el: Extract<DesignElement, { type: 'image' }>, displaySrc: string) => {
     const img = (await FabricImage.fromURL(displaySrc, { crossOrigin: 'anonymous' })) as FabricImage & BObject;
     const p = imageToProps(el, { width: img.width, height: img.height });
-    img.set({ left: p.left, top: p.top, scaleX: p.scaleX, scaleY: p.scaleY, angle: p.angle });
+    img.set({ left: p.left, top: p.top, scaleX: p.scaleX, scaleY: p.scaleY, angle: p.angle, opacity: el.opacity ?? 1 });
     img.binder = p.binder;
-    styleControls(img, 'image');
+    style(img, 'image');
     fabric.current?.add(img);
     return img;
   };
-
-  const setBackgroundObject = (cmyk: Cmyk | null) => {
+  const addShape = (el: Extract<DesignElement, { type: 'shape' }>) => {
+    const p = shapeToProps(el);
+    const path = new Path(p.path, { fill: cmykToRgbCss(el.color_cmyk), opacity: p.opacity, strokeWidth: 0 }) as Path & BObject;
+    path.set({ left: p.left, top: p.top, angle: p.angle, scaleX: p.width / (path.width || 1), scaleY: p.height / (path.height || 1) });
+    path.binder = p.binder;
+    style(path, 'shape');
+    fabric.current?.add(path);
+    return path;
+  };
+  const fillObject = (kind: 'background' | 'spine', cmyk: Cmyk) => {
+    const c = fabric.current!;
+    let box = { left: W / 2, top: H / 2, width: W, height: H };
+    if (kind === 'spine') {
+      const b = spineBox(spec)!;
+      box = { left: (b.x + b.w / 2) * PX_PER_MM, top: H / 2, width: b.w * PX_PER_MM, height: H };
+    } else {
+      const p = backgroundProps(spec, cmyk);
+      box = { left: p.left, top: p.top, width: p.width, height: p.height };
+    }
+    const r = new Rect({ ...box, originX: 'center', originY: 'center', fill: cmykToRgbCss(cmyk), selectable: false, evented: false, hoverCursor: 'default' }) as Rect & BObject;
+    r.binder = { kind, cmyk };
+    c.add(r);
+    return r;
+  };
+  /** Background at the very bottom, the spine colour right above it. */
+  const restack = () => {
+    const c = fabric.current!;
+    const objs = c.getObjects() as BObject[];
+    const spine = objs.find((o) => o.binder?.kind === 'spine');
+    const bg = objs.find((o) => o.binder?.kind === 'background');
+    if (spine) c.sendObjectToBack(spine);
+    if (bg) c.sendObjectToBack(bg);
+  };
+  const setFill = (kind: 'background' | 'spine', cmyk: Cmyk | null) => {
     const c = fabric.current;
     if (!c) return;
-    const existing = (c.getObjects() as BObject[]).find((o) => o.binder?.kind === 'background');
+    const existing = (c.getObjects() as BObject[]).find((o) => o.binder?.kind === kind);
     if (cmyk === null) {
       if (existing) c.remove(existing);
     } else if (existing) {
       existing.set({ fill: cmykToRgbCss(cmyk) });
-      existing.binder = { kind: 'background', cmyk };
+      existing.binder = { kind, cmyk };
     } else {
-      const p = backgroundProps(spec, cmyk);
-      const r = new Rect({ left: p.left, top: p.top, width: p.width, height: p.height, originX: 'center', originY: 'center', fill: cmykToRgbCss(cmyk), selectable: false, evented: false, hoverCursor: 'default' }) as Rect & BObject;
-      r.binder = p.binder;
-      c.add(r);
-      c.sendObjectToBack(r);
+      fillObject(kind, cmyk);
     }
+    restack();
     c.requestRenderAll();
+    bump();
     commit();
   };
 
-  /** Replace everything on the canvas with a saved design (reopen, undo, redo). */
   const loadDesign = useCallback(
     async (design: DesignJSON) => {
       const c = fabric.current;
@@ -251,12 +319,13 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
       try {
         c.discardActiveObject();
         for (const o of [...c.getObjects()]) c.remove(o);
-        const bg = backgroundOf(design.elements);
-        if (bg) setBackgroundObject(bg.color_cmyk);
         for (const el of design.elements) {
-          if (el.type === 'text') addTextObject(el);
-          else if (el.type === 'image') await addImageObject(el, el.src);
+          if (el.type === 'rect') fillObject(isSpineRect(el, spec) ? 'spine' : 'background', el.color_cmyk);
+          else if (el.type === 'text') await addText(el);
+          else if (el.type === 'image') await addImage(el, el.src);
+          else if (el.type === 'shape') addShape(el);
         }
+        restack();
         c.requestRenderAll();
       } finally {
         applying.current = false;
@@ -268,7 +337,7 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
     [spec, commit],
   );
 
-  // ---- Reopen a saved design -----------------------------------------------------------------------------------------------
+  // ---- Checks, session, reopening ------------------------------------------------------------------------------------------
   const result = useMemo(() => validateDesign(snap.design, spec), [snap.design, spec]);
   const hasContent = snap.design.elements.length > 0;
   const snapRef = useRef({ snap, result, hasContent });
@@ -310,34 +379,39 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
     void loadDesign(next);
   };
 
-  // ---- Adding things -------------------------------------------------------------------------------------------------------------
+  // ---- Adding --------------------------------------------------------------------------------------------------------------------------
   const home = useMemo(() => homePanel(spec), [spec]);
-
-  const addText = () => {
+  const select = (o: BObject) => {
     const c = fabric.current;
     if (!c) return;
-    const wMm = Math.min(90, home.w);
-    const arabic = cfg.lang === 'ar';
-    const tb = addTextObject({
-      type: 'text',
-      text: t('default_text'),
-      font: arabic ? 'Tajawal' : 'Poppins',
-      size_pt: Math.min(28, Math.max(8, home.w / 4)),
-      weight: '700',
-      color_cmyk: [0, 0, 0, 100],
-      x_mm: home.x + home.w / 2 - wMm / 2,
-      y_mm: home.y + home.h / 2 - 6,
-      w_mm: wMm,
-      h_mm: 12,
-      align: 'center',
-      rtl: arabic,
-    });
-    c.setActiveObject(tb);
+    c.setActiveObject(o);
     c.requestRenderAll();
+    setSelected(o);
+  };
+
+  const newText = async (heading: boolean) => {
+    const arabic = cfg.lang === 'ar';
+    // A heading is about a tenth of the panel height (≈ 30 mm on a binder cover, 9 mm on a 10 cm sticker).
+    const sizeMm = Math.max(3, Math.min(home.h * (heading ? 0.1 : 0.05), home.w * (heading ? 0.09 : 0.045)));
+    const wMm = home.w * 0.9;
+    const tb = await addText({
+      type: 'text', text: t(heading ? 'heading_text' : 'body_text'), font: arabic ? (heading ? 'Cairo' : 'Tajawal') : heading ? 'Montserrat' : 'Poppins',
+      size_pt: Math.round(sizeMm * (72 / 25.4) * 10) / 10, weight: heading ? '700' : '400', color_cmyk: [0, 0, 0, 100],
+      x_mm: home.x + (home.w - wMm) / 2, y_mm: home.y + home.h / 2 - sizeMm * 0.7, w_mm: wMm, h_mm: sizeMm * 1.4, align: 'center', rtl: arabic,
+    });
+    select(tb);
     commit();
   };
 
-  const addImage = async (file: File) => {
+  const newShape = (shape: ShapeKind) => {
+    const side = Math.min(home.w, home.h) * 0.3;
+    const w = shape === 'rectangle' ? side * 1.5 : side;
+    const s = addShape({ type: 'shape', shape, x_mm: home.x + (home.w - w) / 2, y_mm: home.y + (home.h - side) / 2, w_mm: w, h_mm: side, color_cmyk: [0, 25, 85, 10] });
+    select(s);
+    commit();
+  };
+
+  const upload = async (file: File) => {
     const c = fabric.current;
     if (!c) return;
     setUploadError('');
@@ -345,14 +419,21 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
     setUploadPct(0);
     try {
       const res = await api.upload(file, (f) => setUploadPct(Math.round(f * 100)));
-      const wMm = Math.min(70, home.w);
-      const hMm = (wMm * res.source_px.h) / res.source_px.w;
-      const img = await addImageObject(
-        { type: 'image', src: res.url, x_mm: home.x + home.w / 2 - wMm / 2, y_mm: home.y + home.h / 2 - hMm / 2, w_mm: wMm, h_mm: hMm, rotation_deg: 0, source_px: res.source_px },
-        res.proxy_url || res.url,
-      );
-      c.setActiveObject(img);
-      c.requestRenderAll();
+      let el: Extract<DesignElement, { type: 'image' }>;
+      if (firstUpload.current && !hasContent) {
+        // Upload mode: the first picture fills the whole sheet, like a finished design.
+        const scale = Math.max(spec.canvas_with_bleed_mm.w / res.source_px.w, spec.canvas_with_bleed_mm.h / res.source_px.h);
+        const w = res.source_px.w * scale;
+        const h = res.source_px.h * scale;
+        el = { type: 'image', src: res.url, x_mm: (spec.canvas_with_bleed_mm.w - w) / 2, y_mm: (spec.canvas_with_bleed_mm.h - h) / 2, w_mm: w, h_mm: h, rotation_deg: 0, source_px: res.source_px };
+      } else {
+        const wMm = Math.min(home.w * 0.6, 90);
+        const hMm = (wMm * res.source_px.h) / res.source_px.w;
+        el = { type: 'image', src: res.url, x_mm: home.x + (home.w - wMm) / 2, y_mm: home.y + (home.h - hMm) / 2, w_mm: wMm, h_mm: hMm, rotation_deg: 0, source_px: res.source_px };
+      }
+      firstUpload.current = false;
+      const img = await addImage(el, res.proxy_url || res.url);
+      select(img);
       commit();
     } catch (e) {
       const code = e instanceof ApiError ? e.code : '';
@@ -362,10 +443,18 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
     }
   };
 
-  // ---- Acting on the selection ---------------------------------------------------------------------------------------------------------
+  const applyTemplate = async (id: string) => {
+    const tplDef = STARTERS.find((s) => s.id === id);
+    if (!tplDef) return;
+    history.current.past.push(snap.design);
+    history.current.future = [];
+    await loadDesign({ ...emptyDesign(spec, cfg), elements: tplDef.build(spec) });
+  };
+
+  // ---- Acting on the selection -----------------------------------------------------------------------------------------------------------
   const touch = () => {
     fabric.current?.requestRenderAll();
-    setTick((n) => n + 1);
+    bump();
     commit();
   };
   const withSel = (fn: (o: BObject, c: Canvas) => void) => {
@@ -375,58 +464,104 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
     selected.setCoords();
     touch();
   };
-  const remove = () => withSel((o, c) => { c.remove(o); c.discardActiveObject(); });
+  const remove = (o: BObject | null = selected) => {
+    const c = fabric.current;
+    if (!c || !o) return;
+    c.remove(o);
+    if (o === selected) c.discardActiveObject();
+    touch();
+  };
   const duplicate = () =>
     void (async () => {
       const c = fabric.current;
       if (!c || !selected) return;
       const copy = (await selected.clone(['binder'])) as BObject;
-      copy.set({ left: selected.left + 20, top: selected.top + 20 });
+      copy.set({ left: selected.left + 12 / zoom, top: selected.top + 12 / zoom });
       copy.binder = { ...(selected.binder ?? { kind: 'text' }), locked: false };
+      style(copy, copy.binder.kind);
       c.add(copy);
-      c.setActiveObject(copy);
+      select(copy);
       touch();
     })();
   const forward = () => withSel((o, c) => c.bringObjectForward(o));
   const backward = () =>
     withSel((o, c) => {
       c.sendObjectBackwards(o);
-      const bg = (c.getObjects() as BObject[]).find((x) => x.binder?.kind === 'background');
-      if (bg) c.sendObjectToBack(bg); // the background stays the bottom layer
+      restack();
     });
-  const center = () => withSel((o) => o.set({ left: (home.x + home.w / 2) * PX_PER_MM, top: (home.y + home.h / 2) * PX_PER_MM }));
-  const turn = () => withSel((o) => o.set({ angle: (o.angle + 90) % 360 }));
-  const toggleLock = () =>
+  const toggleLock = (o: BObject | null = selected) => {
+    if (!o) return;
+    o.binder = { ...(o.binder ?? { kind: 'text' }), locked: !o.binder?.locked };
+    applyLock(o);
+    touch();
+  };
+
+  /** Axis-aligned box of an object in canvas px (centre origin, any rotation). */
+  const boxOf = (o: BObject) => {
+    const w = o.width * o.scaleX;
+    const h = o.height * o.scaleY;
+    const a = ((o.angle ?? 0) * Math.PI) / 180;
+    const bw = Math.abs(w * Math.cos(a)) + Math.abs(h * Math.sin(a));
+    const bh = Math.abs(w * Math.sin(a)) + Math.abs(h * Math.cos(a));
+    return { x: o.left - bw / 2, y: o.top - bh / 2, w: bw, h: bh };
+  };
+  /** The safe box (px) of the panel the object's centre sits on. */
+  const panelOf = (o: BObject) => {
+    const cx = o.left / PX_PER_MM;
+    const panels = panelsInCanvas(spec);
+    const p = panels.find((q) => cx >= q.trim.x && cx <= q.trim.x + q.trim.w) ?? panels[0]!;
+    return { x: p.safe.x * PX_PER_MM, y: p.safe.y * PX_PER_MM, w: p.safe.w * PX_PER_MM, h: p.safe.h * PX_PER_MM, trim: p.trim };
+  };
+  const align = (how: 'left' | 'hcenter' | 'right' | 'top' | 'vmiddle' | 'bottom') =>
     withSel((o) => {
-      const locked = !o.binder?.locked;
-      o.binder = { ...(o.binder ?? { kind: 'text' }), locked };
-      o.set({ lockMovementX: locked, lockMovementY: locked, lockRotation: locked, lockScalingX: locked, lockScalingY: locked, hasControls: !locked, editable: !locked });
+      if (o.binder?.locked) return;
+      const b = boxOf(o);
+      const p = panelOf(o);
+      if (how === 'left') o.set({ left: o.left + (p.x - b.x) });
+      if (how === 'right') o.set({ left: o.left + (p.x + p.w - (b.x + b.w)) });
+      if (how === 'hcenter') o.set({ left: p.x + p.w / 2 });
+      if (how === 'top') o.set({ top: o.top + (p.y - b.y) });
+      if (how === 'bottom') o.set({ top: o.top + (p.y + p.h - (b.y + b.h)) });
+      if (how === 'vmiddle') o.set({ top: p.y + p.h / 2 });
     });
-  const fillSheet = () =>
+  /** Cover the whole sheet, or the panel the picture sits on (to the bleed / turn-in edge). */
+  const fillWith = (target: 'sheet' | 'panel') =>
     withSel((o) => {
       const px = o.binder?.source_px;
       if (!px) return;
-      const scale = Math.max(W / px.w, H / px.h);
-      o.set({ angle: 0, scaleX: (px.w * scale) / o.width, scaleY: (px.h * scale) / o.height, left: W / 2, top: H / 2 });
+      let box = { x: 0, y: 0, w: W, h: H };
+      if (target === 'panel') {
+        const tr = panelOf(o).trim;
+        const first = tr.x <= spec.bleed_mm + spec.turn_in_mm + 0.01;
+        const last = tr.x + tr.w >= spec.canvas_with_bleed_mm.w - spec.bleed_mm - spec.turn_in_mm - 0.01;
+        const x0 = first ? 0 : tr.x;
+        const x1 = last ? spec.canvas_with_bleed_mm.w : tr.x + tr.w;
+        box = { x: x0 * PX_PER_MM, y: 0, w: (x1 - x0) * PX_PER_MM, h: H };
+      }
+      const scale = Math.max(box.w / px.w, box.h / px.h);
+      o.set({ angle: 0, scaleX: (px.w * scale) / o.width, scaleY: (px.h * scale) / o.height, left: box.x + box.w / 2, top: box.y + box.h / 2 });
     });
 
-  const selectElement = (designIndex: number) => {
-    const c = fabric.current;
-    const i = snap.indexOf[designIndex];
-    if (!c || i === undefined) return;
-    const o = c.getObjects()[i] as BObject | undefined;
-    if (o && o.binder?.kind !== 'background') {
-      c.setActiveObject(o);
-      c.requestRenderAll();
-      setSelected(o);
-    }
+  const applyColour = (target: PickTarget, cmyk: Cmyk) => {
+    if (target === 'background' || target === 'spine') return setFill(target, cmyk);
+    const o = selected;
+    if (!o || o.binder?.locked) return;
+    o.binder = { ...(o.binder ?? { kind: 'text' }), cmyk };
+    o.set({ fill: cmykToRgbCss(cmyk) });
+    touch();
   };
+  const applyColourRef = useRef(applyColour);
+  applyColourRef.current = applyColour;
 
   const onKey = (ev: React.KeyboardEvent) => {
     const c = fabric.current;
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z') {
+      ev.preventDefault();
+      return ev.shiftKey ? redo() : undo();
+    }
     const o = c?.getActiveObject() as (BObject & { isEditing?: boolean }) | undefined;
     if (!c || !o || o.isEditing || o.binder?.locked) return;
-    const step = (ev.shiftKey ? 10 : 1) * (1 / zoom);
+    const step = (ev.shiftKey ? 10 : 1) / zoom;
     const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
     if (ev.key === 'Delete' || ev.key === 'Backspace') {
       ev.preventDefault();
@@ -439,129 +574,354 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
     }
   };
 
-  // ---- Render ---------------------------------------------------------------------------------------------------------------------------------
+  // ---- Preview of the print file (client-side, artwork only) --------------------------------------------------------------------------------
+  const openPreview = () => {
+    const c = fabric.current;
+    if (!c) return;
+    c.discardActiveObject();
+    c.requestRenderAll();
+    const k = 2;
+    const src = c.toDataURL({ format: 'png', multiplier: k });
+    const img = new Image();
+    img.onload = () => {
+      const out = document.createElement('canvas');
+      out.width = img.width;
+      out.height = img.height;
+      const ctx = out.getContext('2d')!;
+      const perMm = img.width / spec.canvas_with_bleed_mm.w;
+      ctx.drawImage(img, 0, 0);
+      ctx.save();
+      ctx.scale(perMm, perMm);
+      ctx.lineWidth = 0.4;
+      ctx.strokeStyle = '#EC008C';
+      if (spec.sticker) {
+        ctx.stroke(new Path2D(svgPathData(stickerOutlines(spec).cut)));
+      } else {
+        ctx.strokeRect(spec.bleed_mm, spec.bleed_mm, spec.trim_mm.w, spec.trim_mm.h);
+      }
+      ctx.restore();
+      setPreview(out.toDataURL('image/png'));
+    };
+    img.src = src;
+  };
+
+  const saveAndBack = async () => {
+    try {
+      if (hasContent && session.phase === 'edit') await session.saveNow();
+    } catch {
+      /* the draft is kept locally in the session; leaving is still allowed */
+    }
+    notify(cfg, { type: 'close' });
+  };
+
+  // ---- Render ---------------------------------------------------------------------------------------------------------------------------------------
   const issues = [...result.errors, ...result.warnings];
   const busy = session.phase === 'approving' || session.phase === 'done';
-  const currentBackground = backgroundOf(snap.design.elements)?.color_cmyk ?? null;
-  const layers = ((fabric.current?.getObjects() ?? []) as BObject[]).map((o, i) => ({ o, i })).filter(({ o }) => o.binder && o.binder.kind !== 'background').reverse();
+  const objects = (fabric.current?.getObjects() ?? []) as BObject[];
+  const bgCmyk = (objects.find((o) => o.binder?.kind === 'background')?.binder?.cmyk ?? null) as Cmyk | null;
+  const spineCmyk = (objects.find((o) => o.binder?.kind === 'spine')?.binder?.cmyk ?? null) as Cmyk | null;
+  const subtitle = spec.sticker
+    ? t('subtitle_sticker', { shape: t(`shape_${spec.sticker.shape}`), w: spec.trim_mm.w, h: spec.trim_mm.h })
+    : `${t(`binding_${spec.binding ?? 'ltr'}`)} · ${t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}`;
+  const productTitle = cfg.order?.title || t(`title_${cfg.template}`);
+  const rtl = cfg.lang === 'ar';
+
+  const tools: Array<{ id: Tool; icon: ReactElement }> = [
+    { id: 'text', icon: <path d="M5 5h14M12 5v14" /> },
+    { id: 'image', icon: <><rect x="4" y="5" width="16" height="14" rx="1.5" /><circle cx="9" cy="10" r="1.6" /><path d="M5 17l5-5 4 4 2-2 3 3" /></> },
+    { id: 'shapes', icon: <path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z" /> },
+    { id: 'colours', icon: <><circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 0 0 16c1.2 0 1.8-.8 1.8-1.7 0-1.6-1.4-1.8-1.4-3.1 0-1 .8-1.7 1.8-1.7H17a3 3 0 0 0 3-3C20 6.5 16.4 4 12 4z" /></> },
+    { id: 'templates', icon: <><rect x="4" y="4" width="7" height="7" rx="1" /><rect x="13" y="4" width="7" height="7" rx="1" /><rect x="4" y="13" width="7" height="7" rx="1" /><rect x="13" y="13" width="7" height="7" rx="1" /></> },
+  ];
 
   return (
-    <div className="binder-app" dir={cfg.lang === 'ar' ? 'rtl' : 'ltr'} lang={cfg.lang}>
-      <header className="binder-bar">
-        <div>
-          <h1>{t(`title_${cfg.template}`)}</h1>
-          <p>{spec.sticker ? t('subtitle_sticker', { shape: t(`shape_${spec.sticker.shape}`), w: spec.trim_mm.w, h: spec.trim_mm.h }) : `${t(`binding_${spec.binding ?? 'ltr'}`)} · ${t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}`}</p>
-        </div>
-        <button type="button" className="binder-btn binder-btn--ghost" onClick={() => notify(cfg, { type: 'close' })}>
-          {t('close')}
+    <div className="studio" dir={rtl ? 'rtl' : 'ltr'} lang={cfg.lang}>
+      <header className="studio-top">
+        <button type="button" className="studio-back" onClick={() => void saveAndBack()}>
+          <span aria-hidden="true">{rtl ? '›' : '‹'}</span> {t('save_back')}
         </button>
+        <span className="studio-top__title">{productTitle}</span>
+        <div className="studio-top__hist">
+          <button type="button" className="studio-icon" onClick={undo} disabled={history.current.past.length === 0} aria-label={t('undo')} title={t('undo')}>
+            <svg viewBox="0 0 24 24"><path d="M9 7L4 12l5 5M4 12h11a5 5 0 0 1 0 10h-2" /></svg>
+          </button>
+          <button type="button" className="studio-icon" onClick={redo} disabled={history.current.future.length === 0} aria-label={t('redo')} title={t('redo')}>
+            <svg viewBox="0 0 24 24"><path d="M15 7l5 5-5 5M20 12H9a5 5 0 0 0 0 10h2" /></svg>
+          </button>
+        </div>
       </header>
 
-      <main className="binder-main">
-        <section className="binder-stagewrap">
-          <div className="binder-livebar">
-            <div className="binder-row binder-row--tight">
-              <button type="button" className="binder-btn binder-btn--ghost binder-btn--small" onClick={undo} disabled={history.current.past.length === 0}>↶ {t('undo')}</button>
-              <button type="button" className="binder-btn binder-btn--ghost binder-btn--small" onClick={redo} disabled={history.current.future.length === 0}>↷ {t('redo')}</button>
+      <div className="studio-body">
+        <nav className="studio-rail" aria-label="tools">
+          {tools.map((tl) => (
+            <button key={tl.id} type="button" className={`studio-rail__btn${tool === tl.id ? ' is-on' : ''}`} onClick={() => setTool(tl.id)} aria-pressed={tool === tl.id}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">{tl.icon}</svg>
+              <span>{t(`tool_${tl.id}`)}</span>
+            </button>
+          ))}
+        </nav>
+
+        <aside className="studio-panel">
+          {tool === 'text' && (
+            <>
+              <h2>{t('tool_text')}</h2>
+              <p className="studio-muted">{t('text_panel_hint')}</p>
+              <button type="button" className="studio-add studio-add--heading" onClick={() => void newText(true)} disabled={!fontsReady || busy}>{t('add_heading')}</button>
+              <button type="button" className="studio-add" onClick={() => void newText(false)} disabled={!fontsReady || busy}>{t('add_body')}</button>
+            </>
+          )}
+          {tool === 'image' && (
+            <>
+              <h2>{t('tool_image')}</h2>
+              <p className="studio-muted">{t('image_panel_hint')}</p>
+              <div
+                className={`studio-drop${dragging ? ' is-drag' : ''}`}
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files?.[0]; if (f) void upload(f); }}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5M7 10l5-5 5 5M5 19h14" /></svg>
+                <button type="button" className="studio-btn studio-btn--ghost" onClick={() => fileInput.current?.click()} disabled={uploadPct !== null || busy}>
+                  {uploadPct !== null ? t('uploading', { pct: uploadPct }) : t('choose_image')}
+                </button>
+                <span className="studio-muted">{t('or_drop')}</span>
+                {uploadPct !== null && <progress max={100} value={uploadPct} />}
+              </div>
+              {uploadError && <p className="studio-error" role="alert">{uploadError}</p>}
+            </>
+          )}
+          {tool === 'shapes' && (
+            <>
+              <h2>{t('tool_shapes')}</h2>
+              <p className="studio-muted">{t('shapes_panel_hint')}</p>
+              <div className="studio-shapes">
+                {SHAPE_KINDS.map((k) => (
+                  <button key={k} type="button" className="studio-shape" onClick={() => newShape(k)} disabled={busy} title={t(`shape_${k}`)}>
+                    <svg viewBox={k === 'rectangle' ? '0 0 36 24' : '0 0 30 30'} aria-hidden="true"><path d={k === 'rectangle' ? shapePathData(k, 36, 24) : shapePathData(k, 30, 30)} /></svg>
+                    <span>{t(`shape_${k}`)}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {tool === 'colours' && (
+            <>
+              <h2>{t('colours_bg')}</h2>
+              <ColourPicker t={t} value={bgCmyk} allowNone onChange={(c) => setFill('background', c)} onPick={() => setPicking('background')} picking={picking === 'background'} onCancelPick={() => setPicking(null)} />
+              {isBinder && spineBox(spec) && (
+                <>
+                  <h2 className="studio-gap">{t('colours_spine')}</h2>
+                  <p className="studio-muted">{t('colours_spine_hint')}</p>
+                  <ColourPicker t={t} value={spineCmyk} allowNone onChange={(c) => setFill('spine', c)} onPick={() => setPicking('spine')} picking={picking === 'spine'} onCancelPick={() => setPicking(null)} />
+                </>
+              )}
+            </>
+          )}
+          {tool === 'templates' && (
+            <>
+              <h2>{t('tool_templates')}</h2>
+              <p className="studio-muted">{t('templates_hint')}</p>
+              <div className="studio-templates">
+                {STARTERS.map((s) => (
+                  <button key={s.id} type="button" className="studio-template" onClick={() => void applyTemplate(s.id)} disabled={busy}>
+                    <TemplateThumb spec={spec} elements={s.build(spec)} />
+                    <span>{s[cfg.lang]}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </aside>
+
+        <main className="studio-stage" ref={stageRef}>
+          <p className="studio-stage__title">{subtitle}</p>
+          {picking && (
+            <div className="studio-picking" role="status">
+              {t('picking')} <button type="button" onClick={() => setPicking(null)}>{t('cancel')}</button>
             </div>
-            <span className="binder-muted">{t('live_hint')}</span>
-          </div>
-          <div className="binder-stage" ref={stageRef} tabIndex={0} onKeyDown={onKey} aria-label={t(`title_${cfg.template}`)}>
-            <div className="binder-frame" style={{ width: viewW, height: viewH }} dir="ltr">
+          )}
+          <div className={`studio-sheet${picking ? ' is-picking' : ''}`} tabIndex={0} onKeyDown={onKey} aria-label={productTitle}>
+            <div className="binder-frame" style={{ width: Math.round(viewW), height: viewH }} dir="ltr">
               <canvas ref={canvasEl} />
               <img className="binder-overlay" src={overlayUrlFor(tpl)} alt="" draggable={false} />
             </div>
           </div>
           <Legend spec={spec} t={t} />
-        </section>
+        </main>
 
-        <aside className="binder-panel" aria-live="polite">
-          <input ref={fileInput} type="file" hidden accept="image/jpeg,image/png,image/webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) void addImage(f); e.target.value = ''; }} />
-
-          {busy ? (
-            <StatusCard session={session} t={t} cfg={cfg} />
-          ) : (
-            <>
-              <div className="binder-card">
-                <h2>{t('add_title')}</h2>
-                <div className="binder-row">
-                  <button type="button" className="binder-btn" onClick={addText} disabled={!fontsReady}>{t('add_text')}</button>
-                  <button type="button" className="binder-btn" onClick={() => fileInput.current?.click()} disabled={uploadPct !== null}>
-                    {uploadPct !== null ? t('uploading', { pct: uploadPct }) : t('add_image')}
-                  </button>
+        <aside className="studio-side" aria-live="polite">
+          <section className="studio-sec">
+            <h2>{t('your_order')}</h2>
+            <p className="studio-order__name">{productTitle}</p>
+            {cfg.order && cfg.order.chips.length > 0 && (
+              <div className="studio-chips">{cfg.order.chips.map((c, i) => <span key={i} className="studio-chip">{c}</span>)}</div>
+            )}
+            <p className="studio-muted studio-small">{t('order_note')}</p>
+            {cfg.order?.total && (
+              <div className="studio-total">
+                <div>
+                  <span>{t('total')}</span>
+                  {cfg.order.note && <small>{cfg.order.note}</small>}
                 </div>
-                {uploadPct !== null && <progress max={100} value={uploadPct} />}
-                {uploadError && <p className="binder-msg binder-msg--error" role="alert">{uploadError}</p>}
+                <strong>{cfg.order.total}</strong>
               </div>
+            )}
+            {busy ? (
+              <StatusCard session={session} t={t} cfg={cfg} />
+            ) : (
+              <>
+                <button type="button" className="studio-btn studio-btn--primary" onClick={() => void session.approve()} disabled={!(hasContent && result.ok)}>
+                  {session.phase === 'failed' ? t('try_again') : t('approve')}
+                </button>
+                <button type="button" className="studio-btn studio-btn--ghost" onClick={openPreview} disabled={!hasContent}>{t('preview_file')}</button>
+                <span className={`studio-save studio-save--${session.saveState}`}>
+                  {session.saveState === 'saving' ? t('saving') : session.saveState === 'saved' ? `✓ ${t('saved')}` : session.saveState === 'error' ? t('save_failed') : ''}
+                </span>
+              </>
+            )}
+            <FailureCard session={session} t={t} />
+          </section>
 
-              <div className="binder-card">
-                <h2>{t('bg_title')}</h2>
-                <Swatches value={currentBackground} onPick={setBackgroundObject} lang={cfg.lang} allowNone noneLabel={t('bg_none')} />
-              </div>
+          {hasContent && issues.length > 0 && (
+            <section className="studio-sec">
+              <h2>{t('checks')}</h2>
+              <IssueList issues={issues} t={t} onSelect={(i) => { const o = objects[snap.indexOf[i] ?? -1]; if (o && o.binder?.kind !== 'background' && o.binder?.kind !== 'spine') select(o); }} />
+            </section>
+          )}
 
-              <Selection key={`${selected ? 'sel' : 'none'}-${tick}`} selected={selected} t={t} lang={cfg.lang} design={snap.design} indexOf={snap.indexOf} objects={(fabric.current?.getObjects() ?? []) as BObject[]} onChange={touch} actions={{ remove, duplicate, forward, backward, center, turn, toggleLock, fillSheet }} />
+          {!busy && (
+            <section className="studio-sec">
+              <h2>{t('selected')}</h2>
+              <Selected
+                key={selected ? String(objects.indexOf(selected)) : 'none'}
+                o={selected}
+                t={t}
+                design={snap.design}
+                indexOf={snap.indexOf}
+                objects={objects}
+                onChange={touch}
+                ensureFont={ensureFont}
+                picking={picking === 'selected'}
+                actions={{ remove: () => remove(), duplicate, forward, backward, toggleLock: () => toggleLock(), align, fillWith, pick: () => setPicking('selected'), cancelPick: () => setPicking(null), colour: (c) => applyColour('selected', c) }}
+              />
+            </section>
+          )}
 
-              {layers.length > 0 && (
-                <div className="binder-card">
-                  <h2>{t('layers')}</h2>
-                  <ul className="binder-layers">
-                    {layers.map(({ o, i }) => (
-                      <li key={i} className={`${o === selected ? 'is-on' : ''} ${o.binder?.locked ? 'is-locked' : ''}`}>
-                        <button type="button" onClick={() => { const c = fabric.current; if (c) { c.setActiveObject(o); c.requestRenderAll(); setSelected(o); } }}>
-                          <span className="binder-layer__kind">{o.binder?.kind === 'text' ? t('layer_text') : t('layer_image')}</span>
-                          {o.binder?.kind === 'text' ? String((o as Textbox).text).replace(/\s+/g, ' ').slice(0, 40) : (o.binder?.source_px ? `${o.binder.source_px.w} × ${o.binder.source_px.h} px` : '')}
-                          {o.binder?.locked ? ' 🔒' : ''}
+          {!busy && objects.length > 0 && (
+            <section className="studio-sec">
+              <h2>{t('layers')}</h2>
+              <ul className="studio-layers">
+                {[...objects].reverse().map((o) => {
+                  const k = o.binder?.kind;
+                  const fill = k === 'background' || k === 'spine';
+                  const name = k === 'text' ? String((o as Textbox).text).replace(/\s+/g, ' ').slice(0, 36) : k === 'shape' ? t(`shape_${o.binder?.shape}`) : k === 'image' ? t('layer_image') : k === 'spine' ? t('layer_spine') : t('layer_background');
+                  const icon = k === 'text' ? 'T' : k === 'shape' ? '★' : k === 'image' ? '▣' : '◐';
+                  return (
+                    <li key={objects.indexOf(o)} className={o === selected ? 'is-on' : ''}>
+                      <button type="button" className="studio-layer" onClick={() => (fill ? setTool('colours') : select(o))}>
+                        <i aria-hidden="true">{icon}</i>
+                        <span dir="auto">{name}</span>
+                      </button>
+                      {!fill && (
+                        <button type="button" className={`studio-mini${o.binder?.locked ? ' is-locked' : ''}`} onClick={() => toggleLock(o)} title={o.binder?.locked ? t('unlock_it') : t('lock_it')} aria-label={o.binder?.locked ? t('unlock_it') : t('lock_it')}>
+                          <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="1.5" />{o.binder?.locked ? <path d="M8 11V8a4 4 0 0 1 8 0v3" /> : <path d="M8 11V8a4 4 0 0 1 7.5-2" />}</svg>
                         </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="binder-card">
-                <h2>{t('checks')}</h2>
-                {!hasContent ? (
-                  <p className="binder-muted">{t('checks_empty_live')}</p>
-                ) : issues.length === 0 ? (
-                  <p className="binder-msg binder-msg--ok">{t('checks_ok')}</p>
-                ) : (
-                  <IssueList issues={issues} t={t} onSelect={selectElement} />
-                )}
-              </div>
-
-              <FailureCard session={session} t={t} />
-              <Actions session={session} t={t} canApprove={hasContent && result.ok} />
-            </>
+                      )}
+                      <button type="button" className="studio-mini" onClick={() => (fill ? setFill(k as 'background' | 'spine', null) : remove(o))} title={t('remove')} aria-label={t('remove')}>×</button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
           )}
         </aside>
-      </main>
+      </div>
+
+      <input ref={fileInput} type="file" hidden accept="image/jpeg,image/png,image/webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ''; }} />
+
+      {preview && (
+        <div className="studio-modal" role="dialog" aria-modal="true" aria-label={t('preview_title')} onClick={() => setPreview(null)}>
+          <div className="studio-modal__box" onClick={(e) => e.stopPropagation()}>
+            <div className="studio-modal__head">
+              <h2>{t('preview_title')}</h2>
+              <button type="button" className="studio-mini" onClick={() => setPreview(null)} aria-label={t('close')}>×</button>
+            </div>
+            <img src={preview} alt="" />
+            <p className="studio-muted">{spec.sticker ? t('preview_note') : t('preview_note_binder')}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function emptyDesign(spec: Spec): DesignJSON {
-  return { template: spec.template, mode: 'live', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [], ...(spec.sticker ? { sticker: spec.sticker } : { binding: spec.binding ?? 'ltr' }) };
+function emptyDesign(spec: Spec, cfg: EditorConfig): DesignJSON {
+  return {
+    template: spec.template,
+    mode: cfg.mode === 'upload' ? 'upload' : 'live',
+    canvas_mm: { ...spec.canvas_with_bleed_mm },
+    elements: [],
+    ...(spec.sticker ? { sticker: spec.sticker } : { binding: spec.binding ?? 'ltr' }),
+  };
 }
 
-function Swatches({ value, onPick, lang, allowNone, noneLabel }: { value: Cmyk | null; onPick: (c: Cmyk | null) => void; lang: 'en' | 'ar'; allowNone?: boolean; noneLabel?: string }) {
+/** A small drawing of a starter design: colour fills, shapes and the text lines. */
+function TemplateThumb({ spec, elements }: { spec: Spec; elements: DesignElement[] }) {
+  const { w, h } = spec.canvas_with_bleed_mm;
   return (
-    <div className="binder-swatches" role="listbox" aria-label="colour">
-      {allowNone && (
-        <button type="button" role="option" aria-selected={value === null} title={noneLabel} className={`binder-swatch binder-swatch--none${value === null ? ' is-on' : ''}`} onClick={() => onPick(null)} />
+    <svg className="studio-template__thumb" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <rect x="0" y="0" width={w} height={h} fill="#fff" />
+      {elements.map((el, i) =>
+        el.type === 'rect' ? (
+          <rect key={i} x={el.x_mm} y={el.y_mm} width={el.w_mm} height={el.h_mm} fill={cmykToRgbCss(el.color_cmyk)} />
+        ) : el.type === 'shape' ? (
+          <path key={i} transform={`translate(${el.x_mm} ${el.y_mm})`} d={shapePathData(el.shape, el.w_mm, el.h_mm)} fill={cmykToRgbCss(el.color_cmyk)} />
+        ) : el.type === 'text' ? (
+          <text key={i} x={el.x_mm + el.w_mm / 2} y={el.y_mm + (el.h_mm ?? 0) * 0.75} fontSize={(el.size_pt * 25.4) / 72} fontFamily={`"${el.font}", Tajawal, Poppins, sans-serif`} fontWeight={el.weight} fill={cmykToRgbCss(el.color_cmyk)} textAnchor="middle" direction={el.rtl ? 'rtl' : 'ltr'}>
+            {el.text}
+          </text>
+        ) : null,
       )}
-      {PALETTE.map((s) => (
-        <button
-          key={s.cmyk.join(',')}
-          type="button"
-          role="option"
-          aria-selected={!!value && sameCmyk(value, s.cmyk)}
-          title={s[lang]}
-          aria-label={s[lang]}
-          className={`binder-swatch${value && sameCmyk(value, s.cmyk) ? ' is-on' : ''}`}
-          style={{ background: cmykToRgbCss(s.cmyk) }}
-          onClick={() => onPick(s.cmyk)}
-        />
-      ))}
+    </svg>
+  );
+}
+
+function ColourPicker({ t, value, onChange, allowNone, onPick, picking, onCancelPick }: { t: T; value: Cmyk | null; onChange: (c: Cmyk | null) => void; allowNone?: boolean; onPick?: () => void; picking?: boolean; onCancelPick?: () => void }) {
+  const hex = value ? cmykToHex(value) : '#ffffff';
+  const [draft, setDraft] = useState(hex);
+  useEffect(() => setDraft(hex), [hex]);
+  return (
+    <div className="studio-colour">
+      <div className="studio-colour__row">
+        <label className="studio-colour__well" style={{ background: value ? hex : undefined }} data-none={value ? undefined : ''}>
+          <input type="color" value={hex} onChange={(e) => onChange(hexToCmyk(e.target.value))} aria-label={t('color')} />
+        </label>
+        <label className="studio-colour__hex">
+          <span>{t('hex')}</span>
+          <input
+            type="text"
+            value={draft}
+            maxLength={7}
+            dir="ltr"
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={() => /^#?[0-9a-f]{6}$/i.test(draft) && onChange(hexToCmyk(draft.startsWith('#') ? draft : `#${draft}`))}
+            onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+          />
+        </label>
+        {onPick && (
+          <button type="button" className={`studio-btn studio-btn--ghost studio-btn--small${picking ? ' is-on' : ''}`} onClick={picking ? onCancelPick : onPick} title={t('pick_from_design')}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5l5 5M17 7l-9.5 9.5L4 20l3.5-3.5M12 6l6 6" /></svg>
+            {picking ? t('cancel') : t('pick_from_design')}
+          </button>
+        )}
+      </div>
+      <div className="studio-swatches">
+        {allowNone && <button type="button" className={`studio-swatch studio-swatch--none${value === null ? ' is-on' : ''}`} title={t('no_colour')} aria-label={t('no_colour')} onClick={() => onChange(null)} />}
+        {QUICK_COLOURS.map((c) => (
+          <button key={c.join(',')} type="button" className={`studio-swatch${value && sameCmyk(value, c) ? ' is-on' : ''}`} style={{ background: cmykToRgbCss(c) }} aria-label={cmykToHex(c)} onClick={() => onChange(c)} />
+        ))}
+      </div>
+      {value && <p className="studio-muted studio-small" dir="ltr">C {value[0]} · M {value[1]} · Y {value[2]} · K {value[3]}</p>}
     </div>
   );
 }
@@ -571,112 +931,157 @@ interface SelActions {
   duplicate: () => void;
   forward: () => void;
   backward: () => void;
-  center: () => void;
-  turn: () => void;
   toggleLock: () => void;
-  fillSheet: () => void;
+  align: (how: 'left' | 'hcenter' | 'right' | 'top' | 'vmiddle' | 'bottom') => void;
+  fillWith: (target: 'sheet' | 'panel') => void;
+  pick: () => void;
+  cancelPick: () => void;
+  colour: (c: Cmyk) => void;
 }
 
-/** Controls for whatever is selected on the sheet. */
-function Selection({ selected, t, lang, design, indexOf, objects, onChange, actions }: { selected: BObject | null; t: T; lang: 'en' | 'ar'; design: DesignJSON; indexOf: number[]; objects: BObject[]; onChange: () => void; actions: SelActions }) {
-  if (!selected) {
-    return (
-      <div className="binder-card">
-        <h2>{t('sel_text')} / {t('sel_image')}</h2>
-        <p className="binder-muted">{t('sel_none')}</p>
-      </div>
-    );
-  }
+function Selected({ o, t, design, indexOf, objects, onChange, ensureFont, picking, actions }: { o: BObject | null; t: T; design: DesignJSON; indexOf: number[]; objects: BObject[]; onChange: () => void; ensureFont: (f: string, w: string, s: string) => Promise<void>; picking: boolean; actions: SelActions }) {
+  if (!o) return <p className="studio-muted">{t('sel_nothing')}</p>;
+  const locked = !!o.binder?.locked;
+  const kind = o.binder?.kind;
 
-  const locked = !!selected.binder?.locked;
+  const alignRow = (
+    <div className="studio-field">
+      <span>{t('align_on_panel')}</span>
+      <div className="studio-aligns">
+        {(['left', 'hcenter', 'right', 'top', 'vmiddle', 'bottom'] as const).map((a) => (
+          <button key={a} type="button" className="studio-icon" onClick={() => actions.align(a)} disabled={locked} title={t(`al_${a}`)} aria-label={t(`al_${a}`)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">{ALIGN_ICONS[a]}</svg>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+  const opacityRow = (
+    <label className="studio-field">
+      <span>{t('opacity')} · {Math.round((o.opacity ?? 1) * 100)}%</span>
+      <input type="range" min={0.05} max={1} step={0.05} value={o.opacity ?? 1} disabled={locked} onChange={(e) => { o.set({ opacity: Number(e.target.value) }); onChange(); }} />
+    </label>
+  );
   const common = (
     <>
-      {locked && <p className="binder-muted">{t('sel_locked')}</p>}
-      <div className="binder-row">
-        <button type="button" className="binder-btn binder-btn--ghost" onClick={actions.center} disabled={locked}>{t('center_it')}</button>
-        <button type="button" className="binder-btn binder-btn--ghost" onClick={actions.forward}>{t('layer_up')}</button>
-        <button type="button" className="binder-btn binder-btn--ghost" onClick={actions.backward}>{t('layer_down')}</button>
-      </div>
-      <div className="binder-row">
-        <button type="button" className="binder-btn binder-btn--ghost" onClick={actions.turn} disabled={locked}>↻ {t('turn')}</button>
-        <button type="button" className="binder-btn binder-btn--ghost" onClick={actions.toggleLock}>{locked ? t('unlock') : t('lock')}</button>
-        <button type="button" className="binder-btn binder-btn--ghost" onClick={actions.duplicate}>{t('duplicate')}</button>
-        <button type="button" className="binder-btn binder-btn--ghost binder-btn--danger" onClick={actions.remove}>{t('delete')}</button>
+      <div className="studio-actions">
+        <button type="button" className="studio-btn studio-btn--ghost studio-btn--small" onClick={actions.forward}>{t('layer_up')}</button>
+        <button type="button" className="studio-btn studio-btn--ghost studio-btn--small" onClick={actions.backward}>{t('layer_down')}</button>
+        <button type="button" className="studio-btn studio-btn--ghost studio-btn--small" onClick={actions.toggleLock}>{locked ? t('unlock_it') : t('lock_it')}</button>
+        <button type="button" className="studio-btn studio-btn--ghost studio-btn--small" onClick={actions.duplicate}>{t('duplicate')}</button>
+        <button type="button" className="studio-btn studio-btn--ghost studio-btn--small studio-btn--danger" onClick={actions.remove}>{t('delete')}</button>
       </div>
     </>
   );
+  const colourRow = (
+    <div className="studio-field">
+      <span>{t('color')}</span>
+      <ColourPicker t={t} value={(o.binder?.cmyk ?? [0, 0, 0, 100]) as Cmyk} onChange={(c) => c && !locked && actions.colour(c)} onPick={actions.pick} picking={picking} onCancelPick={actions.cancelPick} />
+    </div>
+  );
 
-  if (selected.binder?.kind === 'text') {
-    const tb = selected as Textbox & BObject;
-    const cmyk = tb.binder?.cmyk ?? [0, 0, 0, 100];
+  if (locked) {
+    return (
+      <>
+        <p className="studio-muted">{t('sel_locked')}</p>
+        {common}
+      </>
+    );
+  }
+
+  if (kind === 'text') {
+    const tb = o as Textbox & BObject;
     const weight = String(tb.fontWeight === 'bold' ? '700' : tb.fontWeight === 'normal' ? '400' : (tb.fontWeight ?? '400'));
     const set = (props: Record<string, unknown>) => {
       tb.set(props);
+      tb.initDimensions?.();
       tb.setCoords();
       onChange();
     };
+    const setFont = async (family: string, w = weight) => {
+      await ensureFont(family, w, tb.text);
+      set({ fontFamily: family, fontWeight: w });
+    };
     return (
-      <div className="binder-card">
-        <h2>{t('sel_text')}</h2>
-        <label className="binder-field">
+      <>
+        <label className="studio-field">
           <span>{t('text_content')}</span>
-          <textarea rows={3} dir="auto" value={tb.text} disabled={locked} onChange={(e) => set({ text: e.target.value, direction: isRtlText(e.target.value) ? 'rtl' : 'ltr' })} />
+          <textarea rows={2} dir="auto" value={tb.text} onChange={(e) => set({ text: e.target.value, direction: isRtlText(e.target.value) ? 'rtl' : 'ltr' })} />
         </label>
-        <div className="binder-row">
-          <label className="binder-field binder-field--grow">
-            <span>{t('font')}</span>
-            <select value={tb.fontFamily} disabled={locked} onChange={(e) => set({ fontFamily: e.target.value })}>
-              {FONT_FAMILIES.map((f) => <option key={f} value={f}>{f}</option>)}
-            </select>
-          </label>
-          <label className="binder-field binder-field--grow">
+        <label className="studio-field">
+          <span>{t('font')}</span>
+          <select value={tb.fontFamily} onChange={(e) => void setFont(e.target.value)} style={{ fontFamily: `"${tb.fontFamily}", Tajawal, Poppins, sans-serif` }}>
+            <optgroup label={t('fonts_ar')}>
+              {FONT_LIST.filter((f) => f.script === 'ar').map((f) => <option key={f.name} value={f.name} style={{ fontFamily: `"${f.name}"` }}>{f.name}</option>)}
+            </optgroup>
+            <optgroup label={t('fonts_latin')}>
+              {FONT_LIST.filter((f) => f.script === 'latin').map((f) => <option key={f.name} value={f.name} style={{ fontFamily: `"${f.name}"` }}>{f.name}</option>)}
+            </optgroup>
+          </select>
+        </label>
+        <div className="studio-two">
+          <label className="studio-field">
             <span>{t('weight')}</span>
-            <select value={weight} disabled={locked} onChange={(e) => set({ fontWeight: e.target.value })}>
+            <select value={weight} onChange={(e) => void setFont(tb.fontFamily, e.target.value)}>
               {TEXT_WEIGHTS.map((w) => <option key={w} value={w}>{t(`weight_${w}`)}</option>)}
             </select>
           </label>
-        </div>
-        <div className="binder-row">
-          <label className="binder-field binder-field--grow">
+          <label className="studio-field">
             <span>{t('text_size')}</span>
-            <input type="number" min={4} max={400} step={1} value={Math.round((tb.fontSize / ptToPx(1)) * 10) / 10} disabled={locked} onChange={(e) => { const pt = Number(e.target.value); if (pt >= 4 && pt <= 400) set({ fontSize: ptToPx(pt) }); }} />
+            <input type="number" min={4} max={400} step={1} value={Math.round((tb.fontSize / ptToPx(1)) * 10) / 10} onChange={(e) => { const pt = Number(e.target.value); if (pt >= 4 && pt <= 400) set({ fontSize: ptToPx(pt) }); }} />
           </label>
-          <div className="binder-field binder-field--grow">
-            <span>{' '}</span>
-            <div className="binder-seg">
-              {(['left', 'center', 'right'] as const).map((a) => (
-                <button key={a} type="button" className={tb.textAlign === a ? 'is-on' : ''} disabled={locked} onClick={() => set({ textAlign: a })}>{t(`align_${a}`)}</button>
-              ))}
-            </div>
+        </div>
+        <div className="studio-field">
+          <span>{' '}</span>
+          <div className="studio-seg">
+            {(['left', 'center', 'right'] as const).map((a) => (
+              <button key={a} type="button" className={tb.textAlign === a ? 'is-on' : ''} onClick={() => set({ textAlign: a })}>{t(`align_${a}`)}</button>
+            ))}
           </div>
         </div>
-        <div className="binder-field">
-          <span>{t('color')}</span>
-          <Swatches value={cmyk} lang={lang} onPick={(c) => { if (!c || locked) return; tb.binder = { ...(tb.binder ?? { kind: 'text' }), cmyk: c }; set({ fill: cmykToRgbCss(c) }); }} />
-        </div>
+        {colourRow}
+        {alignRow}
         {common}
-      </div>
+      </>
+    );
+  }
+
+  if (kind === 'shape') {
+    return (
+      <>
+        <p className="studio-sel-name">{t(`shape_${o.binder?.shape}`)}</p>
+        {colourRow}
+        {opacityRow}
+        {alignRow}
+        {common}
+      </>
     );
   }
 
   // Picture
-  const objIndex = objects.indexOf(selected);
-  const designIndex = indexOf.indexOf(objIndex);
+  const designIndex = indexOf.indexOf(objects.indexOf(o));
   const el = designIndex >= 0 ? design.elements[designIndex] : undefined;
   const dpi = el?.type === 'image' ? Math.round(effectiveDpi(el)) : 0;
   const quality = !dpi ? '' : dpi < THRESHOLDS.blockDpi ? 'low' : dpi < THRESHOLDS.warnDpi ? 'ok' : 'good';
   return (
-    <div className="binder-card">
-      <h2>{t('sel_image')}</h2>
-      <button type="button" className="binder-btn binder-btn--ghost" onClick={actions.fillSheet} disabled={locked}>{t('fill_canvas')}</button>
-      {quality && (
-        <div className={`binder-quality binder-quality--${quality}`}>
-          <span>{t('quality')}</span>
-          <strong>{t(`quality_${quality}`)}</strong>
-          <small>{t('dpi', { dpi })}</small>
-        </div>
-      )}
+    <>
+      {quality && <p className={`studio-quality studio-quality--${quality}`}>{t('dpi', { dpi })} · {t(`quality_${quality}`)}</p>}
+      <div className="studio-actions">
+        <button type="button" className="studio-btn studio-btn--ghost studio-btn--small" onClick={() => actions.fillWith('sheet')}>{t('fill_canvas')}</button>
+        {design.template !== 'sticker' && <button type="button" className="studio-btn studio-btn--ghost studio-btn--small" onClick={() => actions.fillWith('panel')}>{t('fill_panel')}</button>}
+      </div>
+      {opacityRow}
+      {alignRow}
       {common}
-    </div>
+    </>
   );
 }
+
+const ALIGN_ICONS: Record<string, ReactElement> = {
+  left: <><path d="M4 4v16" /><rect x="7" y="7" width="10" height="4" /><rect x="7" y="13" width="6" height="4" /></>,
+  hcenter: <><path d="M12 4v16" /><rect x="6" y="7" width="12" height="4" /><rect x="8" y="13" width="8" height="4" /></>,
+  right: <><path d="M20 4v16" /><rect x="7" y="7" width="10" height="4" /><rect x="11" y="13" width="6" height="4" /></>,
+  top: <><path d="M4 4h16" /><rect x="7" y="7" width="4" height="10" /><rect x="13" y="7" width="4" height="6" /></>,
+  vmiddle: <><path d="M4 12h16" /><rect x="7" y="6" width="4" height="12" /><rect x="13" y="8" width="4" height="8" /></>,
+  bottom: <><path d="M4 20h16" /><rect x="7" y="7" width="4" height="10" /><rect x="13" y="11" width="4" height="6" /></>,
+};
