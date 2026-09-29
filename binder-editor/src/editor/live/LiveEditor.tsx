@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { Canvas, FabricImage, Path, Rect, Textbox, type FabricObject, type TPointerEventInfo } from 'fabric';
+import { Canvas, Control, FabricImage, Path, Rect, Textbox, type FabricObject, type TPointerEventInfo } from 'fabric';
 import {
   cmykToRgbCss,
   effectiveDpi,
@@ -58,6 +58,34 @@ const CONTROL_STYLE = {
   borderScaleFactor: 1.5,
   padding: 0,
 } as const;
+
+/** The round red delete button drawn on the selected item's top-right corner. */
+function renderDeleteControl(ctx: CanvasRenderingContext2D, left: number, top: number) {
+  const r = 13;
+  ctx.save();
+  ctx.translate(left, top);
+  ctx.shadowColor = 'rgba(8, 19, 42, 0.25)';
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#b23a38';
+  ctx.stroke();
+  // Trash can: lid, handle, body with two lines.
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-6, -4.5); ctx.lineTo(6, -4.5);
+  ctx.moveTo(-2, -4.5); ctx.lineTo(-2, -6.5); ctx.lineTo(2, -6.5); ctx.lineTo(2, -4.5);
+  ctx.moveTo(-4.5, -2.5); ctx.lineTo(-3.8, 6.5); ctx.lineTo(3.8, 6.5); ctx.lineTo(4.5, -2.5);
+  ctx.moveTo(-1.3, -0.5); ctx.lineTo(-1.1, 4.3);
+  ctx.moveTo(1.3, -0.5); ctx.lineTo(1.1, 4.3);
+  ctx.stroke();
+  ctx.restore();
+}
 
 /**
  * The designer (binders and stickers, upload and design alike): a tool rail and
@@ -153,6 +181,8 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     if (!canvasEl.current) return;
     const c = new Canvas(canvasEl.current, { width: W, height: H, backgroundColor: '#ffffff', preserveObjectStacking: true, selection: false, enableRetinaScaling: true });
     fabric.current = c;
+    // Test hook for the browser checks; only with ?debug=1.
+    if (new URLSearchParams(location.search).get('debug') === '1') (window as unknown as { __studioCanvas?: Canvas }).__studioCanvas = c;
 
     const onSel = () => {
       const o = (c.getActiveObject() as BObject | undefined) ?? null;
@@ -224,8 +254,33 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   }, [viewW, viewH, zoom]);
 
   // ---- Building objects ------------------------------------------------------------------------------------------------------
+  const removeRef = useRef<(o: BObject) => void>(() => undefined);
+  const deleteControl = useMemo(
+    () =>
+      new Control({
+        x: 0.5,
+        y: -0.5,
+        offsetX: 18,
+        offsetY: -18,
+        sizeX: 26,
+        sizeY: 26,
+        touchSizeX: 40,
+        touchSizeY: 40,
+        cursorStyle: 'pointer',
+        withConnection: false,
+        render: renderDeleteControl,
+        mouseUpHandler: (_e, transform) => {
+          removeRef.current(transform.target as BObject);
+          return true;
+        },
+      }),
+    [],
+  );
+
   const style = (o: BObject, kind: BinderMeta['kind']) => {
     o.set({ ...CONTROL_STYLE, originX: 'center', originY: 'center', lockScalingFlip: true });
+    // Every item gets the 🗑️ button on its top-right corner (hidden with the other controls when locked).
+    o.controls = { ...o.controls, deleteControl };
     if (kind === 'image') {
       o.set({ lockUniScaling: true });
       o.setControlsVisibility({ ml: false, mr: false, mt: false, mb: false });
@@ -471,6 +526,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     if (o === selected) c.discardActiveObject();
     touch();
   };
+  removeRef.current = (o) => remove(o);
   const duplicate = () =>
     void (async () => {
       const c = fabric.current;
