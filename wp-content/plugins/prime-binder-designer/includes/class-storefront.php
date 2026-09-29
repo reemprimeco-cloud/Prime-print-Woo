@@ -130,7 +130,7 @@ class Binder_Storefront {
 		}
 
 		$templates = Binder_Product_Meta::required_templates( $product_id );
-		$live      = (bool) apply_filters( 'binder_live_mode_enabled', true, $product_id );
+		$live      = (bool) apply_filters( 'binder_live_mode_enabled', Binder_Settings::live_editor_enabled(), $product_id );
 
 		$config = array(
 			'editor'  => PRIME_BINDER_URL . 'assets/dist/index.html',
