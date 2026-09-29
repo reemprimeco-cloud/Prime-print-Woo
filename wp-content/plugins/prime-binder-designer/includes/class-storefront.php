@@ -18,7 +18,9 @@ class Binder_Storefront {
 
 	const FIELD_DESIGNS = 'binder_design';
 	const FIELD_SESSION = 'binder_session';
+	const FIELD_BINDING = 'binder_binding';
 	const ITEM_KEY      = 'binder_designs';
+	const ITEM_BINDING  = 'binder_binding';
 
 	public static function init() {
 		add_action( 'woocommerce_before_add_to_cart_button', array( __CLASS__, 'render_panel' ), 5 );
@@ -69,6 +71,14 @@ class Binder_Storefront {
 			'attached'    => array( 'Attached', 'مرفق' ),
 			'item_label'  => array( '%s design', 'تصميم %s' ),
 			'card_cta'    => array( 'Design & order', 'صمّم واطلب' ),
+			'binding_title' => array( 'Binder language', 'لغة الكلاسير' ),
+			'binding_ltr'  => array( 'English · opens from the left', 'إنجليزي · يُفتح من اليسار' ),
+			'binding_rtl'  => array( 'Arabic · opens from the right', 'عربي · يُفتح من اليمين' ),
+			'binding_first' => array( 'Choose English or Arabic first: it decides which panel is the front cover.', 'اختر إنجليزي أو عربي أولاً، فهذا يحدد أي جهة هي الغلاف الأمامي.' ),
+			'binding_changed' => array( 'The binder language changed. Please add your design again.', 'تغيّرت لغة الكلاسير. الرجاء إضافة تصميمك من جديد.' ),
+			'binding_missing' => array( 'Please choose English or Arabic for your binder.', 'الرجاء اختيار إنجليزي أو عربي للكلاسير.' ),
+			'binding_mismatch' => array( 'Your design was made for the other binder language. Please add it again.', 'تصميمك مُعدّ للغة الكلاسير الأخرى. الرجاء إضافته من جديد.' ),
+			'opens_from'  => array( 'Binder', 'الكلاسير' ),
 		);
 
 		if ( ! isset( $strings[ $key ] ) ) {
@@ -164,11 +174,28 @@ class Binder_Storefront {
 			);
 		}
 
-		$hint = count( $templates ) > 1 ? self::copy( 'hint_set' ) : self::copy( 'hint' );
+		$hint      = count( $templates ) > 1 ? self::copy( 'hint_set' ) : self::copy( 'hint' );
+		$is_binder = ! in_array( 'sticker', $templates, true );
+
+		if ( $is_binder ) {
+			$config['binding'] = array(
+				'field'   => self::FIELD_BINDING,
+				'first'   => self::copy( 'binding_first' ),
+				'changed' => self::copy( 'binding_changed' ),
+			);
+		}
 		?>
 		<div class="binder-panel" data-binder-panel data-binder="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
 			<h3 class="binder-panel__title"><?php echo esc_html( self::copy( 'heading' ) ); ?></h3>
 			<p class="binder-panel__lead"><?php echo esc_html( self::copy( 'lead' ) ); ?></p>
+
+			<?php if ( $is_binder ) : ?>
+				<fieldset class="binder-binding" data-binder-binding>
+					<legend class="binder-binding__title"><?php echo esc_html( self::copy( 'binding_title' ) ); ?></legend>
+					<label class="binder-binding__option"><input type="radio" name="<?php echo esc_attr( self::FIELD_BINDING ); ?>" value="ltr" required> <span><?php echo esc_html( self::copy( 'binding_ltr' ) ); ?></span></label>
+					<label class="binder-binding__option"><input type="radio" name="<?php echo esc_attr( self::FIELD_BINDING ); ?>" value="rtl" required> <span><?php echo esc_html( self::copy( 'binding_rtl' ) ); ?></span></label>
+				</fieldset>
+			<?php endif; ?>
 
 			<?php foreach ( $templates as $template ) : ?>
 				<div class="binder-row" data-binder-row="<?php echo esc_attr( $template ); ?>">
@@ -243,6 +270,31 @@ class Binder_Storefront {
 	}
 
 	/**
+	 * The binder language posted with the add-to-cart request: 'ltr' | 'rtl' | ''.
+	 *
+	 * @return string
+	 */
+	public static function posted_binding() {
+		// phpcs:ignore WordPress.Security.NonceVerification
+		$v = isset( $_POST[ self::FIELD_BINDING ] ) ? sanitize_key( wp_unslash( $_POST[ self::FIELD_BINDING ] ) ) : '';
+
+		return Binder_Templates::is_binding( $v ) ? $v : '';
+	}
+
+	/**
+	 * The binding a saved design was made for: 'ltr' | 'rtl' | ''.
+	 *
+	 * @param array $row wp_binder_designs row.
+	 * @return string
+	 */
+	public static function design_binding( array $row ) {
+		$design = json_decode( (string) $row['design_json'], true );
+		$v      = is_array( $design ) ? ( $design['binding'] ?? '' ) : '';
+
+		return Binder_Templates::is_binding( $v ) ? $v : '';
+	}
+
+	/**
 	 * Is this design fit to be ordered by the visitor holding $token?
 	 *
 	 * @param int    $design_id  Design row id.
@@ -272,6 +324,12 @@ class Binder_Storefront {
 
 		$designs = self::posted_designs();
 		$token   = self::posted_token();
+		$binding = self::posted_binding();
+
+		if ( ! in_array( 'sticker', $required, true ) && '' === $binding ) {
+			wc_add_notice( self::copy( 'binding_missing' ), 'error' );
+			return false;
+		}
 
 		foreach ( $required as $template ) {
 			$id = isset( $designs[ $template ] ) ? $designs[ $template ] : 0;
@@ -289,6 +347,12 @@ class Binder_Storefront {
 			// A sticker design is only good for the size and shape it was made for.
 			if ( 'sticker' === $template && ! Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) ) {
 				wc_add_notice( self::copy( 'size_mismatch' ), 'error' );
+				return false;
+			}
+
+			// A binder design is only good for the language (opening side) it was made for.
+			if ( 'sticker' !== $template && self::design_binding( Binder_DB::get( $id ) ) !== $binding ) {
+				wc_add_notice( self::copy( 'binding_mismatch' ), 'error' );
 				return false;
 			}
 		}
@@ -309,18 +373,25 @@ class Binder_Storefront {
 
 		$designs = self::posted_designs();
 		$token   = self::posted_token();
+		$binding = self::posted_binding();
 		$keep    = array();
 
 		foreach ( $required as $template ) {
 			$id = isset( $designs[ $template ] ) ? $designs[ $template ] : 0;
 
-			if ( self::design_is_orderable( $id, $product_id, $template, $token ) && ( 'sticker' !== $template || Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) ) ) {
+			if ( ! self::design_is_orderable( $id, $product_id, $template, $token ) ) {
+				continue;
+			}
+			if ( 'sticker' === $template ? Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) : self::design_binding( Binder_DB::get( $id ) ) === $binding ) {
 				$keep[ $template ] = $id;
 			}
 		}
 
 		if ( $keep ) {
 			$data[ self::ITEM_KEY ] = $keep;
+			if ( ! in_array( 'sticker', $required, true ) ) {
+				$data[ self::ITEM_BINDING ] = $binding;
+			}
 		}
 
 		return $data;
@@ -329,6 +400,13 @@ class Binder_Storefront {
 	public static function show_item_data( $item_data, $cart_item ) {
 		if ( empty( $cart_item[ self::ITEM_KEY ] ) || ! is_array( $cart_item[ self::ITEM_KEY ] ) ) {
 			return $item_data;
+		}
+
+		if ( ! empty( $cart_item[ self::ITEM_BINDING ] ) && Binder_Templates::is_binding( $cart_item[ self::ITEM_BINDING ] ) ) {
+			$item_data[] = array(
+				'key'   => self::copy( 'opens_from' ),
+				'value' => self::copy( 'binding_' . $cart_item[ self::ITEM_BINDING ] ),
+			);
 		}
 
 		foreach ( $cart_item[ self::ITEM_KEY ] as $template => $id ) {

@@ -82,6 +82,8 @@ class Binder_Rest_API {
 					'w'        => array( 'type' => 'number' ),
 					'h'        => array( 'type' => 'number' ),
 					'shape'    => array( 'type' => 'string' ),
+					// Binder covers only: which way the binder opens (decides which guide drawing is sent).
+					'binding'  => array( 'type' => 'string', 'enum' => array( 'ltr', 'rtl' ) ),
 				),
 			)
 		);
@@ -106,6 +108,7 @@ class Binder_Rest_API {
 						'type'     => 'string',
 						'required' => true,
 					),
+					'binding'  => array( 'type' => 'string', 'enum' => array( 'ltr', 'rtl' ) ),
 				),
 			)
 		);
@@ -214,11 +217,14 @@ class Binder_Rest_API {
 			return new WP_Error( 'binder_unknown_template', __( 'Unknown template.', 'prime-binder-designer' ), array( 'status' => 404 ) );
 		}
 
+		$binding = Binder_Templates::is_binding( $request['binding'] ) ? $request['binding'] : 'ltr';
+
 		return rest_ensure_response(
 			array(
 				'template'    => $template,
 				'spec'        => $spec,
-				'overlay_url' => Binder_Templates::overlay_url( $template ),
+				'binding'     => $binding,
+				'overlay_url' => Binder_Templates::overlay_url( $template, 3600, $binding ),
 			)
 		);
 	}
@@ -231,13 +237,14 @@ class Binder_Rest_API {
 	 */
 	public static function get_overlay( WP_REST_Request $request ) {
 		$template = $request['template'];
-		$path     = Binder_Templates::path( $template, 'overlay' );
+		$binding  = Binder_Templates::is_binding( $request['binding'] ) ? $request['binding'] : 'ltr';
+		$path     = Binder_Templates::path( $template, 'overlay', $binding );
 
 		if ( '' === $path || ! is_readable( $path ) ) {
 			return new WP_Error( 'binder_unknown_template', __( 'Unknown template.', 'prime-binder-designer' ), array( 'status' => 404 ) );
 		}
 
-		if ( ! Binder_Templates::verify( $template, $request['exp'], $request['sig'] ) ) {
+		if ( ! Binder_Templates::verify( $template, $request['exp'], $request['sig'], $binding ) ) {
 			return new WP_Error( 'binder_bad_signature', __( 'This link has expired or is invalid.', 'prime-binder-designer' ), array( 'status' => 403 ) );
 		}
 
@@ -459,6 +466,10 @@ class Binder_Rest_API {
 		// A sticker design must say which size and shape it is for, and its canvas must be that size.
 		if ( Binder_Templates::is_parametric( $template ) && ! Binder_Sticker::design_params( $design ) ) {
 			return new WP_Error( 'binder_bad_design', __( 'The design does not carry a valid sticker size and shape.', 'prime-binder-designer' ), array( 'status' => 400 ) );
+		}
+		// A binder design must say which way the binder opens (English: left, Arabic: right).
+		if ( ! Binder_Templates::is_parametric( $template ) && ! Binder_Templates::is_binding( $design['binding'] ?? null ) ) {
+			return new WP_Error( 'binder_bad_design', __( 'The design does not say whether the binder is English or Arabic.', 'prime-binder-designer' ), array( 'status' => 400 ) );
 		}
 
 		$json = wp_json_encode( $design );

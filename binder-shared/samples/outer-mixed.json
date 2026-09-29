@@ -88,5 +88,6 @@
       "h_mm": 12,
       "rotation_deg": 90
     }
-  ]
+  ],
+  "binding": "ltr"
 }

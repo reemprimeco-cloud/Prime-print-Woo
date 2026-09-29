@@ -55,8 +55,8 @@ export default function LiveEditor({ cfg }: { cfg: EditorConfig }) {
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    api.template(cfg.template, cfg.sticker).then(setTpl).catch(() => setLoadError(true));
-  }, [api, cfg.template, cfg.sticker]);
+    api.template(cfg.template, { sticker: cfg.sticker, binding: cfg.binding }).then(setTpl).catch(() => setLoadError(true));
+  }, [api, cfg.template, cfg.sticker, cfg.binding]);
 
   if (loadError) return <div className="binder-app binder-center" role="alert">{t('load_failed')}</div>;
   if (!tpl) return <div className="binder-app binder-center">{t('loading')}</div>;
@@ -69,7 +69,7 @@ type Api = ReturnType<typeof createApi>;
 function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: TemplateInfo }) {
   const spec = tpl.spec;
   const [store, setStore] = useState<PolotnoStore | null>(null);
-  const [snap, setSnap] = useState<{ design: DesignJSON; ids: string[] }>({ design: { template: spec.template, mode: 'live', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [], ...(spec.sticker ? { sticker: spec.sticker } : {}) }, ids: [] });
+  const [snap, setSnap] = useState<{ design: DesignJSON; ids: string[] }>({ design: { template: spec.template, mode: 'live', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [], ...(spec.sticker ? { sticker: spec.sticker } : { binding: spec.binding ?? 'ltr' }) }, ids: [] });
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
@@ -224,7 +224,7 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
       <header className="binder-bar">
         <div>
           <h1>{t(`title_${cfg.template}`)}</h1>
-          <p>{spec.sticker ? t('subtitle_sticker', { shape: t(`shape_${spec.sticker.shape}`), w: spec.trim_mm.w, h: spec.trim_mm.h }) : t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}</p>
+          <p>{spec.sticker ? t('subtitle_sticker', { shape: t(`shape_${spec.sticker.shape}`), w: spec.trim_mm.w, h: spec.trim_mm.h }) : `${t(`binding_${spec.binding ?? 'ltr'}`)} · ${t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}`}</p>
         </div>
         <button type="button" className="binder-btn binder-btn--ghost" onClick={() => notify(cfg, { type: 'close' })}>
           {t('close')}

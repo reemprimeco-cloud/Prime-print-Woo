@@ -21,7 +21,7 @@ const outer = load('outer');
 const inner = load('inner');
 
 const src = (w: number, h: number) => ({ src: 'https://example.com/a.jpg', source_px: { w, h } });
-const design = (spec: Spec, el: ReturnType<typeof fillElement>): DesignJSON => ({ template: spec.template, mode: 'upload', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [el] });
+const design = (spec: Spec, el: ReturnType<typeof fillElement>): DesignJSON => ({ template: spec.template, mode: 'upload', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [el], binding: 'ltr' });
 
 describe('fill and fit', () => {
   for (const spec of [outer, inner]) {

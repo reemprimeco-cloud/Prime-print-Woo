@@ -55,5 +55,6 @@
       "align": "center",
       "rtl": false
     }
-  ]
+  ],
+  "binding": "ltr"
 }

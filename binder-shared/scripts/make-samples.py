@@ -141,6 +141,8 @@ def design(spec, mode, elements):
          'canvas_mm': dict(spec['canvas_with_bleed_mm']), 'elements': elements}
     if 'sticker' in spec:
         d['sticker'] = dict(spec['sticker'])
+    else:
+        d['binding'] = spec.get('binding', 'ltr')
     return d
 
 

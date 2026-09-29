@@ -1,4 +1,4 @@
-import { normalizeStickerParams, type DesignMode, type StickerParams, type TemplateKey } from '@binder/shared';
+import { isBinding, normalizeStickerParams, type Binding, type DesignMode, type StickerParams, type TemplateKey } from '@binder/shared';
 
 export type Lang = 'en' | 'ar';
 
@@ -15,6 +15,8 @@ export interface EditorConfig {
   designId?: number;
   /** Sticker template only: the size and shape chosen on the product page (w, h in mm and shape on the URL). */
   sticker?: StickerParams;
+  /** Binder covers: which way the binder opens, chosen on the product page (binding=ltr|rtl on the URL). */
+  binding?: Binding;
 }
 
 const KEY = 'binder_session';
@@ -46,6 +48,7 @@ export function readConfig(search = window.location.search): EditorConfig {
   const lang = q.get('lang');
 
   const sticker = template === 'sticker' ? normalizeStickerParams({ w_mm: q.get('w'), h_mm: q.get('h'), shape: q.get('shape') ?? 'rectangle' }) : null;
+  const binding = q.get('binding');
 
   return {
     rest: (q.get('rest') ?? '/wp-json/binder/v1').replace(/\/$/, ''),
@@ -56,5 +59,6 @@ export function readConfig(search = window.location.search): EditorConfig {
     sessionToken: sessionToken(),
     ...(q.get('design') ? { designId: Number(q.get('design')) } : {}),
     ...(sticker ? { sticker } : {}),
+    ...(template !== 'sticker' && isBinding(binding) ? { binding } : {}),
   };
 }

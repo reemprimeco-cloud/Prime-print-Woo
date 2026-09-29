@@ -14,6 +14,14 @@
 export type TemplateKey = 'binder_outer' | 'binder_inner' | 'sticker';
 export type DesignMode = 'upload' | 'live';
 
+/**
+ * Which way a binder opens. An English binder ('ltr') opens from the left, so
+ * on the flat sheet the front cover is the right-hand panel; an Arabic binder
+ * ('rtl') opens from the right and the front is the left-hand panel. The
+ * geometry is the same either way — only which panel is which.
+ */
+export type Binding = 'ltr' | 'rtl';
+
 /** Sticker outlines the shop cuts. "custom" is cut to the artwork by hand. */
 export type StickerShape = 'rectangle' | 'square' | 'round' | 'hexagon' | 'triangle' | 'star' | 'heart' | 'custom';
 
@@ -58,6 +66,8 @@ export interface Spec {
   fold_lines_y_mm_from_trim_top: number[];
   /** Present on the sticker template only. */
   sticker?: StickerParams;
+  /** Binder covers: which way the binder opens (panel names are already mirrored for 'rtl'). */
+  binding?: Binding;
 }
 
 export interface ImageElement {
@@ -123,6 +133,8 @@ export interface DesignJSON {
   elements: DesignElement[];
   /** Required when template is "sticker": the size and shape the design was made for. */
   sticker?: StickerParams;
+  /** Required for the binder covers: which way the binder opens. */
+  binding?: Binding;
 }
 
 export type Severity = 'error' | 'warning';

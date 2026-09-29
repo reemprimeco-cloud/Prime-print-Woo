@@ -99,6 +99,19 @@ def build_spec(c):
     }
 
 
+MIRROR = {'back_cover': 'front_cover', 'front_cover': 'back_cover', 'inside_front': 'inside_back', 'inside_back': 'inside_front'}
+
+
+def mirrored(c, spec):
+    """The same cover for a binder that opens from the right (Arabic): the cover
+    panels swap names and labels, nothing moves. Mirrors binder-shared/src/binding.ts."""
+    labels = {name: label for name, label, _ in c['panels']}
+    c2 = dict(c, panels=[(MIRROR.get(n, n), labels[MIRROR.get(n, n)], w) for n, _, w in c['panels']],
+              note='opens from the RIGHT (Arabic)')
+    s2 = dict(spec, binding='rtl', panels_relative_to_trim=[dict(p, name=MIRROR.get(p['name'], p['name'])) for p in spec['panels_relative_to_trim']])
+    return c2, s2
+
+
 def build_svg(c, spec):
     b, t = spec['bleed_mm'], spec['turn_in_mm']
     W, H = spec['canvas_with_bleed_mm']['w'], spec['canvas_with_bleed_mm']['h']
@@ -138,7 +151,8 @@ def build_svg(c, spec):
     items = [('bleed', f'Bleed {b:g} mm'), ('trim', 'Trim / cut line'), ('fold', 'Fold line'), ('safe', f'Safe area {spec["safe_margin_mm"]:g} mm')]
     if t > 0:
         items += [('miter', 'Corner miter cut'), ('turnin', 'Turn-in (wrap)')]
-    out.append(f'<text x="{lx}" y="{ly - 3.8}" font-size="3.2" fill="{COLORS["text"]}">PRIME PRINTING · {c["title"]} · flat {TW:g} × {TH:g} mm + {b:g} mm bleed · {DPI} DPI · CMYK</text>')
+    note = c.get('note', 'opens from the LEFT (English)')
+    out.append(f'<text x="{lx}" y="{ly - 3.8}" font-size="3.2" fill="{COLORS["text"]}">PRIME PRINTING · {c["title"]} · {note} · flat {TW:g} × {TH:g} mm + {b:g} mm bleed · {DPI} DPI · CMYK</text>')
     for i, (key, label) in enumerate(items):
         y = ly + i * 4.2
         out.append(f'<rect x="{lx}" y="{y}" width="6" height="2.6" fill="{COLORS[key]}" stroke="{COLORS[key]}" stroke-width="0.3"/>')
@@ -184,12 +198,16 @@ def main():
         stem = os.path.join(OUT, f'binder-{name}')
         with open(stem + '-spec.json', 'w') as f:
             json.dump(spec, f, indent=2)
-        svg = build_svg(c, spec)
-        with open(stem + '-template.svg', 'w') as f:
-            f.write(svg)
-        if not render_with_chromium(stem, stem + '-spec.json'):
-            print('  (Chromium renderer unavailable, falling back to MuPDF)')
-            write_raster_and_pdf(svg, spec, stem)
+        # Two drawings per cover: English (opens from the left) and, with the
+        # cover panels swapped, Arabic (opens from the right). One spec serves both.
+        c_rtl, spec_rtl = mirrored(c, spec)
+        for suffix, cc, ss in [('', c, spec), ('-rtl', c_rtl, spec_rtl)]:
+            svg = build_svg(cc, ss)
+            with open(stem + suffix + '-template.svg', 'w') as f:
+                f.write(svg)
+            if not render_with_chromium(stem + suffix, stem + '-spec.json'):
+                print('  (Chromium renderer unavailable, falling back to MuPDF)')
+                write_raster_and_pdf(svg, ss, stem + suffix)
         print(f'{name}: trim {spec["trim_mm"]["w"]} x {spec["trim_mm"]["h"]} mm, spine {SPINE_MM} mm, canvas {spec["canvas_with_bleed_px"]["w"]} x {spec["canvas_with_bleed_px"]["h"]} px')
     if os.path.isdir(PLUGIN):
         for f in os.listdir(OUT):

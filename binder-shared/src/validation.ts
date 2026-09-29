@@ -21,6 +21,7 @@ import {
   visibleBox,
   EPS_MM,
 } from './geometry.ts';
+import { isBinding } from './binding.ts';
 import { normalizeStickerParams, sameStickerParams } from './sticker.ts';
 import {
   FONTS,
@@ -89,6 +90,13 @@ export function validateShape(input: unknown, spec: Spec): Issue[] {
   }
   if (d.mode !== 'upload' && d.mode !== 'live') {
     issues.push(err('shape.mode', 'mode must be "upload" or "live".'));
+  }
+  if (!spec.sticker) {
+    if (!isBinding(d.binding)) {
+      issues.push(err('shape.binding', 'A binder design must say which way the binder opens: binding "ltr" (English) or "rtl" (Arabic).'));
+    } else if (spec.binding && d.binding !== spec.binding) {
+      issues.push(err('shape.binding', `Design is for a ${d.binding} binder but the template is ${spec.binding}.`));
+    }
   }
   if (spec.sticker) {
     const p = normalizeStickerParams(d.sticker);

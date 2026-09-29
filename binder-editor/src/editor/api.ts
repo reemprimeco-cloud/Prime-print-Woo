@@ -1,4 +1,4 @@
-import { stickerOverlayDataUrl, type DesignJSON, type Issue, type Spec, type StickerParams, type TemplateKey } from '@binder/shared';
+import { stickerOverlayDataUrl, withBinding, type Binding, type DesignJSON, type Issue, type Spec, type StickerParams, type TemplateKey } from '@binder/shared';
 import type { EditorConfig } from './config';
 
 export class ApiError extends Error {
@@ -69,9 +69,21 @@ export function createApi(cfg: EditorConfig) {
     }).then((r) => parse<T>(r));
 
   return {
-    template(t: TemplateKey, sticker?: StickerParams) {
-      const q = t === 'sticker' && sticker ? `?w=${sticker.w_mm}&h=${sticker.h_mm}&shape=${encodeURIComponent(sticker.shape)}` : '';
-      return json<TemplateInfo>(`/template/${t}${q}`, 'GET');
+    /**
+     * The template's spec and guide. A sticker sends its size and shape; a
+     * binder cover sends which way it opens and gets the spec with the cover
+     * panels named for that side (and the matching guide drawing).
+     */
+    template(t: TemplateKey, opts: { sticker?: StickerParams; binding?: Binding } = {}) {
+      const q =
+        t === 'sticker' && opts.sticker
+          ? `?w=${opts.sticker.w_mm}&h=${opts.sticker.h_mm}&shape=${encodeURIComponent(opts.sticker.shape)}`
+          : t !== 'sticker'
+            ? `?binding=${opts.binding ?? 'ltr'}`
+            : '';
+      return json<TemplateInfo>(`/template/${t}${q}`, 'GET').then((info) =>
+        t === 'sticker' ? info : { ...info, spec: withBinding(info.spec, opts.binding ?? 'ltr') },
+      );
     },
 
     /** XHR rather than fetch: an artwork file can be tens of MB and the customer needs a progress bar. */

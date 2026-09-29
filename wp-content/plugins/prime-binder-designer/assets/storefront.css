@@ -200,3 +200,10 @@ html.binder-modal-open body { overflow: hidden; }
 	from { opacity: 0; transform: translateY(8px); }
 	to { opacity: 1; transform: none; }
 }
+
+/* Binder language (opening side): a required choice before designing. */
+.binder-binding { border: 1px solid #d9dee5; padding: 0.75rem 1rem 0.85rem; margin: 0 0 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; align-items: center; }
+.binder-binding__title { font-weight: 600; font-size: 0.85rem; padding: 0 0.35rem; }
+.binder-binding__option { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.92rem; cursor: pointer; margin: 0; }
+.binder-binding__option input { margin: 0; }
+[data-binder-open][disabled] { opacity: 0.45; cursor: not-allowed; }

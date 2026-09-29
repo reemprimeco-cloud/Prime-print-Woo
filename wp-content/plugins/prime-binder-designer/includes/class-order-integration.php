@@ -13,6 +13,8 @@ defined( 'ABSPATH' ) || exit;
 class Binder_Order_Integration {
 
 	const ITEM_META    = '_binder_designs';
+	/** Hidden line meta: 'ltr' | 'rtl'. */
+	const ITEM_BINDING_META = '_binder_binding';
 	const NOTIFIED     = '_binder_notified';
 	const PAID_STATUSES = array( 'processing', 'completed' );
 
@@ -49,6 +51,13 @@ class Binder_Order_Integration {
 		$designs = array_map( 'absint', $values[ Binder_Storefront::ITEM_KEY ] );
 
 		$item->add_meta_data( self::ITEM_META, $designs, true );
+
+		// Which way the binder opens: the shop needs it to know which panel is the front.
+		$binding = $values[ Binder_Storefront::ITEM_BINDING ] ?? '';
+		if ( Binder_Templates::is_binding( $binding ) ) {
+			$item->add_meta_data( self::ITEM_BINDING_META, $binding, true );
+			$item->add_meta_data( Binder_Storefront::copy( 'opens_from' ), Binder_Storefront::copy( 'binding_' . $binding ), true );
+		}
 
 		foreach ( $designs as $template => $id ) {
 			$item->add_meta_data( sprintf( Binder_Storefront::copy( 'item_label' ), Binder_Storefront::copy( $template ) ), sprintf( '%s (#%d)', Binder_Storefront::copy( 'attached' ), $id ), true );
@@ -233,7 +242,8 @@ class Binder_Order_Integration {
 			$warns  = $row && $row['validation_warnings'] ? count( (array) json_decode( $row['validation_warnings'], true ) ) : 0;
 
 			echo '<tr><td>' . esc_html( $d['item']->get_name() ) . '</td>';
-			echo '<td>' . esc_html( Binder_Storefront::copy( $d['template'] ) ) . '<br><small>' . esc_html( $row ? ( 'live' === $row['mode'] ? 'Designed online' : 'Uploaded' ) : '' ) . ' · #' . (int) $d['id'] . '</small></td>';
+			$binding = $row ? Binder_Storefront::design_binding( $row ) : '';
+			echo '<td>' . esc_html( Binder_Storefront::copy( $d['template'] ) ) . ( $binding ? '<br><strong>' . esc_html( 'rtl' === $binding ? 'Arabic · opens from the right' : 'English · opens from the left' ) . '</strong>' : '' ) . '<br><small>' . esc_html( $row ? ( 'live' === $row['mode'] ? 'Designed online' : 'Uploaded' ) : '' ) . ' · #' . (int) $d['id'] . '</small></td>';
 			echo '<td>' . esc_html( ucfirst( $status ) ) . ( $warns ? '<br><small>' . esc_html( sprintf( '%d warning(s)', $warns ) ) . '</small>' : '' ) . '</td><td>';
 
 			if ( $cmyk ) {

@@ -113,6 +113,22 @@
 		return p ? p.w + 'x' + p.h + ':' + p.shape : '';
 	}
 
+	/* -------------------------------------------------------------- binding */
+
+	// A binder is English (opens from the left, front cover on the right of the
+	// sheet) or Arabic (opens from the right, front cover on the left). The
+	// customer must choose before designing; the choice travels to the editor
+	// and a design made for the other side is dropped if it changes.
+	var binding = cfg.binding || null;
+
+	function chosenBinding() {
+		if ( ! binding ) {
+			return '';
+		}
+		var checked = ( form || document ).querySelector( '[name="' + binding.field + '"]:checked' );
+		return checked ? checked.value : '';
+	}
+
 	panel.querySelector( '[data-binder-session]' ).value = token;
 
 	/* ---------------------------------------------------------------- rows */
@@ -129,7 +145,8 @@
 			upload: el.querySelector( '[data-binder-open="upload"]' ),
 			draft: 0, // Unapproved draft id, so reopening the editor continues the customer's work.
 			params: null, // Sticker: the size and shape the open/approved design is for.
-			sizeKey: ''
+			sizeKey: '',
+			binding: '' // Binder: the language the open/approved design is for.
 		};
 
 		rows[ row.template ] = row;
@@ -152,6 +169,12 @@
 
 	function renderGate() {
 		var ready = allReady();
+		var openable = ! binding || !! chosenBinding();
+
+		// Nothing can be designed until the binder language is chosen.
+		Array.prototype.forEach.call( panel.querySelectorAll( '[data-binder-open]' ), function ( btn ) {
+			btn.disabled = ! openable;
+		} );
 
 		if ( submit ) {
 			submit.disabled = ! ready;
@@ -202,6 +225,10 @@
 			q.push( [ 'w', row.params.w ], [ 'h', row.params.h ], [ 'shape', row.params.shape ] );
 		}
 
+		if ( 'sticker' !== row.template && row.binding ) {
+			q.push( [ 'binding', row.binding ] );
+		}
+
 		return cfg.editor + '?' + q.map( function ( kv ) {
 			return encodeURIComponent( kv[ 0 ] ) + '=' + encodeURIComponent( kv[ 1 ] );
 		} ).join( '&' );
@@ -210,6 +237,30 @@
 	function openEditor( row, mode, opener ) {
 		if ( current ) {
 			return;
+		}
+
+		if ( 'sticker' !== row.template && binding ) {
+			var chosen = chosenBinding();
+
+			if ( ! chosen ) {
+				if ( hint ) {
+					hint.textContent = binding.first;
+					hint.hidden = false;
+				}
+				var first = ( form || document ).querySelector( '[name="' + binding.field + '"]' );
+				if ( first && first.focus ) {
+					first.focus();
+				}
+				return;
+			}
+
+			if ( row.binding && row.binding !== chosen ) {
+				row.draft = 0; // a draft for the other side cannot continue
+			}
+			row.binding = chosen;
+			if ( hint ) {
+				hint.textContent = hintDefault;
+			}
 		}
 
 		if ( 'sticker' === row.template ) {
@@ -342,6 +393,33 @@
 
 		( form || document ).addEventListener( 'input', onSizeChange );
 		( form || document ).addEventListener( 'change', onSizeChange );
+	}
+
+	// The binder language changed after a design was made: that design is for the other side.
+	if ( binding ) {
+		( form || document ).addEventListener( 'change', function ( event ) {
+			if ( ! event.target || event.target.name !== binding.field ) {
+				return;
+			}
+
+			var chosen = chosenBinding();
+
+			Object.keys( rows ).forEach( function ( t ) {
+				var row = rows[ t ];
+
+				if ( 'sticker' !== row.template && row.binding && row.binding !== chosen && ( row.input.value || row.draft ) ) {
+					row.input.value = '';
+					row.draft = 0;
+					row.proof.removeAttribute( 'href' );
+
+					if ( hint ) {
+						hint.textContent = binding.changed;
+					}
+				}
+			} );
+
+			render();
+		} );
 	}
 
 	document.addEventListener( 'keydown', function ( event ) {

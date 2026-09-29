@@ -54,9 +54,10 @@ class Binder_Templates {
 	 *
 	 * @param string $template Template key.
 	 * @param string $kind     'spec' | 'overlay' | 'pdf' | 'svg'.
+	 * @param string $binding  'ltr' (English binder, the default drawing) or 'rtl' (Arabic: cover panels swapped). The spec is shared.
 	 * @return string Path, or '' when the template or kind is unknown.
 	 */
-	public static function path( $template, $kind ) {
+	public static function path( $template, $kind, $binding = 'ltr' ) {
 		$files = array(
 			'spec'    => '-spec.json',
 			'overlay' => '-overlay.png',
@@ -68,7 +69,17 @@ class Binder_Templates {
 			return '';
 		}
 
-		return PRIME_BINDER_DIR . 'templates/' . self::TEMPLATES[ $template ] . $files[ $kind ];
+		$variant = ( 'rtl' === $binding && 'spec' !== $kind ) ? '-rtl' : '';
+
+		return PRIME_BINDER_DIR . 'templates/' . self::TEMPLATES[ $template ] . $variant . $files[ $kind ];
+	}
+
+	/**
+	 * @param mixed $v A binding value from a request or a design.
+	 * @return bool
+	 */
+	public static function is_binding( $v ) {
+		return 'ltr' === $v || 'rtl' === $v;
 	}
 
 	/**
@@ -101,19 +112,22 @@ class Binder_Templates {
 	 *
 	 * @param string $template Template key.
 	 * @param int    $ttl      Seconds the URL stays valid.
+	 * @param string $binding  'ltr' | 'rtl'.
 	 * @return string
 	 */
-	public static function overlay_url( $template, $ttl = 3600 ) {
+	public static function overlay_url( $template, $ttl = 3600, $binding = 'ltr' ) {
 		if ( self::is_parametric( $template ) ) {
 			return ''; // The editor draws the sticker guide from the spec.
 		}
 
 		$expires = time() + (int) $ttl;
+		$binding = self::is_binding( $binding ) ? $binding : 'ltr';
 
 		return add_query_arg(
 			array(
-				'exp' => $expires,
-				'sig' => self::sign( $template, $expires ),
+				'binding' => $binding,
+				'exp'     => $expires,
+				'sig'     => self::sign( $template, $expires, $binding ),
 			),
 			rest_url( 'binder/v1/template/' . $template . '/overlay' )
 		);
@@ -122,23 +136,25 @@ class Binder_Templates {
 	/**
 	 * @param string $template Template key.
 	 * @param int    $expires  Unix timestamp.
+	 * @param string $binding  'ltr' | 'rtl'.
 	 * @return string HMAC-SHA256, hex.
 	 */
-	public static function sign( $template, $expires ) {
-		return hash_hmac( 'sha256', $template . '|' . (int) $expires, wp_salt( 'auth' ) );
+	public static function sign( $template, $expires, $binding = 'ltr' ) {
+		return hash_hmac( 'sha256', $template . '|' . (int) $expires . '|' . $binding, wp_salt( 'auth' ) );
 	}
 
 	/**
 	 * @param string $template Template key.
 	 * @param int    $expires  Unix timestamp from the URL.
 	 * @param string $sig      Signature from the URL.
+	 * @param string $binding  'ltr' | 'rtl' from the URL.
 	 * @return bool
 	 */
-	public static function verify( $template, $expires, $sig ) {
+	public static function verify( $template, $expires, $sig, $binding = 'ltr' ) {
 		if ( (int) $expires < time() ) {
 			return false;
 		}
 
-		return hash_equals( self::sign( $template, $expires ), (string) $sig );
+		return hash_equals( self::sign( $template, $expires, $binding ), (string) $sig );
 	}
 }

@@ -60,6 +60,7 @@ const design = (spec: Spec, elements: DesignJSON['elements'], mode: DesignJSON['
   mode,
   canvas_mm: { ...spec.canvas_with_bleed_mm },
   elements,
+  binding: 'ltr',
 });
 
 describe('spec files are internally consistent (guards against a bad regeneration)', () => {

@@ -50,8 +50,8 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
 
   // ---- Template ---------------------------------------------------------------------
   useEffect(() => {
-    api.template(cfg.template, cfg.sticker).then(setTpl).catch(() => setLoadError(true));
-  }, [api, cfg.template, cfg.sticker]);
+    api.template(cfg.template, { sticker: cfg.sticker, binding: cfg.binding }).then(setTpl).catch(() => setLoadError(true));
+  }, [api, cfg.template, cfg.sticker, cfg.binding]);
 
   const spec = tpl?.spec ?? null;
   const canvasMm = spec?.canvas_with_bleed_mm;
@@ -74,7 +74,7 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
 
   // ---- Design + checks ---------------------------------------------------------------------
   const design: DesignJSON | null = useMemo(
-    () => (spec && el ? { template: spec.template, mode: 'upload', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [el], ...(spec.sticker ? { sticker: spec.sticker } : {}) } : null),
+    () => (spec && el ? { template: spec.template, mode: 'upload', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [el], ...(spec.sticker ? { sticker: spec.sticker } : { binding: spec.binding ?? 'ltr' }) } : null),
     [spec, el],
   );
   const result = useMemo(() => (design && spec ? validateDesign(design, spec) : null), [design, spec]);
@@ -279,7 +279,7 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
       <header className="binder-bar">
         <div>
           <h1>{t(`title_${cfg.template}`)}</h1>
-          <p>{spec.sticker ? t('subtitle_sticker', { shape: t(`shape_${spec.sticker.shape}`), w: spec.trim_mm.w, h: spec.trim_mm.h }) : t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}</p>
+          <p>{spec.sticker ? t('subtitle_sticker', { shape: t(`shape_${spec.sticker.shape}`), w: spec.trim_mm.w, h: spec.trim_mm.h }) : `${t(`binding_${spec.binding ?? 'ltr'}`)} · ${t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}`}</p>
         </div>
         <button type="button" className="binder-btn binder-btn--ghost" onClick={() => notify(cfg, { type: 'close' })}>
           {t('close')}
