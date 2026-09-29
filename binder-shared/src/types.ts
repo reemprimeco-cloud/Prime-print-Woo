@@ -81,11 +81,43 @@ export interface ImageElement {
   rotation_deg?: number;
   /** Pixel size of the ORIGINAL file. Required: the DPI check depends on it. */
   source_px: { w: number; h: number };
+  /** 0..1, default 1. */
+  opacity?: number;
 }
 
-/** Fonts the print route ships with (§0). */
-export const FONTS = ['Tajawal', 'Poppins'] as const;
-export type FontName = (typeof FONTS)[number];
+/**
+ * Fonts the print route ships with (§0; widened 2026-09-29). Every one is
+ * self-hosted in binder-editor/public/fonts and declared in fonts.css. Arabic
+ * text set in a Latin-only face falls back to Tajawal, never a system font.
+ */
+export const FONT_LIST = [
+  { name: 'Tajawal', script: 'ar' },
+  { name: 'Cairo', script: 'ar' },
+  { name: 'Almarai', script: 'ar' },
+  { name: 'Amiri', script: 'ar' },
+  { name: 'El Messiri', script: 'ar' },
+  { name: 'Reem Kufi', script: 'ar' },
+  { name: 'Changa', script: 'ar' },
+  { name: 'Lalezar', script: 'ar' },
+  { name: 'Aref Ruqaa', script: 'ar' },
+  { name: 'Poppins', script: 'latin' },
+  { name: 'Montserrat', script: 'latin' },
+  { name: 'Playfair Display', script: 'latin' },
+  { name: 'Oswald', script: 'latin' },
+  { name: 'Bebas Neue', script: 'latin' },
+  { name: 'Lobster', script: 'latin' },
+  { name: 'Pacifico', script: 'latin' },
+  { name: 'Dancing Script', script: 'latin' },
+  { name: 'Great Vibes', script: 'latin' },
+] as const;
+export const FONTS = FONT_LIST.map((f) => f.name);
+export type FontName = (typeof FONT_LIST)[number]['name'];
+
+/** CSS font stack for a design font: the font, then the house Arabic and Latin faces. */
+export function fontStack(font: string): string {
+  const q = (f: string) => `"${f}"`;
+  return [...new Set([font, 'Tajawal', 'Poppins'])].map(q).join(', ') + ', sans-serif';
+}
 
 export interface TextElement {
   type: 'text';
@@ -124,7 +156,29 @@ export interface RectElement {
   color_cmyk: [number, number, number, number];
 }
 
-export type DesignElement = ImageElement | TextElement | RectElement;
+/**
+ * A drawn shape (rectangle, circle, star …) in one CMYK colour, fitted to its
+ * box. The outline is the same one the sticker cut line uses (sticker.ts
+ * shapePath), so the editor and the print route cannot disagree about it.
+ */
+export type ShapeKind = 'rectangle' | 'square' | 'round' | 'hexagon' | 'triangle' | 'star' | 'heart';
+export const SHAPE_KINDS: readonly ShapeKind[] = ['rectangle', 'square', 'round', 'hexagon', 'triangle', 'star', 'heart'];
+
+export interface ShapeElement {
+  type: 'shape';
+  shape: ShapeKind;
+  x_mm: number;
+  y_mm: number;
+  w_mm: number;
+  h_mm: number;
+  rotation_deg?: number;
+  /** Percent, [C, M, Y, K], each 0..100. */
+  color_cmyk: [number, number, number, number];
+  /** 0..1, default 1. */
+  opacity?: number;
+}
+
+export type DesignElement = ImageElement | TextElement | RectElement | ShapeElement;
 
 export interface DesignJSON {
   template: TemplateKey;

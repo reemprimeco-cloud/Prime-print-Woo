@@ -1,4 +1,4 @@
-import type { Box, DesignElement, ImageElement, PanelSpec, RectElement, Spec } from './types.ts';
+import type { Box, DesignElement, ImageElement, PanelSpec, RectElement, ShapeElement, Spec } from './types.ts';
 
 export const MM_PER_INCH = 25.4;
 
@@ -109,7 +109,7 @@ export function boxInside(inner: Box, outer: Box, eps = EPS_MM): boolean {
  * Whether an image or rectangle element fully covers `target`, honouring
  * rotation: every corner of the target must fall inside the (rotated) box.
  */
-export function elementCovers(el: ImageElement | RectElement, target: Box, eps = EPS_MM): boolean {
+export function elementCovers(el: ImageElement | RectElement | ShapeElement, target: Box, eps = EPS_MM): boolean {
   const cx = el.x_mm + el.w_mm / 2;
   const cy = el.y_mm + el.h_mm / 2;
   const a = -rad(el.rotation_deg ?? 0);

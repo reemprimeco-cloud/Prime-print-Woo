@@ -70,6 +70,12 @@ describe('valid designs render to verified print PDFs', () => {
     expect(verifyPdf(cmyk, 'binder_outer')).toContain('SUMMARY  OK');
   }, 90_000);
 
+  it('shapes, opacity, spine colour and a new font: exact CMYK for every fill', async () => {
+    const { cmyk } = await ok('outer-shapes');
+    const out = verifyPdf(cmyk, 'binder_outer', ['--expect-cmyk', '0.9 0 0.4 0.1', '--expect-cmyk', '0 0.25 0.85 0.1', '--expect-cmyk', '0 1 0.6 0', '--expect-cmyk', '1 0.85 0.3 0.45']);
+    expect(out).toContain('SUMMARY  OK');
+  }, 90_000);
+
   it('inner liner template', async () => {
     const { cmyk } = await ok('inner-mixed');
     expect(verifyPdf(cmyk, 'binder_inner')).toContain('SUMMARY  OK');

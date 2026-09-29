@@ -24,3 +24,50 @@
 @font-face { font-family: "Poppins"; font-weight: 700; src: url("./Poppins-Bold.ttf") format("truetype"); }
 @font-face { font-family: "Poppins"; font-weight: 800; src: url("./Poppins-ExtraBold.ttf") format("truetype"); }
 @font-face { font-family: "Poppins"; font-weight: 900; src: url("./Poppins-Black.ttf") format("truetype"); }
+
+/*
+ * The wider font choice (2026-09-29). All SIL Open Font License 1.1, from the
+ * Google Fonts repository (github.com/google/fonts, ofl/).
+ *
+ * Only STATIC font files, and no weight left to be faked: Chromium writes a
+ * variable font, or a bold it synthesises, into the PDF as a Type 3 font,
+ * which print RIPs handle badly. So the variable fonts were cut into Regular,
+ * Medium and Bold instances (fontTools varLib.instancer), and a font that has
+ * a single weight claims the whole weight range, so asking it for bold gives
+ * its one real face instead of a smeared fake.
+ */
+@font-face { font-family: "Cairo"; font-weight: 400; src: url("./Cairo-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Cairo"; font-weight: 500; src: url("./Cairo-Medium.ttf") format("truetype"); }
+@font-face { font-family: "Cairo"; font-weight: 700; src: url("./Cairo-Bold.ttf") format("truetype"); }
+@font-face { font-family: "El Messiri"; font-weight: 400; src: url("./ElMessiri-Regular.ttf") format("truetype"); }
+@font-face { font-family: "El Messiri"; font-weight: 500; src: url("./ElMessiri-Medium.ttf") format("truetype"); }
+@font-face { font-family: "El Messiri"; font-weight: 700; src: url("./ElMessiri-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Reem Kufi"; font-weight: 400; src: url("./ReemKufi-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Reem Kufi"; font-weight: 500; src: url("./ReemKufi-Medium.ttf") format("truetype"); }
+@font-face { font-family: "Reem Kufi"; font-weight: 700; src: url("./ReemKufi-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Changa"; font-weight: 400; src: url("./Changa-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Changa"; font-weight: 500; src: url("./Changa-Medium.ttf") format("truetype"); }
+@font-face { font-family: "Changa"; font-weight: 700; src: url("./Changa-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Montserrat"; font-weight: 400; src: url("./Montserrat-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Montserrat"; font-weight: 500; src: url("./Montserrat-Medium.ttf") format("truetype"); }
+@font-face { font-family: "Montserrat"; font-weight: 700; src: url("./Montserrat-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Playfair Display"; font-weight: 400; src: url("./PlayfairDisplay-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Playfair Display"; font-weight: 500; src: url("./PlayfairDisplay-Medium.ttf") format("truetype"); }
+@font-face { font-family: "Playfair Display"; font-weight: 700; src: url("./PlayfairDisplay-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Oswald"; font-weight: 400; src: url("./Oswald-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Oswald"; font-weight: 500; src: url("./Oswald-Medium.ttf") format("truetype"); }
+@font-face { font-family: "Oswald"; font-weight: 700; src: url("./Oswald-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Dancing Script"; font-weight: 400; src: url("./DancingScript-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Dancing Script"; font-weight: 500; src: url("./DancingScript-Medium.ttf") format("truetype"); }
+@font-face { font-family: "Dancing Script"; font-weight: 700; src: url("./DancingScript-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Almarai"; font-weight: 100 599; src: url("./Almarai-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Almarai"; font-weight: 600 900; src: url("./Almarai-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Amiri"; font-weight: 100 599; src: url("./Amiri-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Amiri"; font-weight: 600 900; src: url("./Amiri-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Aref Ruqaa"; font-weight: 100 599; src: url("./ArefRuqaa-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Aref Ruqaa"; font-weight: 600 900; src: url("./ArefRuqaa-Bold.ttf") format("truetype"); }
+@font-face { font-family: "Lalezar"; font-weight: 100 900; src: url("./Lalezar-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Bebas Neue"; font-weight: 100 900; src: url("./BebasNeue-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Lobster"; font-weight: 100 900; src: url("./Lobster-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Pacifico"; font-weight: 100 900; src: url("./Pacifico-Regular.ttf") format("truetype"); }
+@font-face { font-family: "Great Vibes"; font-weight: 100 900; src: url("./GreatVibes-Regular.ttf") format("truetype"); }

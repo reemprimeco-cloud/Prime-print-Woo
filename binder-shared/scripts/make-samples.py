@@ -213,6 +213,21 @@ def main():
         text('Name: ______________', {'x': ifront['x'], 'y': ifront['y'] + ifront['h'] * 0.6, 'w': ifront['w']}, 18, 'Poppins', '500', False, cmyk=(0, 0, 0, 0)),
     ]))
 
+    # 5b. the wider designer: spine colour through the turn-in, a star and a heart in
+    #     exact CMYK, a half-transparent logo, text in Cairo and Playfair Display.
+    spine_trim = op['spine']['trim']
+    teal, gold = (90, 0, 40, 10), (0, 25, 85, 10)
+    write('outer-shapes.json', design(outer, 'live', [
+        {'type': 'rect', 'x_mm': 0, 'y_mm': 0, 'w_mm': outer['canvas_with_bleed_mm']['w'], 'h_mm': outer['canvas_with_bleed_mm']['h'], 'color_cmyk': [5, 10, 25, 0]},
+        {'type': 'rect', 'x_mm': spine_trim['x'], 'y_mm': 0, 'w_mm': spine_trim['w'], 'h_mm': outer['canvas_with_bleed_mm']['h'], 'color_cmyk': list(teal)},
+        {'type': 'shape', 'shape': 'star', 'x_mm': fc['x'] + 20, 'y_mm': fc['y'] + 20, 'w_mm': 60, 'h_mm': 60, 'color_cmyk': list(gold)},
+        {'type': 'shape', 'shape': 'heart', 'x_mm': fc['x'] + fc['w'] - 80, 'y_mm': fc['y'] + 20, 'w_mm': 60, 'h_mm': 55, 'color_cmyk': [0, 100, 60, 0], 'opacity': 0.6, 'rotation_deg': 15},
+        {'type': 'image', 'src': '/samples/assets/logo.png', 'x_mm': fc['x'] + (fc['w'] - logo_size) / 2, 'y_mm': fc['y'] + fc['h'] * 0.35,
+         'w_mm': logo_size, 'h_mm': logo_size, 'rotation_deg': 0, 'source_px': {'w': logo[0], 'h': logo[1]}, 'opacity': 0.5},
+        text('قسم اللغة الإنجليزية', {'x': fc['x'], 'y': fc['y'] + fc['h'] * 0.65, 'w': fc['w']}, 34, 'Cairo', '700', True, cmyk=(100, 85, 30, 45)),
+        text('English Department', {'x': fc['x'], 'y': fc['y'] + fc['h'] * 0.78, 'w': fc['w']}, 24, 'Playfair Display', '700', False, cmyk=(100, 85, 30, 45)),
+    ]))
+
     # 6. stickers: a round 50 x 50 mm upload (full-bleed image) and a 60 x 60 mm star designed online.
     st_round = sticker_spec(50, 50, 'round')
     bg_round = make_background(st_round, os.path.join(ASSETS, 'bg-sticker-round.jpg'))

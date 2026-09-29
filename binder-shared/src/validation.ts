@@ -25,6 +25,7 @@ import { isBinding } from './binding.ts';
 import { normalizeStickerParams, sameStickerParams } from './sticker.ts';
 import {
   FONTS,
+  SHAPE_KINDS,
   type DesignElement,
   type DesignJSON,
   type ImageElement,
@@ -149,6 +150,10 @@ export function validateShape(input: unknown, spec: Spec): Issue[] {
     if (isNum(raw.y_mm) && Math.abs(raw.y_mm) > limitY) issues.push(err('shape.range', `Element ${i}: y_mm is out of range.`, at));
     if (isNum(raw.w_mm) && (raw.w_mm <= 0 || raw.w_mm > limitX)) issues.push(err('shape.range', `Element ${i}: w_mm is out of range.`, at));
 
+    if (raw.opacity !== undefined && (!isNum(raw.opacity) || raw.opacity < 0 || raw.opacity > 1)) {
+      issues.push(err('shape.opacity', `Element ${i}: opacity must be between 0 and 1.`, at));
+    }
+
     if (raw.type === 'image') {
       if (!isNum(raw.h_mm) || raw.h_mm <= 0 || raw.h_mm > limitY) {
         issues.push(err('shape.range', `Element ${i}: h_mm must be a positive number.`, at));
@@ -203,8 +208,19 @@ export function validateShape(input: unknown, spec: Spec): Issue[] {
       if (!Array.isArray(col) || col.length !== 4 || !col.every((n) => isNum(n) && n >= 0 && n <= 100)) {
         issues.push(err('shape.color', `Element ${i}: color_cmyk must be four numbers from 0 to 100.`, at));
       }
+    } else if (raw.type === 'shape') {
+      if (!isNum(raw.h_mm) || raw.h_mm <= 0 || raw.h_mm > limitY) {
+        issues.push(err('shape.range', `Element ${i}: h_mm must be a positive number.`, at));
+      }
+      if (!(SHAPE_KINDS as readonly string[]).includes(raw.shape as string)) {
+        issues.push(err('shape.kind', `Element ${i}: shape must be one of ${SHAPE_KINDS.join(', ')}.`, at));
+      }
+      const col = raw.color_cmyk;
+      if (!Array.isArray(col) || col.length !== 4 || !col.every((n) => isNum(n) && n >= 0 && n <= 100)) {
+        issues.push(err('shape.color', `Element ${i}: color_cmyk must be four numbers from 0 to 100.`, at));
+      }
     } else {
-      issues.push(err('shape.type', `Element ${i}: type must be "image", "text" or "rect".`, at));
+      issues.push(err('shape.type', `Element ${i}: type must be "image", "text", "rect" or "shape".`, at));
     }
   });
 
@@ -227,8 +243,25 @@ export function validateShape(input: unknown, spec: Spec): Issue[] {
  */
 export function isBackground(el: DesignElement, index: number, design: DesignJSON, spec: Spec): boolean {
   if (el.type === 'text') return false;
+  // A solid colour area is a fill by nature — the spine colour, a panel colour —
+  // and may run into the bleed and the turn-in like any background.
+  if (el.type === 'rect') return true;
   if (el.type === 'image' && design.mode === 'upload' && index === 0) return true;
-  return elementCovers(el, visibleBox(spec));
+  if (elementCovers(el, visibleBox(spec))) return true;
+  // A picture (or a plain rectangle shape) that covers one whole panel — front,
+  // spine or back — is that panel's background, even though it does not cover
+  // the others.
+  if (el.type === 'image' || (el.type === 'shape' && (el.shape === 'rectangle' || el.shape === 'square'))) {
+    const visible = visibleBox(spec);
+    return panelsInCanvas(spec).some((p) => {
+      const x0 = Math.max(p.trim.x, visible.x);
+      const y0 = Math.max(p.trim.y, visible.y);
+      const x1 = Math.min(p.trim.x + p.trim.w, visible.x + visible.w);
+      const y1 = Math.min(p.trim.y + p.trim.h, visible.y + visible.h);
+      return x1 > x0 && y1 > y0 && elementCovers(el, { x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+    });
+  }
+  return false;
 }
 
 /** Run the §4.5 rules on a structurally valid design. */
@@ -291,7 +324,7 @@ export function validateRules(design: DesignJSON, spec: Spec): Issue[] {
 
   // 3. Empty bleed (warning) --------------------------------------------------------
   const bottom = design.elements[0];
-  if (bottom && (bottom.type === 'image' || bottom.type === 'rect')) {
+  if (bottom && (bottom.type === 'image' || bottom.type === 'rect' || bottom.type === 'shape')) {
     const share = (bottom.w_mm * bottom.h_mm) / (canvas.w * canvas.h);
     const intendedBackground = (design.mode === 'upload' && bottom.type === 'image') || share >= THRESHOLDS.backgroundShare;
     if (intendedBackground && !elementCovers(bottom, canvas)) {

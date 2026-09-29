@@ -264,10 +264,33 @@ describe('rectangles: solid CMYK fills (background colour)', () => {
     expect(r.warnings.map((w) => w.code)).toContain('bleed.empty');
   });
 
-  it('a small rectangle in the turn-in zone is content, and is blocked', () => {
+  it('a colour fill (rect) may run through the turn-in: the spine colour wraps behind the board', () => {
+    const spine = panelsInCanvas(outer).find((p) => p.name === 'spine')!;
+    const fill = rect(outer, { x_mm: spine.trim.x, y_mm: 0, w_mm: spine.trim.w, h_mm: outer.canvas_with_bleed_mm.h });
+    const r = validateDesign(design(outer, [rect(outer), fill]), outer);
+    expect(r.errors).toEqual([]);
+  });
+
+  it('a small drawn shape in the turn-in zone is content, and is blocked', () => {
     const v = visibleBox(outer);
-    const r = validateDesign(design(outer, [rect(outer), rect(outer, { x_mm: v.x - 8, y_mm: v.y + 30, w_mm: 20, h_mm: 20 })]), outer);
+    const star = { type: 'shape' as const, shape: 'star' as const, x_mm: v.x - 8, y_mm: v.y + 30, w_mm: 20, h_mm: 20, color_cmyk: [0, 100, 100, 0] as [number, number, number, number] };
+    const r = validateDesign(design(outer, [rect(outer), star]), outer);
     expect(r.errors.map((e) => e.code)).toContain('turnin.violation');
+  });
+
+  it('a picture covering one whole panel to the edge is that panel\'s background, not a logo in the turn-in', () => {
+    const back = panelsInCanvas(outer).find((p) => p.name === 'back_cover')!;
+    const img = { type: 'image' as const, src: 'https://x/a.jpg', x_mm: 0, y_mm: 0, w_mm: back.trim.x + back.trim.w + 2, h_mm: outer.canvas_with_bleed_mm.h, source_px: { w: 4000, h: 4200 } };
+    const r = validateDesign(design(outer, [img]), outer);
+    expect(r.errors.map((e) => e.code)).not.toContain('turnin.violation');
+  });
+
+  it('shapes: kind, colour and opacity are checked', () => {
+    const base = { type: 'shape' as const, shape: 'heart' as const, x_mm: 400, y_mm: 60, w_mm: 30, h_mm: 30, color_cmyk: [0, 50, 0, 0] as [number, number, number, number] };
+    expect(validateDesign(design(outer, [base]), outer).ok).toBe(true);
+    expect(validateDesign(design(outer, [{ ...base, shape: 'blob' } as never]), outer).errors.map((e) => e.code)).toContain('shape.kind');
+    expect(validateDesign(design(outer, [{ ...base, opacity: 1.5 }]), outer).errors.map((e) => e.code)).toContain('shape.opacity');
+    expect(validateDesign(design(outer, [{ ...base, opacity: 0.4 }]), outer).ok).toBe(true);
   });
 
   it('shape: bad colour, missing height', () => {

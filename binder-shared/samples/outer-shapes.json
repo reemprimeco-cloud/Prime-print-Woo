@@ -1,0 +1,117 @@
+{
+  "template": "binder_outer",
+  "mode": "live",
+  "canvas_mm": {
+    "w": 696.0,
+    "h": 356.0
+  },
+  "elements": [
+    {
+      "type": "rect",
+      "x_mm": 0,
+      "y_mm": 0,
+      "w_mm": 696.0,
+      "h_mm": 356.0,
+      "color_cmyk": [
+        5,
+        10,
+        25,
+        0
+      ]
+    },
+    {
+      "type": "rect",
+      "x_mm": 308.0,
+      "y_mm": 0,
+      "w_mm": 80,
+      "h_mm": 356.0,
+      "color_cmyk": [
+        90,
+        0,
+        40,
+        10
+      ]
+    },
+    {
+      "type": "shape",
+      "shape": "star",
+      "x_mm": 413.0,
+      "y_mm": 43.0,
+      "w_mm": 60,
+      "h_mm": 60,
+      "color_cmyk": [
+        0,
+        25,
+        85,
+        10
+      ]
+    },
+    {
+      "type": "shape",
+      "shape": "heart",
+      "x_mm": 593.0,
+      "y_mm": 43.0,
+      "w_mm": 60,
+      "h_mm": 55,
+      "color_cmyk": [
+        0,
+        100,
+        60,
+        0
+      ],
+      "opacity": 0.6,
+      "rotation_deg": 15
+    },
+    {
+      "type": "image",
+      "src": "/samples/assets/logo.png",
+      "x_mm": 498.0,
+      "y_mm": 131.5,
+      "w_mm": 70.0,
+      "h_mm": 70.0,
+      "rotation_deg": 0,
+      "source_px": {
+        "w": 1200,
+        "h": 1200
+      },
+      "opacity": 0.5
+    },
+    {
+      "type": "text",
+      "text": "قسم اللغة الإنجليزية",
+      "font": "Cairo",
+      "size_pt": 34,
+      "weight": "700",
+      "color_cmyk": [
+        100,
+        85,
+        30,
+        45
+      ],
+      "x_mm": 393.0,
+      "y_mm": 224.5,
+      "w_mm": 280.0,
+      "align": "center",
+      "rtl": true
+    },
+    {
+      "type": "text",
+      "text": "English Department",
+      "font": "Playfair Display",
+      "size_pt": 24,
+      "weight": "700",
+      "color_cmyk": [
+        100,
+        85,
+        30,
+        45
+      ],
+      "x_mm": 393.0,
+      "y_mm": 264.8,
+      "w_mm": 280.0,
+      "align": "center",
+      "rtl": false
+    }
+  ],
+  "binding": "ltr"
+}

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
-import { cmykToRgbCss, planColors, type DesignElement, type DesignJSON, type Spec, type TextElement } from '@binder/shared';
+import { cmykToRgbCss, fontStack, planColors, shapePath, svgPathData, type DesignElement, type DesignJSON, type Spec, type TextElement } from '@binder/shared';
 
 export interface MeasuredText {
   index: number;
@@ -21,15 +21,11 @@ const MM_PER_CSS_PX = 25.4 / 96;
 const LAYOUT_SCALE = 16;
 const L = (mm: number): string => `${mm * LAYOUT_SCALE}mm`;
 
-const FONT_STACK: Record<string, string> = {
-  Tajawal: '"Tajawal", "Poppins", sans-serif',
-  Poppins: '"Poppins", "Tajawal", sans-serif',
-};
-
 function transformFor(el: DesignElement): CSSProperties {
+  const opacity = 'opacity' in el && typeof el.opacity === 'number' && el.opacity < 1 ? { opacity: el.opacity } : {};
   return el.rotation_deg
-    ? { transform: `rotate(${el.rotation_deg}deg)`, transformOrigin: 'center center' }
-    : {};
+    ? { transform: `rotate(${el.rotation_deg}deg)`, transformOrigin: 'center center', ...opacity }
+    : opacity;
 }
 
 function textStyle(el: TextElement, sentinel: [number, number, number], proof: boolean): CSSProperties {
@@ -38,7 +34,7 @@ function textStyle(el: TextElement, sentinel: [number, number, number], proof: b
     top: L(el.y_mm),
     width: L(el.w_mm),
     ...(el.h_mm ? { height: L(el.h_mm) } : {}),
-    fontFamily: FONT_STACK[el.font],
+    fontFamily: fontStack(el.font),
     fontWeight: el.weight,
     fontSize: `${el.size_pt * LAYOUT_SCALE}pt`,
     lineHeight: el.line_height ?? 1.2,
@@ -81,7 +77,7 @@ export function PrintCanvas({ spec, design, onReady, onError, proof = false }: P
       // set in Poppins is measured with the Tajawal fallback that will print).
       await Promise.all(
         texts.flatMap((t) =>
-          ['Tajawal', 'Poppins'].map((family) => document.fonts.load(`${t.weight} ${t.size_pt}pt "${family}"`, t.text)),
+          [...new Set([t.font, 'Tajawal', 'Poppins'])].map((family) => document.fonts.load(`${t.weight} ${t.size_pt}pt "${family}"`, t.text)),
         ),
       );
       await document.fonts.ready;
@@ -147,6 +143,21 @@ export function PrintCanvas({ spec, design, onReady, onError, proof = false }: P
                 ...transformFor(e),
               }}
             />
+          ) : e.type === 'shape' ? (
+            // The outline in the element's own box, drawn at LAYOUT_SCALE in mm units; the fill
+            // is the colour sentinel (exact CMYK in the PDF) or the proof colour.
+            <svg
+              key={i}
+              className="el"
+              viewBox={`0 0 ${e.w_mm} ${e.h_mm}`}
+              preserveAspectRatio="none"
+              style={{ left: L(e.x_mm), top: L(e.y_mm), width: L(e.w_mm), height: L(e.h_mm), overflow: 'visible', ...transformFor(e) }}
+            >
+              <path
+                d={svgPathData(shapePath(e.shape, { x: 0, y: 0, w: e.w_mm, h: e.h_mm }))}
+                fill={proof ? cmykToRgbCss(e.color_cmyk) : `rgb(${plan.entries[plan.byElement.get(i) ?? 0]!.sentinel.join(', ')})`}
+              />
+            </svg>
           ) : e.type === 'image' ? (
             <img
               key={i}

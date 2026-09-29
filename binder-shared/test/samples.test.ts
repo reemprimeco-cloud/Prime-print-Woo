@@ -10,6 +10,12 @@ const spec = (n: 'outer' | 'inner'): Spec => read(`templates/binder-${n}-spec.js
 const sample = (n: string): DesignJSON => read(`samples/${n}.json`);
 
 describe('generated sample designs against the validator', () => {
+  it('outer-shapes: spine fill through the turn-in, shapes, opacity, new fonts: clean', () => {
+    const r = validateDesign(sample('outer-shapes'), spec('outer'));
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toEqual([]);
+  });
+
   it('sticker-round and sticker-star: clean, spec rebuilt from the design itself', () => {
     for (const n of ['sticker-round', 'sticker-star']) {
       const d = sample(n);
