@@ -195,7 +195,7 @@ export function polotnoToDesignWithIds(
     }
   }
 
-  return { design: { template: spec.template, mode: 'live', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements }, ids };
+  return { design: { template: spec.template, mode: 'live', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements, ...(spec.sticker ? { sticker: spec.sticker } : {}) }, ids };
 }
 
 // ---- Design -> Polotno --------------------------------------------------------------------------------------------

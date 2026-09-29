@@ -18,7 +18,7 @@ import pypdf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-GS = os.path.expanduser('~/.local/prime-tools/gs/bin/gs')
+GS = next(p for p in [os.path.expanduser('~/.local/prime-tools/gs/bin/gs'), '/usr/bin/gs', '/usr/local/bin/gs'] if os.path.exists(p))
 SPECS = {'binder_outer': 'binder-outer-spec.json', 'binder_inner': 'binder-inner-spec.json'}
 
 pdf_path, template = sys.argv[1], sys.argv[2]
@@ -27,7 +27,9 @@ expect_cmyk = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == '--expect
 png = sys.argv[sys.argv.index('--png') + 1] if '--png' in sys.argv else None
 rgb_expected = '--rgb' in sys.argv   # proof PDF: RGB is expected, CMYK checks are skipped
 
-spec = json.load(open(os.path.join(ROOT, '..', 'binder-shared', 'templates', SPECS[template])))
+# The sticker template has no spec file: pass the spec the design was rendered with (--spec file.json).
+spec_path = sys.argv[sys.argv.index('--spec') + 1] if '--spec' in sys.argv else os.path.join(ROOT, '..', 'binder-shared', 'templates', SPECS[template])
+spec = json.load(open(spec_path))
 mm = lambda pt: pt * 25.4 / 72
 fails = 0
 
@@ -57,6 +59,12 @@ check(close(box_mm('/TrimBox'), [b, b, W - b, H - b]), f'TrimBox inset {b} mm on
 
 doc = fitz.open(pdf_path)
 page = doc[0]
+
+if spec.get('sticker'):
+    # The cut line must be there as the CutContour spot colour, overprinting.
+    raw = open(pdf_path, 'rb').read()
+    check(b'/CutContour' in raw and b'/Separation' in raw, 'cut line drawn in the CutContour spot colour')
+    check(b'/OP true' in raw, 'cut line overprints (does not knock out the artwork)')
 
 fonts = list({f[0]: f for f in page.get_fonts(full=True)}.values())   # de-duplicate by object number
 for f in fonts:

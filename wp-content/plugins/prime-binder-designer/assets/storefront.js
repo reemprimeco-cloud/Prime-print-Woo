@@ -57,7 +57,61 @@
 	var form = panel.closest( 'form' );
 	var submit = form ? form.querySelector( '.single_add_to_cart_button' ) : null;
 	var hint = panel.querySelector( '[data-binder-hint]' );
+	var hintDefault = hint ? hint.textContent : '';
 	var token = sessionToken();
+
+	/* -------------------------------------------------------------- sticker */
+
+	// A sticker's template is its size and shape, which live in the product's
+	// calculator fields (cfg.sticker.fields names them, values in cm). They are
+	// read when the editor opens, and a design is dropped if they change after.
+	var sticker = cfg.sticker || null;
+
+	function stickerFields() {
+		if ( ! sticker ) {
+			return null;
+		}
+
+		var scope = form || document;
+
+		for ( var i = 0; i < sticker.fields.length; i++ ) {
+			var f = sticker.fields[ i ];
+			var w = scope.querySelector( '[name="' + f.w + '"]' );
+
+			if ( w ) {
+				return {
+					w: w,
+					h: scope.querySelector( '[name="' + f.h + '"]' ),
+					shape: f.shape ? scope.querySelector( '[name="' + f.shape + '"]' ) : null,
+					unit: f.unit
+				};
+			}
+		}
+
+		return null;
+	}
+
+	function stickerParams() {
+		var f = stickerFields();
+
+		if ( ! f ) {
+			return null;
+		}
+
+		var k = 'cm' === f.unit ? 10 : 1;
+		var w = Math.round( parseFloat( f.w.value ) * k * 10 ) / 10;
+		var h = f.h ? Math.round( parseFloat( f.h.value ) * k * 10 ) / 10 : 0;
+
+		if ( ! ( w >= sticker.min_mm && h >= sticker.min_mm && w <= sticker.max_mm && h <= sticker.max_mm ) ) {
+			return null;
+		}
+
+		return { w: w, h: h, shape: f.shape && f.shape.value ? f.shape.value : 'rectangle' };
+	}
+
+	function stickerKey( p ) {
+		return p ? p.w + 'x' + p.h + ':' + p.shape : '';
+	}
 
 	panel.querySelector( '[data-binder-session]' ).value = token;
 
@@ -73,7 +127,9 @@
 			state: el.querySelector( '[data-binder-state]' ),
 			proof: el.querySelector( '[data-binder-proof]' ),
 			upload: el.querySelector( '[data-binder-open="upload"]' ),
-			draft: 0 // Unapproved draft id, so reopening the editor continues the customer's work.
+			draft: 0, // Unapproved draft id, so reopening the editor continues the customer's work.
+			params: null, // Sticker: the size and shape the open/approved design is for.
+			sizeKey: ''
 		};
 
 		rows[ row.template ] = row;
@@ -142,6 +198,10 @@
 			q.push( [ 'design', row.draft ] );
 		}
 
+		if ( 'sticker' === row.template && row.params ) {
+			q.push( [ 'w', row.params.w ], [ 'h', row.params.h ], [ 'shape', row.params.shape ] );
+		}
+
 		return cfg.editor + '?' + q.map( function ( kv ) {
 			return encodeURIComponent( kv[ 0 ] ) + '=' + encodeURIComponent( kv[ 1 ] );
 		} ).join( '&' );
@@ -150,6 +210,32 @@
 	function openEditor( row, mode, opener ) {
 		if ( current ) {
 			return;
+		}
+
+		if ( 'sticker' === row.template ) {
+			var params = stickerParams();
+
+			if ( ! params ) {
+				if ( hint ) {
+					hint.textContent = sticker.size_first;
+					hint.hidden = false;
+				}
+				var f = stickerFields();
+				if ( f && f.w.focus ) {
+					f.w.focus();
+				}
+				return;
+			}
+
+			// A draft made for another size cannot continue; start fresh.
+			if ( row.sizeKey && row.sizeKey !== stickerKey( params ) ) {
+				row.draft = 0;
+			}
+			row.params = params;
+			row.sizeKey = stickerKey( params );
+			if ( hint ) {
+				hint.textContent = hintDefault;
+			}
 		}
 
 		var overlay = document.createElement( 'div' );
@@ -217,6 +303,46 @@
 
 		openEditor( rows[ rowEl.getAttribute( 'data-binder-row' ) ], btn.getAttribute( 'data-binder-open' ), btn );
 	} );
+
+	// The size or shape changed after a design was made for it: that design no longer fits.
+	if ( sticker ) {
+		var onSizeChange = function ( event ) {
+			var name = event.target && event.target.name;
+
+			if ( ! name ) {
+				return;
+			}
+
+			var named = sticker.fields.some( function ( f ) {
+				return name === f.w || name === f.h || name === f.shape;
+			} );
+
+			if ( ! named ) {
+				return;
+			}
+
+			var key = stickerKey( stickerParams() );
+
+			Object.keys( rows ).forEach( function ( t ) {
+				var row = rows[ t ];
+
+				if ( 'sticker' === row.template && row.sizeKey && row.sizeKey !== key && ( row.input.value || row.draft ) ) {
+					row.input.value = '';
+					row.draft = 0;
+					row.proof.removeAttribute( 'href' );
+
+					if ( hint ) {
+						hint.textContent = sticker.size_changed;
+					}
+				}
+			} );
+
+			render();
+		};
+
+		( form || document ).addEventListener( 'input', onSizeChange );
+		( form || document ).addEventListener( 'change', onSizeChange );
+	}
 
 	document.addEventListener( 'keydown', function ( event ) {
 		if ( 'Escape' === event.key && current ) {

@@ -11,8 +11,23 @@
  * bleed_mm before use (see geometry.ts).
  */
 
-export type TemplateKey = 'binder_outer' | 'binder_inner';
+export type TemplateKey = 'binder_outer' | 'binder_inner' | 'sticker';
 export type DesignMode = 'upload' | 'live';
+
+/** Sticker outlines the shop cuts. "custom" is cut to the artwork by hand. */
+export type StickerShape = 'rectangle' | 'square' | 'round' | 'hexagon' | 'triangle' | 'star' | 'heart' | 'custom';
+
+/**
+ * What makes one sticker template different from another: the size the
+ * customer chose on the product page and the shape it is cut to. The spec is
+ * derived from these (sticker.ts); a design carries them so the render
+ * service can rebuild the same spec without trusting anything else.
+ */
+export interface StickerParams {
+  w_mm: number;
+  h_mm: number;
+  shape: StickerShape;
+}
 
 export interface Box {
   x: number;
@@ -41,6 +56,8 @@ export interface Spec {
   panels_relative_to_trim: PanelSpec[];
   fold_lines_x_mm_from_trim_left: number[];
   fold_lines_y_mm_from_trim_top: number[];
+  /** Present on the sticker template only. */
+  sticker?: StickerParams;
 }
 
 export interface ImageElement {
@@ -104,6 +121,8 @@ export interface DesignJSON {
   mode: DesignMode;
   canvas_mm: { w: number; h: number };
   elements: DesignElement[];
+  /** Required when template is "sticker": the size and shape the design was made for. */
+  sticker?: StickerParams;
 }
 
 export type Severity = 'error' | 'warning';

@@ -22,6 +22,7 @@ let browser: Promise<Browser> | null = null;
 export function getBrowser(cfg: Config): Promise<Browser> {
   browser ??= chromium.launch({
     headless: true,
+    ...(cfg.chromiumPath ? { executablePath: cfg.chromiumPath } : {}),
     args: [
       '--font-render-hinting=none',
       '--disable-dev-shm-usage',

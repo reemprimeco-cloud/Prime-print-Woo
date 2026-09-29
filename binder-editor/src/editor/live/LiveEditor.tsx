@@ -4,7 +4,7 @@ import { PolotnoContainer, WorkspaceWrap } from 'polotno';
 import { Workspace } from 'polotno/canvas/workspace';
 import 'polotno/ui.css';
 import { effectiveDpi, panelsInCanvas, THRESHOLDS, validateDesign, type Cmyk, type DesignJSON, type Spec } from '@binder/shared';
-import { ApiError, createApi, type TemplateInfo } from '../api';
+import { ApiError, createApi, overlayUrlFor, type TemplateInfo } from '../api';
 import type { EditorConfig } from '../config';
 import { makeT, type T } from '../i18n';
 import { Legend } from '../Legend';
@@ -55,8 +55,8 @@ export default function LiveEditor({ cfg }: { cfg: EditorConfig }) {
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    api.template(cfg.template).then(setTpl).catch(() => setLoadError(true));
-  }, [api, cfg.template]);
+    api.template(cfg.template, cfg.sticker).then(setTpl).catch(() => setLoadError(true));
+  }, [api, cfg.template, cfg.sticker]);
 
   if (loadError) return <div className="binder-app binder-center" role="alert">{t('load_failed')}</div>;
   if (!tpl) return <div className="binder-app binder-center">{t('loading')}</div>;
@@ -69,7 +69,7 @@ type Api = ReturnType<typeof createApi>;
 function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: TemplateInfo }) {
   const spec = tpl.spec;
   const [store, setStore] = useState<PolotnoStore | null>(null);
-  const [snap, setSnap] = useState<{ design: DesignJSON; ids: string[] }>({ design: { template: spec.template, mode: 'live', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [] }, ids: [] });
+  const [snap, setSnap] = useState<{ design: DesignJSON; ids: string[] }>({ design: { template: spec.template, mode: 'live', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [], ...(spec.sticker ? { sticker: spec.sticker } : {}) }, ids: [] });
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
@@ -80,7 +80,7 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
     (async () => {
       await preloadFonts();
       if (cancelled) return;
-      const s = createLiveStore(spec, tpl.overlay_url);
+      const s = createLiveStore(spec, overlayUrlFor(tpl));
       if (cfg.designId) {
         try {
           const rec = await api.getDesign(cfg.designId);
@@ -98,7 +98,7 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spec, tpl.overlay_url]);
+  }, [spec, tpl.overlay_url]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Design snapshot, kept in step with the canvas -----------------------------------------------
   useEffect(() => {
@@ -135,7 +135,7 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
   // ---- Adding things --------------------------------------------------------------------------------
   const frontPanel = useMemo(() => {
     const panels = panelsInCanvas(spec);
-    return panels.find((p) => p.name === 'front_cover' || p.name === 'inside_front') ?? panels[0]!;
+    return panels.find((p) => p.name === 'front_cover' || p.name === 'inside_front') ?? panels[0]!; // a sticker has one panel
   }, [spec]);
 
   const addText = () => {
@@ -224,7 +224,7 @@ function Inner({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: T
       <header className="binder-bar">
         <div>
           <h1>{t(`title_${cfg.template}`)}</h1>
-          <p>{t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}</p>
+          <p>{spec.sticker ? t('subtitle_sticker', { shape: t(`shape_${spec.sticker.shape}`), w: spec.trim_mm.w, h: spec.trim_mm.h }) : t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}</p>
         </div>
         <button type="button" className="binder-btn binder-btn--ghost" onClick={() => notify(cfg, { type: 'close' })}>
           {t('close')}

@@ -51,10 +51,15 @@ export async function listen(handler: Parameters<typeof createHttpServer>[1]): P
 }
 
 /** Run the independent Python verifier (scripts/verify-pdf.py) on bytes; throws with its output on failure. */
-export function verifyPdf(bytes: Buffer, template: string, flags: string[] = []): string {
+export function verifyPdf(bytes: Buffer, template: string, flags: string[] = [], spec?: unknown): string {
   const dir = mkdtempSync(join(tmpdir(), 'binder-verify-'));
   const file = join(dir, 'x.pdf');
   writeFileSync(file, bytes);
+  if (spec) {
+    // A sticker's spec is derived, not on disk: hand the verifier the one the design was rendered with.
+    writeFileSync(join(dir, 'spec.json'), JSON.stringify(spec));
+    flags = [...flags, '--spec', join(dir, 'spec.json')];
+  }
   try {
     return execFileSync('python3', [join(ROOT, 'scripts/verify-pdf.py'), file, template, ...flags], { encoding: 'utf8' });
   } catch (e) {

@@ -21,6 +21,7 @@ import {
   visibleBox,
   EPS_MM,
 } from './geometry.ts';
+import { normalizeStickerParams, sameStickerParams } from './sticker.ts';
 import {
   FONTS,
   type DesignElement,
@@ -88,6 +89,12 @@ export function validateShape(input: unknown, spec: Spec): Issue[] {
   }
   if (d.mode !== 'upload' && d.mode !== 'live') {
     issues.push(err('shape.mode', 'mode must be "upload" or "live".'));
+  }
+  if (spec.sticker) {
+    const p = normalizeStickerParams(d.sticker);
+    if (!p || !sameStickerParams(p, spec.sticker)) {
+      issues.push(err('shape.sticker', `Design must be for a ${spec.sticker.w_mm} x ${spec.sticker.h_mm} mm ${spec.sticker.shape} sticker.`));
+    }
   }
 
   const c = d.canvas_mm;

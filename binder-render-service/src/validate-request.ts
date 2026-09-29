@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  normalizeStickerParams,
+  stickerSpec,
   validateDesign,
   type DesignJSON,
   type Issue,
@@ -10,7 +12,7 @@ import {
 } from '@binder/shared';
 import type { Config } from './config.ts';
 
-const TEMPLATE_FILES: Record<TemplateKey, string> = {
+const TEMPLATE_FILES: Record<Exclude<TemplateKey, 'sticker'>, string> = {
   binder_outer: 'binder-outer-spec.json',
   binder_inner: 'binder-inner-spec.json',
 };
@@ -18,10 +20,20 @@ const TEMPLATE_FILES: Record<TemplateKey, string> = {
 const specCache = new Map<string, Spec>();
 
 export function isTemplate(v: unknown): v is TemplateKey {
-  return v === 'binder_outer' || v === 'binder_inner';
+  return v === 'binder_outer' || v === 'binder_inner' || v === 'sticker';
 }
 
-export function loadSpec(cfg: Config, template: TemplateKey): Spec {
+/**
+ * The spec for a template. The binder covers come from their spec.json files;
+ * a sticker's is derived from the size and shape the design itself declares
+ * (the plugin has already checked those against the order).
+ */
+export function loadSpec(cfg: Config, template: TemplateKey, design?: unknown): Spec | null {
+  if (template === 'sticker') {
+    const d = typeof design === 'object' && design !== null ? (design as { sticker?: unknown }).sticker : undefined;
+    const params = normalizeStickerParams(d);
+    return params ? stickerSpec(params) : null;
+  }
   const key = `${cfg.templatesDir}|${template}`;
   let spec = specCache.get(key);
   if (!spec) {
@@ -67,7 +79,7 @@ export function validateRequest(
   const b = body as Record<string, unknown>;
 
   if (!Number.isInteger(b.design_id) || (b.design_id as number) < 1) return bad(400, 'invalid_design_id', [err('request.design_id', 'design_id must be a positive integer.')]);
-  if (!isTemplate(b.template)) return bad(400, 'invalid_template', [err('request.template', 'template must be binder_outer or binder_inner.')]);
+  if (!isTemplate(b.template)) return bad(400, 'invalid_template', [err('request.template', 'template must be binder_outer, binder_inner or sticker.')]);
   if (typeof b.session_token !== 'string' || !/^[A-Za-z0-9-]{16,64}$/.test(b.session_token)) {
     return bad(400, 'invalid_session_token', [err('request.session_token', 'session_token must be 16-64 letters, digits or dashes.')]);
   }
@@ -87,7 +99,8 @@ export function validateRequest(
   }
 
   const template = b.template;
-  const spec = loadSpec(cfg, template);
+  const spec = loadSpec(cfg, template, b.design_json);
+  if (!spec) return bad(422, 'validation_failed', [err('shape.sticker', 'A sticker design must carry a valid size (10-1000 mm) and shape.')]);
   const result = validateDesign(b.design_json, spec);
   if (!result.ok) return { ok: false, status: 422, error: 'validation_failed', errors: result.errors };
 

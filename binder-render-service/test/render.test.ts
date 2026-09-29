@@ -5,7 +5,7 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { closeBrowser } from '../src/pipeline/browser.ts';
-import { validateDesign } from '@binder/shared';
+import { stickerSpec, validateDesign } from '@binder/shared';
 import { loadSpec } from '../src/validate-request.ts';
 import { ROOT, SECRET, listen, post, request, sample, startService, testConfig, verifyPdf } from './helpers.ts';
 
@@ -74,6 +74,32 @@ describe('valid designs render to verified print PDFs', () => {
     const { cmyk } = await ok('inner-mixed');
     expect(verifyPdf(cmyk, 'binder_inner')).toContain('SUMMARY  OK');
   }, 90_000);
+
+  it('sticker (round, upload): page boxes from the derived spec, CutContour cut line on both files', async () => {
+    const d = sample('sticker-round');
+    const spec = stickerSpec(d.sticker!);
+    expect(spec.canvas_with_bleed_mm).toEqual({ w: 52, h: 52 });
+    const { cmyk, rgb } = await ok('sticker-round');
+    expect(verifyPdf(cmyk, 'sticker', [], spec)).toContain('SUMMARY  OK');
+    expect(verifyPdf(rgb, 'sticker', ['--rgb'], spec)).toContain('SUMMARY  OK');
+  }, 90_000);
+
+  it('sticker (star, designed online): exact CMYK background, logo, Arabic text, star cut line', async () => {
+    const d = sample('sticker-star');
+    const { cmyk } = await ok('sticker-star');
+    expect(verifyPdf(cmyk, 'sticker', ['--expect-cmyk', '0 1 1 0'], stickerSpec(d.sticker!))).toContain('SUMMARY  OK');
+  }, 90_000);
+});
+
+describe('sticker template: the design itself must say which sticker it is for', () => {
+  it('a sticker design without a size, or whose canvas disagrees with its size, is refused before rendering', async () => {
+    const d = sample('sticker-round');
+    const { sticker: _dropped, ...noParams } = d;
+    expect((await post(svc.url, request({ ...noParams, template: 'sticker' } as never))).status).toBe(422);
+    expect((await post(svc.url, request({ ...d, sticker: { ...d.sticker!, w_mm: 70 } }))).status).toBe(422);
+    expect((await post(svc.url, request({ ...d, sticker: { ...d.sticker!, shape: 'blob' } } as never))).status).toBe(422);
+    expect((await post(svc.url, request({ ...d, sticker: { ...d.sticker!, w_mm: 5, h_mm: 5 }, canvas_mm: { w: 7, h: 7 } }))).status).toBe(422);
+  });
 });
 
 describe('validation blocks bad designs BEFORE any rendering (§5.3)', () => {
@@ -109,7 +135,7 @@ describe('validation blocks bad designs BEFORE any rendering (§5.3)', () => {
     // …but is really four 60 pt lines, and sits near the bottom of the visible area.
     t.y_mm = 356 - 3 - 15 - 20;
     // Precondition: on what the client claims, the design is clean — so any refusal below comes from the measured re-check.
-    expect(validateDesign(d, loadSpec(cfg, 'binder_outer')).ok).toBe(true);
+    expect(validateDesign(d, loadSpec(cfg, 'binder_outer')!).ok).toBe(true);
     const client = await post(svc.url, request(d)); // the final measured check must refuse
     expect(client.status).toBe(422);
     expect(((await client.json()) as any).errors.map((e: any) => e.code)).toContain('turnin.violation');
@@ -216,7 +242,7 @@ describe('image inspection: the server checks the files, not the client\'s descr
       const d = sample('outer-image-only'); // claims 8161 x 4205 px (300 dpi)
       const el = d.elements[0]!;
       if (el.type === 'image') el.src = `${host.url}/small.jpg`; // ...but this file is 600 x 310
-      expect(validateDesign(d, loadSpec(cfg, 'binder_outer')).ok).toBe(true); // clean on the claim alone
+      expect(validateDesign(d, loadSpec(cfg, 'binder_outer')!).ok).toBe(true); // clean on the claim alone
       const res = await post(svc.url, request(d));
       expect(res.status).toBe(422);
       expect(((await res.json()) as any).errors.map((e: any) => e.code)).toContain('dpi.block');

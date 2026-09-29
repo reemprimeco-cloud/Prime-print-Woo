@@ -19,6 +19,7 @@ class Binder_Product_Meta {
 		'binder_outer' => array( 'binder_outer' ),
 		'binder_inner' => array( 'binder_inner' ),
 		'binder_set'   => array( 'binder_outer', 'binder_inner' ),
+		'sticker'      => array( 'sticker' ),
 	);
 
 	public static function init() {
@@ -62,9 +63,10 @@ class Binder_Product_Meta {
 					'binder_outer' => __( 'Outer cover only', 'prime-binder-designer' ),
 					'binder_inner' => __( 'Inner cover only', 'prime-binder-designer' ),
 					'binder_set'   => __( 'Set — outer and inner cover', 'prime-binder-designer' ),
+					'sticker'      => __( 'Sticker — size and shape from the product\'s calculator', 'prime-binder-designer' ),
 				),
 				'desc_tip'    => true,
-				'description' => __( 'Customers must add a finished design for each cover before Add to Cart is enabled. A set asks for both.', 'prime-binder-designer' ),
+				'description' => __( 'Customers must add a finished design for each cover before Add to Cart is enabled. A set asks for both. A sticker takes its size and shape from the calculator on the product page (bleed 1 mm, safe zone 2 mm).', 'prime-binder-designer' ),
 			)
 		);
 
@@ -117,7 +119,7 @@ class Binder_Product_Meta {
 	 * own templates are allowed.
 	 *
 	 * @param int    $product_id Product id.
-	 * @param string $template   'binder_outer' | 'binder_inner'.
+	 * @param string $template   'binder_outer' | 'binder_inner' | 'sticker'.
 	 * @return bool
 	 */
 	public static function allows( $product_id, $template ) {

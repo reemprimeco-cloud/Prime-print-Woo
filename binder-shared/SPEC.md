@@ -417,3 +417,43 @@ file — it's free to redistribute).
 **WordPress plugin:** no Composer dependencies required beyond WP/WooCommerce
 core APIs; keep it framework-free PHP to avoid conflicts with the existing
 theme.
+
+---
+
+## 9. Sticker template (added after the binder build)
+
+One template, `sticker`, for every sticker product (paper, PP, UV DTF, die-cut
+cards). It differs from the binder covers in one way: **there is no spec.json**.
+The customer chooses the size and shape in the product's calculator, and the
+spec is derived from those three values — `binder-shared/src/sticker.ts`
+(`stickerSpec`) for the editor and the render service, `class-sticker.php` for
+the plugin. Keep the two in step; the constants are:
+
+| | |
+|---|---|
+| bleed | 1 mm |
+| safe zone | 2 mm |
+| size range | 10 – 1000 mm per side (0.1 mm steps) |
+| shapes | rectangle, square, round, hexagon, triangle, star, heart, custom |
+| calculator aliases | circle → round, rect → rectangle |
+
+- The design JSON carries `sticker: { w_mm, h_mm, shape }`. `validateShape`
+  refuses a design whose params do not match the spec; the render service
+  rebuilds the spec from those params (`loadSpec(cfg, 'sticker', design)`), and
+  the plugin checks them against the calculator fields posted with add-to-cart
+  (`Binder_Sticker::design_matches_request`), so a design made for 5 × 5 cm can
+  never ship with a 7 × 7 cm order.
+- The guide overlay is an SVG drawn from the spec (`stickerOverlaySvg`): veil
+  over the bleed, magenta cut line, blue dashed bleed, grey dashed safe zone —
+  the colours of the approved sticker designer mock-up. `overlay_url` from
+  `GET /template/sticker?w=&h=&shape=` is empty; the editor draws it.
+- The print files get the cut line as a **CutContour spot colour** stroke
+  (Separation, alternate 100 % magenta, overprinting), stamped after the
+  Ghostscript CMYK conversion so it survives as a spot. `TrimBox` is the cut
+  line's bounding box; for round and other shapes the plotter follows the
+  contour. No nesting: one artwork file per sticker design.
+- Product side: assign **Sticker** in the product's Binder Template tab. The
+  storefront reads the size from the calculator fields (`paper_width`,
+  `pp_width`, `uvdtf_width`, `diecut_width`; filter `binder_sticker_fields`),
+  passes it to the editor, and drops the design if the customer changes the
+  size or shape afterwards.

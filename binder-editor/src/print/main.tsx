@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import type { DesignJSON, Spec } from '@binder/shared';
+import { normalizeStickerParams, stickerSpec, type DesignJSON, type Spec } from '@binder/shared';
 import { PrintCanvas, type MeasuredText } from './PrintCanvas';
 
 /**
@@ -30,9 +30,6 @@ function fail(message: string): void {
 
 async function boot(): Promise<void> {
   const template = location.pathname.split('/').filter(Boolean).pop() ?? '';
-  const res = await fetch(`/spec/${encodeURIComponent(template)}.json`);
-  if (!res.ok) throw new Error(`Unknown template "${template}"`);
-  const spec = (await res.json()) as Spec;
 
   let design = window.__BINDER_DESIGN__;
   if (!design) {
@@ -41,6 +38,18 @@ async function boot(): Promise<void> {
     const s = await fetch(`/samples/${encodeURIComponent(sample)}.json`);
     if (!s.ok) throw new Error(`Unknown sample "${sample}"`);
     design = (await s.json()) as DesignJSON;
+  }
+
+  let spec: Spec;
+  if (template === 'sticker') {
+    // No spec file: the sticker's geometry is derived from the size and shape the design carries.
+    const params = normalizeStickerParams(design.sticker);
+    if (!params) throw new Error('Sticker design carries no valid size and shape');
+    spec = stickerSpec(params);
+  } else {
+    const res = await fetch(`/spec/${encodeURIComponent(template)}.json`);
+    if (!res.ok) throw new Error(`Unknown template "${template}"`);
+    spec = (await res.json()) as Spec;
   }
   if (design.template !== spec.template) {
     throw new Error(`Design is for ${design.template} but the route is ${spec.template}`);

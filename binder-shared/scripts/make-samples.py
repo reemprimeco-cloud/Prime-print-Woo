@@ -22,12 +22,32 @@ OUT = os.path.join(ROOT, 'samples')
 ASSETS = os.path.join(OUT, 'assets')
 os.makedirs(ASSETS, exist_ok=True)
 
-FONT = os.path.expanduser('~/Library/Fonts/Poppins-Bold.ttf')
+FONT = next(p for p in [
+    os.path.expanduser('~/Library/Fonts/Poppins-Bold.ttf'),
+    os.path.join(os.path.dirname(ROOT), 'binder-editor', 'public', 'fonts', 'Poppins-Bold.ttf'),
+] if os.path.exists(p))
 
 
 def load(name):
     with open(os.path.join(TEMPLATES, f'binder-{name}-spec.json')) as f:
         return json.load(f)
+
+
+def sticker_spec(w_mm, h_mm, shape):
+    """The sticker template has no spec.json: mirror of src/sticker.ts stickerSpec()."""
+    b, s, dpi = 1.0, 2.0, 300
+    cw, ch = round(w_mm + 2 * b, 1), round(h_mm + 2 * b, 1)
+    return {
+        'template': 'sticker', 'unit': 'mm', 'dpi': dpi, 'color': 'CMYK (FOGRA39 / ISO Coated v2)',
+        'bleed_mm': b, 'safe_margin_mm': s, 'turn_in_mm': 0,
+        'trim_mm': {'w': w_mm, 'h': h_mm},
+        'canvas_with_bleed_mm': {'w': cw, 'h': ch},
+        'canvas_with_bleed_px': {'w': round(cw / 25.4 * dpi), 'h': round(ch / 25.4 * dpi)},
+        'panels_relative_to_trim': [{'name': 'sticker', 'trim_mm': {'x': 0, 'y': 0, 'w': w_mm, 'h': h_mm},
+                                     'safe_mm': {'x': s, 'y': s, 'w': round(max(0, w_mm - 2 * s), 1), 'h': round(max(0, h_mm - 2 * s), 1)}}],
+        'fold_lines_x_mm_from_trim_left': [], 'fold_lines_y_mm_from_trim_top': [],
+        'sticker': {'w_mm': w_mm, 'h_mm': h_mm, 'shape': shape},
+    }
 
 
 def px_per_mm(spec):
@@ -117,8 +137,11 @@ def text(t, box, size_pt, font='Tajawal', weight='700', rtl=True, cmyk=(0, 0, 0,
 
 
 def design(spec, mode, elements):
-    return {'template': spec['template'], 'mode': mode,
-            'canvas_mm': dict(spec['canvas_with_bleed_mm']), 'elements': elements}
+    d = {'template': spec['template'], 'mode': mode,
+         'canvas_mm': dict(spec['canvas_with_bleed_mm']), 'elements': elements}
+    if 'sticker' in spec:
+        d['sticker'] = dict(spec['sticker'])
+    return d
 
 
 def write(name, obj):
@@ -186,6 +209,20 @@ def main():
         full_image(inner, '/samples/assets/bg-inner.jpg', bg_inner),
         text('هذا السجل ملك للطالب', {'x': ifront['x'], 'y': ifront['y'] + ifront['h'] * 0.4, 'w': ifront['w']}, 30, 'Tajawal', '700', True, cmyk=(0, 0, 0, 0)),
         text('Name: ______________', {'x': ifront['x'], 'y': ifront['y'] + ifront['h'] * 0.6, 'w': ifront['w']}, 18, 'Poppins', '500', False, cmyk=(0, 0, 0, 0)),
+    ]))
+
+    # 6. stickers: a round 50 x 50 mm upload (full-bleed image) and a 60 x 60 mm star designed online.
+    st_round = sticker_spec(50, 50, 'round')
+    bg_round = make_background(st_round, os.path.join(ASSETS, 'bg-sticker-round.jpg'))
+    write('sticker-round.json', design(st_round, 'upload', [full_image(st_round, '/samples/assets/bg-sticker-round.jpg', bg_round)]))
+
+    st_star = sticker_spec(60, 60, 'star')
+    safe = panels(st_star)[0]['safe']
+    write('sticker-star.json', design(st_star, 'live', [
+        {'type': 'rect', 'x_mm': 0, 'y_mm': 0, 'w_mm': st_star['canvas_with_bleed_mm']['w'], 'h_mm': st_star['canvas_with_bleed_mm']['h'], 'color_cmyk': [0, 100, 100, 0]},
+        {'type': 'image', 'src': '/samples/assets/logo.png', 'x_mm': safe['x'] + safe['w'] * 0.3, 'y_mm': safe['y'] + safe['h'] * 0.3,
+         'w_mm': safe['w'] * 0.4, 'h_mm': safe['h'] * 0.4, 'rotation_deg': 0, 'source_px': {'w': logo[0], 'h': logo[1]}},
+        text('برايم', {'x': safe['x'] + safe['w'] * 0.25, 'y': safe['y'] + safe['h'] * 0.72, 'w': safe['w'] * 0.5}, 12, 'Tajawal', '700', True, cmyk=(0, 0, 0, 0), h=6),
     ]))
 
 

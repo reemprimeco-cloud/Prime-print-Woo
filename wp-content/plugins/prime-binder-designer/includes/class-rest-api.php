@@ -78,6 +78,10 @@ class Binder_Rest_API {
 						'type' => 'string',
 						'enum' => Binder_Templates::keys(),
 					),
+					// Sticker only: size in mm and shape, as chosen on the product page.
+					'w'        => array( 'type' => 'number' ),
+					'h'        => array( 'type' => 'number' ),
+					'shape'    => array( 'type' => 'string' ),
 				),
 			)
 		);
@@ -195,7 +199,16 @@ class Binder_Rest_API {
 	 */
 	public static function get_template( WP_REST_Request $request ) {
 		$template = $request['template'];
-		$spec     = Binder_Templates::spec( $template );
+		$params   = null;
+
+		if ( Binder_Templates::is_parametric( $template ) ) {
+			$params = Binder_Sticker::normalize( $request['w'], $request['h'], $request['shape'] );
+			if ( ! $params ) {
+				return new WP_Error( 'binder_bad_size', __( 'Enter a sticker size between 1 and 100 cm and choose a shape.', 'prime-binder-designer' ), array( 'status' => 400 ) );
+			}
+		}
+
+		$spec = Binder_Templates::spec( $template, $params );
 
 		if ( null === $spec ) {
 			return new WP_Error( 'binder_unknown_template', __( 'Unknown template.', 'prime-binder-designer' ), array( 'status' => 404 ) );
@@ -442,6 +455,10 @@ class Binder_Rest_API {
 		}
 		if ( ( $design['template'] ?? '' ) !== $template || ( $design['mode'] ?? '' ) !== $mode || ! isset( $design['elements'] ) || ! is_array( $design['elements'] ) || count( $design['elements'] ) > 60 ) {
 			return new WP_Error( 'binder_bad_design', __( 'The design does not match its template.', 'prime-binder-designer' ), array( 'status' => 400 ) );
+		}
+		// A sticker design must say which size and shape it is for, and its canvas must be that size.
+		if ( Binder_Templates::is_parametric( $template ) && ! Binder_Sticker::design_params( $design ) ) {
+			return new WP_Error( 'binder_bad_design', __( 'The design does not carry a valid sticker size and shape.', 'prime-binder-designer' ), array( 'status' => 400 ) );
 		}
 
 		$json = wp_json_encode( $design );

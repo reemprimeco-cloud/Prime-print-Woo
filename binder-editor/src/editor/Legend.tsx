@@ -1,8 +1,15 @@
-import type { Spec } from '@binder/shared';
+import { STICKER_GUIDES, type Spec } from '@binder/shared';
 import type { T } from './i18n';
 
-/** The colours and names printed on the template's own legend. Values shown come from spec.json. */
-const ITEMS: Array<{ key: string; color: string; mm?: 'bleed' | 'safe' | 'turnin' }> = [
+interface Item {
+  key: string;
+  color: string;
+  mm?: 'bleed' | 'safe' | 'turnin';
+  dashed?: boolean;
+}
+
+/** The colours and names printed on the binder templates' own legend. Values shown come from spec.json. */
+const BINDER_ITEMS: Item[] = [
   { key: 'legend_bleed', color: '#F2836B', mm: 'bleed' },
   { key: 'legend_trim', color: '#000000' },
   { key: 'legend_fold', color: '#00AEEF' },
@@ -11,14 +18,22 @@ const ITEMS: Array<{ key: string; color: string; mm?: 'bleed' | 'safe' | 'turnin
   { key: 'legend_turnin', color: '#BDBDBD', mm: 'turnin' },
 ];
 
+/** The sticker guide (sticker.ts draws it): cut line, bleed, safe zone. */
+const STICKER_ITEMS: Item[] = [
+  { key: 'legend_trim', color: STICKER_GUIDES.cut },
+  { key: 'legend_bleed', color: STICKER_GUIDES.bleed, mm: 'bleed', dashed: true },
+  { key: 'legend_safe', color: STICKER_GUIDES.safe, mm: 'safe', dashed: true },
+];
+
 /** Persistent guide legend (§4.2), shown beside the stage, never drawn on the canvas. */
 export function Legend({ spec, t }: { spec: Spec; t: T }) {
   const mm = { bleed: spec.bleed_mm, safe: spec.safe_margin_mm, turnin: spec.turn_in_mm };
+  const items = spec.sticker ? STICKER_ITEMS : BINDER_ITEMS.filter((l) => l.mm !== 'turnin' || spec.turn_in_mm > 0);
   return (
     <div className="binder-legend" aria-label={t('legend')}>
-      {ITEMS.filter((l) => l.mm !== 'turnin' || spec.turn_in_mm > 0).map((l) => (
+      {items.map((l) => (
         <span key={l.key}>
-          <i style={{ background: l.color }} />
+          <i style={l.dashed ? { background: `repeating-linear-gradient(90deg, ${l.color} 0 0.3rem, transparent 0.3rem 0.5rem)` } : { background: l.color }} />
           {t(l.key, l.mm ? { mm: mm[l.mm] } : {})}
         </span>
       ))}

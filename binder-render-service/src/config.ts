@@ -25,6 +25,8 @@ export interface Config {
   allowedImageHosts: string[];
   renderTimeoutMs: number;
   noSandbox: boolean;
+  /** A Chromium binary to use instead of the one Playwright downloaded (CHROMIUM_PATH). */
+  chromiumPath: string;
   /** Public base URL used in returned file links (defaults to the request's own origin). */
   publicBaseUrl: string;
   /** Simultaneous Chromium renders. Each can use several hundred MB with a 300 dpi image. */
@@ -60,6 +62,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     allowedImageHosts: (env.ALLOWED_IMAGE_HOSTS ?? '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean),
     renderTimeoutMs: Number(env.RENDER_TIMEOUT_MS ?? 120_000),
     noSandbox: env.CHROMIUM_NO_SANDBOX === '1',
+    chromiumPath: env.CHROMIUM_PATH ?? '',
     publicBaseUrl: (env.PUBLIC_BASE_URL ?? '').replace(/\/$/, ''),
     concurrency: Math.max(1, Number(env.RENDER_CONCURRENCY ?? 1)),
     maxQueue: Math.max(0, Number(env.RENDER_MAX_QUEUE ?? 20)),

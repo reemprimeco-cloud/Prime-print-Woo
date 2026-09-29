@@ -7,6 +7,7 @@ import { renderRgbPdf, type MeasuredText } from './browser.ts';
 import { applyTextColors } from './colors.ts';
 import { convertToCmyk } from './ghostscript.ts';
 import { stampBoxes } from './boxes.ts';
+import { stampCutLine } from './cutline.ts';
 import type { PreparedAssets } from './assets.ts';
 
 export interface RenderedPdfs {
@@ -63,8 +64,8 @@ export async function renderDesign(
 
     const cmykRaw = await readFile(outPath);
     const [cmyk, rgb] = await Promise.all([
-      stampBoxes(cmykRaw, spec, { title: `${title} (CMYK print file)` }),
-      stampBoxes(rgbText.pdf, spec, { title: `${title} (RGB proof)` }),
+      stampBoxes(cmykRaw, spec, { title: `${title} (CMYK print file)` }).then((p) => stampCutLine(p, spec)),
+      stampBoxes(rgbText.pdf, spec, { title: `${title} (RGB proof)` }).then((p) => stampCutLine(p, spec)),
     ]);
     lap('boxes');
 

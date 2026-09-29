@@ -1,4 +1,4 @@
-import type { DesignJSON, Issue, Spec, TemplateKey } from '@binder/shared';
+import { stickerOverlayDataUrl, type DesignJSON, type Issue, type Spec, type StickerParams, type TemplateKey } from '@binder/shared';
 import type { EditorConfig } from './config';
 
 export class ApiError extends Error {
@@ -15,7 +15,13 @@ export class ApiError extends Error {
 export interface TemplateInfo {
   template: TemplateKey;
   spec: Spec;
+  /** Signed URL of the guide PNG; empty for the sticker template, whose guide is drawn from the spec. */
   overlay_url: string;
+}
+
+/** The guide image an editor lays over the canvas. */
+export function overlayUrlFor(tpl: TemplateInfo): string {
+  return tpl.overlay_url || (tpl.spec.sticker ? stickerOverlayDataUrl(tpl.spec) : '');
 }
 
 export interface UploadResult {
@@ -63,7 +69,10 @@ export function createApi(cfg: EditorConfig) {
     }).then((r) => parse<T>(r));
 
   return {
-    template: (t: TemplateKey) => json<TemplateInfo>(`/template/${t}`, 'GET'),
+    template(t: TemplateKey, sticker?: StickerParams) {
+      const q = t === 'sticker' && sticker ? `?w=${sticker.w_mm}&h=${sticker.h_mm}&shape=${encodeURIComponent(sticker.shape)}` : '';
+      return json<TemplateInfo>(`/template/${t}${q}`, 'GET');
+    },
 
     /** XHR rather than fetch: an artwork file can be tens of MB and the customer needs a progress bar. */
     upload(file: File, onProgress: (fraction: number) => void): Promise<UploadResult> {

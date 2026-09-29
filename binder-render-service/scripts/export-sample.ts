@@ -13,14 +13,16 @@ import { createAppRouter } from '../src/app-router.ts';
 import { closeBrowser } from '../src/pipeline/browser.ts';
 import { renderDesign } from '../src/pipeline/index.ts';
 import type { DesignJSON, Spec } from '@binder/shared';
+import { loadSpec } from '../src/validate-request.ts';
 
 process.env.ENABLE_SAMPLES = '1';
 const cfg = loadConfig();
 const name = process.argv[2] ?? 'outer-arabic-text';
 
 const design = JSON.parse(readFileSync(join(cfg.samplesDir, `${name}.json`), 'utf8')) as DesignJSON;
-const specFile = design.template === 'binder_outer' ? 'binder-outer-spec.json' : 'binder-inner-spec.json';
-const spec = JSON.parse(readFileSync(join(cfg.templatesDir, specFile), 'utf8')) as Spec;
+// Binder covers come from their spec files; a sticker's spec is derived from the design itself.
+const spec = loadSpec(cfg, design.template, design);
+if (!spec) throw new Error(`No spec for ${name}`);
 
 const app = express();
 app.use(createAppRouter(cfg));

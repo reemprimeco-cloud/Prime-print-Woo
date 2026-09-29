@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, FabricImage } from 'fabric';
 import { effectiveDpi, THRESHOLDS, validateDesign, type DesignJSON, type ImageElement } from '@binder/shared';
-import { ApiError, createApi, type TemplateInfo } from './api';
+import { ApiError, createApi, overlayUrlFor, type TemplateInfo } from './api';
 import type { EditorConfig } from './config';
 import {
   elementToFabric,
@@ -50,8 +50,8 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
 
   // ---- Template ---------------------------------------------------------------------
   useEffect(() => {
-    api.template(cfg.template).then(setTpl).catch(() => setLoadError(true));
-  }, [api, cfg.template]);
+    api.template(cfg.template, cfg.sticker).then(setTpl).catch(() => setLoadError(true));
+  }, [api, cfg.template, cfg.sticker]);
 
   const spec = tpl?.spec ?? null;
   const canvasMm = spec?.canvas_with_bleed_mm;
@@ -74,7 +74,7 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
 
   // ---- Design + checks ---------------------------------------------------------------------
   const design: DesignJSON | null = useMemo(
-    () => (spec && el ? { template: spec.template, mode: 'upload', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [el] } : null),
+    () => (spec && el ? { template: spec.template, mode: 'upload', canvas_mm: { ...spec.canvas_with_bleed_mm }, elements: [el], ...(spec.sticker ? { sticker: spec.sticker } : {}) } : null),
     [spec, el],
   );
   const result = useMemo(() => (design && spec ? validateDesign(design, spec) : null), [design, spec]);
@@ -279,7 +279,7 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
       <header className="binder-bar">
         <div>
           <h1>{t(`title_${cfg.template}`)}</h1>
-          <p>{t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}</p>
+          <p>{spec.sticker ? t('subtitle_sticker', { shape: t(`shape_${spec.sticker.shape}`), w: spec.trim_mm.w, h: spec.trim_mm.h }) : t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}</p>
         </div>
         <button type="button" className="binder-btn binder-btn--ghost" onClick={() => notify(cfg, { type: 'close' })}>
           {t('close')}
@@ -303,7 +303,7 @@ export function UploadEditor({ cfg }: { cfg: EditorConfig }) {
           <div className="binder-stage" ref={stageRef} tabIndex={0} onKeyDown={nudge} aria-label={t(`title_${cfg.template}`)}>
             <div className="binder-frame" style={{ width: workW, height: workH }} dir="ltr">
               <canvas ref={canvasEl} />
-              <img className="binder-overlay" src={tpl.overlay_url} alt="" draggable={false} />
+              <img className="binder-overlay" src={overlayUrlFor(tpl)} alt="" draggable={false} />
               {!source && (
                 <button type="button" className="binder-drop" onClick={() => fileInput.current?.click()}>
                   <strong>{uploadPct === null ? t('upload_cta') : t('uploading', { pct: uploadPct })}</strong>

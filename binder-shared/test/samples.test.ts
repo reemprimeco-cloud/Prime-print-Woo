@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { validateDesign, type DesignJSON, type Spec } from '../src/index.ts';
+import { stickerSpec, validateDesign, type DesignJSON, type Spec } from '../src/index.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (p: string) => JSON.parse(readFileSync(join(here, '..', p), 'utf8'));
@@ -10,6 +10,15 @@ const spec = (n: 'outer' | 'inner'): Spec => read(`templates/binder-${n}-spec.js
 const sample = (n: string): DesignJSON => read(`samples/${n}.json`);
 
 describe('generated sample designs against the validator', () => {
+  it('sticker-round and sticker-star: clean, spec rebuilt from the design itself', () => {
+    for (const n of ['sticker-round', 'sticker-star']) {
+      const d = sample(n);
+      const r = validateDesign(d, stickerSpec(d.sticker!));
+      expect(r.errors).toEqual([]);
+      expect(r.warnings).toEqual([]);
+    }
+  });
+
   it('outer-image-only: clean', () => {
     const r = validateDesign(sample('outer-image-only'), spec('outer'));
     expect(r.errors).toEqual([]);

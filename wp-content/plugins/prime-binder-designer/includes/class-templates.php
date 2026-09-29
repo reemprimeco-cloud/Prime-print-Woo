@@ -1,8 +1,10 @@
 <?php
 /**
- * The two print templates and their spec.json files (§1).
+ * The print templates (§1): the two binder covers with their spec.json files,
+ * and the sticker, whose spec is derived from the size and shape the customer
+ * chose (class-sticker.php).
  *
- * spec.json is the source of truth for every dimension. This class only
+ * spec.json is the source of truth for every binder dimension. This class only
  * locates and reads those files; it never computes or stores a number of its
  * own.
  *
@@ -19,7 +21,18 @@ class Binder_Templates {
 	const TEMPLATES = array(
 		'binder_outer' => 'binder-outer',
 		'binder_inner' => 'binder-inner',
+		'sticker'      => '',
 	);
+
+	/**
+	 * Templates whose geometry depends on values from the product page.
+	 *
+	 * @param string $template Template key.
+	 * @return bool
+	 */
+	public static function is_parametric( $template ) {
+		return 'sticker' === $template;
+	}
 
 	/**
 	 * @return string[] Valid template keys.
@@ -51,7 +64,7 @@ class Binder_Templates {
 			'svg'     => '-template.svg',
 		);
 
-		if ( ! self::exists( $template ) || ! isset( $files[ $kind ] ) ) {
+		if ( ! self::exists( $template ) || self::is_parametric( $template ) || ! isset( $files[ $kind ] ) ) {
 			return '';
 		}
 
@@ -61,10 +74,15 @@ class Binder_Templates {
 	/**
 	 * The parsed spec.json.
 	 *
-	 * @param string $template Template key.
-	 * @return array|null Null when the template is unknown or the file is unreadable.
+	 * @param string     $template Template key.
+	 * @param array|null $params   Sticker only: normalised size and shape (Binder_Sticker::normalize()).
+	 * @return array|null Null when the template is unknown, the file is unreadable, or a sticker has no params.
 	 */
-	public static function spec( $template ) {
+	public static function spec( $template, $params = null ) {
+		if ( self::is_parametric( $template ) ) {
+			return is_array( $params ) ? Binder_Sticker::spec( $params ) : null;
+		}
+
 		$path = self::path( $template, 'spec' );
 
 		if ( '' === $path || ! is_readable( $path ) ) {
@@ -86,6 +104,10 @@ class Binder_Templates {
 	 * @return string
 	 */
 	public static function overlay_url( $template, $ttl = 3600 ) {
+		if ( self::is_parametric( $template ) ) {
+			return ''; // The editor draws the sticker guide from the spec.
+		}
+
 		$expires = time() + (int) $ttl;
 
 		return add_query_arg(

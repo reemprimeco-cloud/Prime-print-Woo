@@ -51,6 +51,10 @@ class Binder_Storefront {
 			'lead'        => array( 'Add your design before ordering. We prepare the print file for you automatically.', 'أضف تصميمك قبل الطلب. نجهّز ملف الطباعة تلقائياً.' ),
 			'binder_outer' => array( 'Outer cover', 'الغلاف الخارجي' ),
 			'binder_inner' => array( 'Inner cover', 'الغلاف الداخلي' ),
+			'sticker'     => array( 'Sticker', 'الملصق' ),
+			'size_first'  => array( 'Enter the sticker size and shape first, then add your design.', 'أدخل مقاس الملصق وشكله أولاً، ثم أضف تصميمك.' ),
+			'size_changed' => array( 'The size or shape changed. Please add your design again for the new size.', 'تغيّر المقاس أو الشكل. الرجاء إضافة تصميمك من جديد للمقاس الجديد.' ),
+			'size_mismatch' => array( 'Your design was made for a different sticker size. Please add it again.', 'تصميمك مُعدّ لمقاس ملصق مختلف. الرجاء إضافته من جديد.' ),
 			'none'        => array( 'No design yet', 'لم يُضف تصميم بعد' ),
 			'ready'       => array( 'Design ready', 'التصميم جاهز' ),
 			'upload'      => array( 'Upload your design', 'ارفع تصميمك' ),
@@ -141,6 +145,17 @@ class Binder_Storefront {
 			'close'   => self::copy( 'close' ),
 			'rows'    => array(),
 		);
+
+		if ( in_array( 'sticker', $templates, true ) ) {
+			// The editor needs the size and shape; the page's calculator fields carry them (in cm).
+			$config['sticker'] = array(
+				'fields'       => Binder_Sticker::size_fields( $product_id ),
+				'min_mm'       => Binder_Sticker::MIN_MM,
+				'max_mm'       => Binder_Sticker::MAX_MM,
+				'size_first'   => self::copy( 'size_first' ),
+				'size_changed' => self::copy( 'size_changed' ),
+			);
+		}
 
 		foreach ( $templates as $template ) {
 			$config['rows'][] = array(
@@ -270,6 +285,12 @@ class Binder_Storefront {
 				wc_add_notice( sprintf( self::copy( 'invalid' ), self::cover_name( $template ) ), 'error' );
 				return false;
 			}
+
+			// A sticker design is only good for the size and shape it was made for.
+			if ( 'sticker' === $template && ! Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) ) {
+				wc_add_notice( self::copy( 'size_mismatch' ), 'error' );
+				return false;
+			}
 		}
 
 		return true;
@@ -293,7 +314,7 @@ class Binder_Storefront {
 		foreach ( $required as $template ) {
 			$id = isset( $designs[ $template ] ) ? $designs[ $template ] : 0;
 
-			if ( self::design_is_orderable( $id, $product_id, $template, $token ) ) {
+			if ( self::design_is_orderable( $id, $product_id, $template, $token ) && ( 'sticker' !== $template || Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) ) ) {
 				$keep[ $template ] = $id;
 			}
 		}

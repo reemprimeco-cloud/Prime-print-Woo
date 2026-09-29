@@ -1,0 +1,60 @@
+{
+  "template": "sticker",
+  "mode": "live",
+  "canvas_mm": {
+    "w": 62.0,
+    "h": 62.0
+  },
+  "elements": [
+    {
+      "type": "rect",
+      "x_mm": 0,
+      "y_mm": 0,
+      "w_mm": 62.0,
+      "h_mm": 62.0,
+      "color_cmyk": [
+        0,
+        100,
+        100,
+        0
+      ]
+    },
+    {
+      "type": "image",
+      "src": "/samples/assets/logo.png",
+      "x_mm": 19.8,
+      "y_mm": 19.8,
+      "w_mm": 22.400000000000002,
+      "h_mm": 22.400000000000002,
+      "rotation_deg": 0,
+      "source_px": {
+        "w": 1200,
+        "h": 1200
+      }
+    },
+    {
+      "type": "text",
+      "text": "برايم",
+      "font": "Tajawal",
+      "size_pt": 12,
+      "weight": "700",
+      "color_cmyk": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "x_mm": 17.0,
+      "y_mm": 43.32,
+      "w_mm": 28.0,
+      "align": "center",
+      "rtl": true,
+      "h_mm": 6
+    }
+  ],
+  "sticker": {
+    "w_mm": 60,
+    "h_mm": 60,
+    "shape": "star"
+  }
+}
