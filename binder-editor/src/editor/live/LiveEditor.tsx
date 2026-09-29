@@ -117,6 +117,8 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   const isBinder = !spec.sticker;
 
   const stageRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLElement>(null);
+  const selRef = useRef<HTMLElement>(null);
   const canvasEl = useRef<HTMLCanvasElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const fabric = useRef<Canvas | null>(null);
@@ -239,7 +241,10 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     setStageWidth(Math.floor(node.getBoundingClientRect().width));
     return () => ro.disconnect();
   }, []);
-  const maxH = typeof window !== 'undefined' ? Math.max(260, window.innerHeight - 260) : 700;
+  // On a phone the sheet stays pinned at the top while the tools scroll under it,
+  // so it gets a bit under half the screen height.
+  const narrow = typeof window !== 'undefined' && window.innerWidth <= 820;
+  const maxH = typeof window !== 'undefined' ? (narrow ? Math.max(200, window.innerHeight * 0.4) : Math.max(260, window.innerHeight - 260)) : 700;
   // Stage padding plus the sheet's frame padding on both sides.
   const chrome = (stageWidth || 800) < 700 ? 40 : 72;
   const viewW = Math.max(220, Math.min((stageWidth || 800) - chrome, MAX_VIEW_PX, (maxH * W) / H));
@@ -258,10 +263,12 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   const deleteControl = useMemo(
     () =>
       new Control({
-        x: 0.5,
-        y: -0.5,
-        offsetX: 18,
-        offsetY: -18,
+        // Under the item's bottom-centre: a wide text box or a picture reaching the side
+        // of the sheet would push a corner button off the canvas.
+        x: 0,
+        y: 0.5,
+        offsetX: 0,
+        offsetY: 24,
         sizeX: 26,
         sizeY: 26,
         touchSizeX: 40,
@@ -279,7 +286,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
 
   const style = (o: BObject, kind: BinderMeta['kind']) => {
     o.set({ ...CONTROL_STYLE, originX: 'center', originY: 'center', lockScalingFlip: true });
-    // Every item gets the 🗑️ button on its top-right corner (hidden with the other controls when locked).
+    // Every item gets the 🗑️ button under it (hidden with the other controls when locked).
     o.controls = { ...o.controls, deleteControl };
     if (kind === 'image') {
       o.set({ lockUniScaling: true });
@@ -433,6 +440,26 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     history.current.past.push(snap.design);
     void loadDesign(next);
   };
+
+  // ---- Phones: keep the pinned sheet's height known, and bring the selected item's settings up under it --------------------
+  const [topH, setTopH] = useState(57);
+  useEffect(() => {
+    const node = topRef.current;
+    if (!node || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setTopH(Math.round(node.getBoundingClientRect().height)));
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!selected || !narrow) return;
+    const sec = selRef.current;
+    const stage = stageRef.current;
+    if (!sec || !stage) return;
+    const gap = sec.getBoundingClientRect().top - stage.getBoundingClientRect().bottom;
+    if (Math.abs(gap) > 4) window.scrollBy({ top: gap, behavior: 'smooth' });
+    // Only when the selection changes, not on every edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
 
   // ---- Adding --------------------------------------------------------------------------------------------------------------------------
   const home = useMemo(() => homePanel(spec), [spec]);
@@ -691,8 +718,8 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   ];
 
   return (
-    <div className="studio" dir={rtl ? 'rtl' : 'ltr'} lang={cfg.lang}>
-      <header className="studio-top">
+    <div className="studio" dir={rtl ? 'rtl' : 'ltr'} lang={cfg.lang} style={{ ['--top-h' as string]: `${topH}px` }}>
+      <header className="studio-top" ref={topRef}>
         <button type="button" className="studio-back" onClick={() => void saveAndBack()}>
           <span aria-hidden="true">{rtl ? '›' : '‹'}</span> {t('save_back')}
         </button>
@@ -806,7 +833,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
         </main>
 
         <aside className="studio-side" aria-live="polite">
-          <section className="studio-sec">
+          <section className="studio-sec studio-sec--order">
             <h2>{t('your_order')}</h2>
             <p className="studio-order__name">{productTitle}</p>
             {cfg.order && cfg.order.chips.length > 0 && (
@@ -839,15 +866,22 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
           </section>
 
           {hasContent && issues.length > 0 && (
-            <section className="studio-sec">
+            <section className="studio-sec studio-sec--checks">
               <h2>{t('checks')}</h2>
               <IssueList issues={issues} t={t} onSelect={(i) => { const o = objects[snap.indexOf[i] ?? -1]; if (o && o.binder?.kind !== 'background' && o.binder?.kind !== 'spine') select(o); }} />
             </section>
           )}
 
           {!busy && (
-            <section className="studio-sec">
-              <h2>{t('selected')}</h2>
+            <section className={`studio-sec studio-sec--selected${selected ? ' has-sel' : ''}`} ref={selRef}>
+              <div className="studio-sec__head">
+                <h2>{t('selected')}</h2>
+                {selected && (
+                  <button type="button" className="studio-trash" onClick={() => remove()} aria-label={t('delete')} title={t('delete')}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 7V4.5h4V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" /></svg>
+                  </button>
+                )}
+              </div>
               <Selected
                 key={selected ? String(objects.indexOf(selected)) : 'none'}
                 o={selected}
@@ -864,7 +898,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
           )}
 
           {!busy && objects.length > 0 && (
-            <section className="studio-sec">
+            <section className="studio-sec studio-sec--layers">
               <h2>{t('layers')}</h2>
               <ul className="studio-layers">
                 {[...objects].reverse().map((o) => {

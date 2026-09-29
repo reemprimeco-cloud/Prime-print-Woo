@@ -175,6 +175,10 @@ html.binder-modal-open body { overflow: hidden; }
 
 .binder-modal__close:hover { background: rgba(255, 255, 255, .14); }
 
+/* The designer page has its own top bar ("Save and go back"), so the modal's
+ * bar is not shown: on a phone every line of height goes to the design. */
+.binder-modal__bar { display: none; }
+
 .binder-modal__frame {
 	flex: 1 1 auto;
 	width: 100%;
