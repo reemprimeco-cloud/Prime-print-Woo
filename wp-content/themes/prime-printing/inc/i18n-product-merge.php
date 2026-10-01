@@ -462,6 +462,68 @@ function prime_repair_swapped_products() {
 }
 
 /**
+ * Turn round a product on sale whose own fields are Arabic and whose "Arabic"
+ * meta is English — what is left of a backwards pair once its English
+ * original has been deleted (step 6 run before step 4). The English text
+ * becomes the product's own and the Arabic goes to the Arabic box, slug too.
+ *
+ * @return string[] One line per product turned round.
+ */
+function prime_flip_backwards_products() {
+	global $wpdb;
+
+	$done = array();
+	$ids  = get_posts(
+		array(
+			'post_type'   => 'product',
+			'post_status' => array( 'publish', 'private', 'pending' ),
+			'numberposts' => -1,
+			'fields'      => 'ids',
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- one-off admin action.
+			'meta_query'  => array( array( 'key' => PRIME_AR_TITLE, 'compare' => 'EXISTS' ) ),
+		)
+	);
+
+	foreach ( $ids as $id ) {
+		$post     = get_post( $id );
+		$ar_title = (string) get_post_meta( $id, PRIME_AR_TITLE, true );
+
+		if ( ! $post || ! prime_has_arabic( $post->post_title ) || '' === $ar_title || prime_has_arabic( $ar_title ) ) {
+			continue;
+		}
+
+		$was     = $post->post_title;
+		$en_slug = sanitize_title( rawurldecode( (string) get_post_meta( $id, PRIME_AR_SLUG, true ) ) );
+		$fields  = array(
+			'post_title'   => $ar_title,
+			'post_excerpt' => (string) get_post_meta( $id, PRIME_AR_EXCERPT, true ),
+			'post_content' => (string) get_post_meta( $id, PRIME_AR_CONTENT, true ),
+		);
+
+		// Only take the English slug when no other post holds it.
+		if ( '' !== $en_slug && ! $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_name = %s AND post_type = 'product' AND ID <> %d LIMIT 1", $en_slug, $id ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$fields['post_name'] = $en_slug;
+		}
+
+		update_post_meta( $id, PRIME_AR_TITLE, $post->post_title );
+		update_post_meta( $id, PRIME_AR_EXCERPT, $post->post_excerpt );
+		update_post_meta( $id, PRIME_AR_CONTENT, $post->post_content );
+		update_post_meta( $id, PRIME_AR_SLUG, $post->post_name );
+
+		$wpdb->update( $wpdb->posts, $fields, array( 'ID' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		clean_post_cache( $id );
+
+		$done[] = '#' . $id . ' ' . $ar_title . '  ⇄  ' . $was;
+	}
+
+	if ( $done && function_exists( 'wc_delete_product_transients' ) ) {
+		wc_delete_product_transients();
+	}
+
+	return $done;
+}
+
+/**
  * Delete the retired Arabic copies for good — Reem, 2026-10-01: "نمسح العربي
  * كله و نعيد بناؤه من جديد". Any copy still unlinked is first linked to its
  * suggested English product, so its Arabic text and URL are not lost with it.
@@ -659,6 +721,12 @@ function prime_render_merge_page() {
 		$report   = array_merge( $report, $result['swapped'], $result['restored'] );
 	}
 
+	if ( 'flip' === $action ) {
+		$flipped  = prime_flip_backwards_products();
+		$report[] = sprintf( 'Turned round: %d', count( $flipped ) );
+		$report   = array_merge( $report, $flipped );
+	}
+
 	if ( 'delete_copies' === $action ) {
 		$result   = prime_delete_retired_copies();
 		$report[] = sprintf(
@@ -725,6 +793,10 @@ function prime_render_merge_page() {
 						<span class="description"><?php esc_html_e( 'Puts the English original back on sale where its Arabic copy was kept instead. Safe to run again.', 'prime-printing' ); ?></span>
 					</p>
 				<?php endif; ?>
+				<p>
+					<button class="button button-primary" name="prime_merge_action" value="flip"><?php esc_html_e( 'Fix products showing Arabic in English', 'prime-printing' ); ?></button>
+					<span class="description"><?php esc_html_e( 'Swaps the English and Arabic text where they are the wrong way round. Safe to run again.', 'prime-printing' ); ?></span>
+				</p>
 				<p>
 					<button class="button" name="prime_merge_action" value="fill_arabic"><?php esc_html_e( '5. Fill missing Arabic text from the translation file', 'prime-printing' ); ?></button>
 					<span class="description"><?php esc_html_e( 'Only products with no Arabic title yet. Safe to run again.', 'prime-printing' ); ?></span>
