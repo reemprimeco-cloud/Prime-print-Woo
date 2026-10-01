@@ -1,0 +1,23 @@
+# Print-file render service on the Synology NAS (Container Manager → Project).
+# The image is built by GitHub (.github/workflows/build-render-image.yml); the
+# NAS only pulls and runs it. Fill in the two values marked CHANGE.
+services:
+  binder-render:
+    image: ghcr.io/reemprimeco-cloud/binder-render-service:latest
+    container_name: binder-render
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    environment:
+      # CHANGE: a long random string. Enter the same one in WordPress →
+      # Settings → Binder Designer → Shared secret.
+      BINDER_SECRET: "CHANGE-ME-to-a-long-random-string"
+      # CHANGE: the public HTTPS address Tailscale Funnel gives this service,
+      # e.g. https://nas-name.tail1234.ts.net (no slash at the end).
+      PUBLIC_BASE_URL: "https://CHANGE-ME.ts.net"
+      ALLOWED_IMAGE_HOSTS: "primeprint.com.kw,www.primeprint.com.kw"
+      ALLOWED_CALLBACK_HOSTS: "primeprint.com.kw,www.primeprint.com.kw"
+      RENDER_CONCURRENCY: "1"
+      RENDER_MAX_QUEUE: "20"
+    # Each render can use several hundred MB with a 300 dpi image.
+    mem_limit: 2g

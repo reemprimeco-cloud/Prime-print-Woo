@@ -1,0 +1,103 @@
+# Build the print-file render service (binder-render-service) as a container
+# image and publish it, private, to this repository's GitHub package registry:
+#
+#   ghcr.io/reemprimeco-cloud/binder-render-service:latest
+#
+# The Synology NAS (or any Docker host) only pulls and runs it; nothing is
+# built there. Built for Intel/AMD and ARM, so it runs on any NAS model that
+# has Container Manager.
+#
+# The ICC profile is not kept in the repository (git-ignored); the build fetches
+# ECI's free "ISO Coated v2 300%" (FOGRA39) from eci.org, as SPEC.md asks for
+# production.
+#
+# Runs on a push to main-0t9dg8 that touches the service, the editor (whose
+# print page the service serves), the shared code, or this file; or by hand
+# from the Actions tab.
+name: Build render service image
+
+on:
+  push:
+    branches: [main-0t9dg8]
+    paths:
+      - binder-render-service/**
+      - binder-editor/**
+      - binder-shared/**
+      - .github/workflows/build-render-image.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: build-render-image
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/reemprimeco-cloud/binder-render-service
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the ECI FOGRA39 colour profile
+        run: |
+          mkdir -p binder-render-service/assets/icc /tmp/eci
+          curl -fsSL -o /tmp/eci/eci.zip https://www.eci.org/_media/downloads/icc_profiles_from_eci/eci_offset_2009.zip
+          unzip -q -o /tmp/eci/eci.zip -d /tmp/eci
+          icc=$(find /tmp/eci -iname 'ISOcoated_v2_300_eci.icc' | head -n 1)
+          if [ -z "$icc" ]; then
+            echo "::error::ISOcoated_v2_300_eci.icc not found in the ECI download"; find /tmp/eci -iname '*.icc'; exit 1
+          fi
+          cp "$icc" binder-render-service/assets/icc/FOGRA39.icc
+          ls -l binder-render-service/assets/icc
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build for this machine and check it starts healthy
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: binder-render-service/Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: render-test:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Health check (Chromium, Ghostscript, ICC profile, print page)
+        run: |
+          docker run -d --name rs -p 8787:8787 -e NODE_ENV=development render-test:ci
+          for i in $(seq 1 30); do
+            if out=$(curl -fsS http://127.0.0.1:8787/healthz 2>/dev/null); then break; fi
+            sleep 2
+          done
+          echo "healthz: $out"
+          docker logs rs | tail -n 20
+          echo "$out" | grep -q '"ghostscript":true' || { echo "::error::Ghostscript missing"; exit 1; }
+          echo "$out" | grep -q '"icc_profile":true' || { echo "::error::ICC profile missing"; exit 1; }
+          echo "$out" | grep -q '"print_page":true' || { echo "::error::print page missing"; exit 1; }
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build for Intel and ARM and publish
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: binder-render-service/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
