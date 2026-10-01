@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.mjs",
-    "build": "esbuild src/server.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/server.mjs --external:playwright --external:express --external:pdf-lib --alias:@binder/shared=../binder-shared/src/index.ts",
+    "build": "esbuild src/server.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/server.mjs --external:playwright --external:express --external:pdf-lib --external:sharp --alias:@binder/shared=../binder-shared/src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "export-sample": "tsx scripts/export-sample.ts"
