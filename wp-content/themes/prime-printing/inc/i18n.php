@@ -185,6 +185,18 @@ function prime_product_id_matches( $candidate_id, $canonical_id ) {
 		return true;
 	}
 
+	// After the single-product switch: the calculator's own product may be the
+	// copy that was retired (Polylang can have filed it as the Arabic side), in
+	// which case its text and slug now live on the product that is on sale.
+	if ( defined( 'PRIME_AR_SLUG' ) && 'publish' !== get_post_status( $canonical_id ) ) {
+		$canonical_slug = (string) get_post_field( 'post_name', $canonical_id );
+		$carried        = (string) get_post_meta( $candidate_id, PRIME_AR_SLUG, true );
+
+		if ( '' !== $canonical_slug && '' !== $carried && rawurldecode( $carried ) === rawurldecode( $canonical_slug ) ) {
+			return true;
+		}
+	}
+
 	// Polylang's own translation group, read straight from its taxonomy. This
 	// keeps working after products stop being a translated post type (the
 	// single-product switch in inc/i18n-products.php), when pll_get_post()

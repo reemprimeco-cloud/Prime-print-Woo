@@ -274,6 +274,331 @@ function prime_undo_switch() {
 }
 
 /**
+ * Retired Arabic posts whose text no live product carries.
+ *
+ * Polylang had no English partner on file for these (an Arabic product made by
+ * hand, or one whose link was lost), so step 2 had nothing to copy them onto:
+ * their Arabic URL now finds only the draft. Reem hit this on PP Stickers,
+ * 2026-10-01 — the Arabic page showed the old copy, its own price, and no
+ * calculator. Each one is linked by hand below.
+ *
+ * @return int[]
+ */
+function prime_find_unlinked_retired() {
+	$log = get_option( PRIME_RETIRED_OPTION, array() );
+	$ids = isset( $log['ids'] ) ? array_map( 'intval', (array) $log['ids'] ) : array();
+
+	return array_values(
+		array_filter(
+			$ids,
+			static function ( $id ) {
+				$slug = (string) get_post_field( 'post_name', $id );
+
+				if ( '' === $slug ) {
+					return false;
+				}
+
+				$carrier = get_posts(
+					array(
+						'post_type'   => 'product',
+						'post_status' => 'any',
+						'numberposts' => 1,
+						'fields'      => 'ids',
+						'exclude'     => array( $id ),
+						// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- admin screen only.
+						'meta_query'  => array( array( 'key' => PRIME_AR_SLUG, 'value' => prime_slug_spellings( $slug ), 'compare' => 'IN' ) ),
+					)
+				);
+
+				return ! $carrier;
+			}
+		)
+	);
+}
+
+/**
+ * A likely English product for a retired Arabic post: a published product with
+ * the same main image (the import and hand-made copies reused it).
+ *
+ * @param int   $arabic_id Retired Arabic post.
+ * @param int[] $retired   All retired IDs, never suggested.
+ * @return int 0 when there is no clear match.
+ */
+function prime_suggest_english_for( $arabic_id, $retired ) {
+	$thumb = (int) get_post_meta( $arabic_id, '_thumbnail_id', true );
+
+	if ( ! $thumb ) {
+		return 0;
+	}
+
+	$ids = get_posts(
+		array(
+			'post_type'    => 'product',
+			'post_status'  => 'publish',
+			'numberposts'  => 3,
+			'fields'       => 'ids',
+			'post__not_in' => array_merge( array( $arabic_id ), $retired ),
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- admin screen only.
+			'meta_query'   => array( array( 'key' => '_thumbnail_id', 'value' => $thumb ) ),
+		)
+	);
+
+	return 1 === count( $ids ) ? (int) $ids[0] : 0;
+}
+
+/**
+ * The product on sale that a retired copy was folded into: the one carrying
+ * its slug as the Arabic slug, else the one sharing its main image.
+ *
+ * @param int   $copy_id Retired copy.
+ * @param int[] $retired All retired IDs.
+ * @return int 0 when unknown.
+ */
+function prime_live_product_for_copy( $copy_id, $retired ) {
+	$slug = (string) get_post_field( 'post_name', $copy_id );
+
+	if ( '' !== $slug ) {
+		$found = get_posts(
+			array(
+				'post_type'   => 'product',
+				'post_status' => 'publish',
+				'numberposts' => 1,
+				'fields'      => 'ids',
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- one-off admin action.
+				'meta_query'  => array( array( 'key' => PRIME_AR_SLUG, 'value' => prime_slug_spellings( $slug ), 'compare' => 'IN' ) ),
+			)
+		);
+
+		if ( $found ) {
+			return (int) $found[0];
+		}
+	}
+
+	return prime_suggest_english_for( $copy_id, $retired );
+}
+
+/**
+ * Does this text contain Arabic letters?
+ *
+ * @param string $text Text.
+ * @return bool
+ */
+function prime_has_arabic( $text ) {
+	return (bool) preg_match( '/\p{Arabic}/u', (string) $text );
+}
+
+/**
+ * Undo what step 3 got backwards where Polylang had a pair filed the wrong way
+ * round — the English original recorded as "Arabic", the Arabic copy as
+ * "English". Step 3 then drafted the original and kept the copy on sale, with
+ * its Arabic title showing in English. PP Stickers (#235, the product its
+ * calculator is tied to) was one, 2026-10-01.
+ *
+ * For each such product on sale: the original is published again under its
+ * own slug, with the Arabic text (already copied onto the wrong post) moved to
+ * it, and the copy goes back to Draft. Also republishes any drafted product
+ * whose title is plainly English and that nothing else on sale replaces.
+ *
+ * @return array{swapped: string[], restored: string[]}
+ */
+function prime_repair_swapped_products() {
+	global $wpdb;
+
+	$log     = get_option( PRIME_RETIRED_OPTION, array() );
+	$retired = isset( $log['ids'] ) ? array_map( 'intval', (array) $log['ids'] ) : array();
+	$done    = array( 'swapped' => array(), 'restored' => array() );
+
+	foreach ( $retired as $original_id ) {
+		$original = get_post( $original_id );
+
+		if ( ! $original || 'product' !== $original->post_type || 'publish' === $original->post_status || prime_has_arabic( $original->post_title ) ) {
+			continue; // Only an English-titled post can be a wrongly drafted original.
+		}
+
+		$copy_id = prime_live_product_for_copy( $original_id, $retired );
+		$copy    = $copy_id ? get_post( $copy_id ) : null;
+
+		if ( $copy && ! prime_has_arabic( $copy->post_title ) ) {
+			continue; // Its live partner is English already: a real duplicate.
+		}
+
+		// The Arabic text of the pair: the copy's own fields.
+		if ( $copy ) {
+			update_post_meta( $original_id, PRIME_AR_TITLE, $copy->post_title );
+			update_post_meta( $original_id, PRIME_AR_EXCERPT, $copy->post_excerpt );
+			update_post_meta( $original_id, PRIME_AR_CONTENT, $copy->post_content );
+			update_post_meta( $original_id, PRIME_AR_SLUG, $copy->post_name );
+
+			foreach ( array( PRIME_AR_TITLE, PRIME_AR_EXCERPT, PRIME_AR_CONTENT, PRIME_AR_SLUG ) as $key ) {
+				delete_post_meta( $copy_id, $key );
+			}
+
+			$wpdb->update( $wpdb->posts, array( 'post_status' => 'draft' ), array( 'ID' => $copy_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			clean_post_cache( $copy_id );
+			$retired[] = $copy_id;
+		}
+
+		$wpdb->update( $wpdb->posts, array( 'post_status' => 'publish' ), array( 'ID' => $original_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		clean_post_cache( $original_id );
+		$retired = array_values( array_diff( $retired, array( $original_id ) ) );
+
+		$label = '#' . $original_id . ' ' . $original->post_title;
+
+		if ( $copy ) {
+			$done['swapped'][] = $label . '  (copy #' . $copy_id . ' set to Draft)';
+		} else {
+			$done['restored'][] = $label;
+		}
+	}
+
+	$log['ids'] = array_values( array_unique( $retired ) );
+	update_option( PRIME_RETIRED_OPTION, $log );
+
+	if ( function_exists( 'wc_delete_product_transients' ) ) {
+		wc_delete_product_transients();
+	}
+
+	return $done;
+}
+
+/**
+ * Delete the retired Arabic copies for good — Reem, 2026-10-01: "نمسح العربي
+ * كله و نعيد بناؤه من جديد". Any copy still unlinked is first linked to its
+ * suggested English product, so its Arabic text and URL are not lost with it.
+ * Orders keep their own line names and prices; only the link to the deleted
+ * copy goes. Cannot be undone, so the switch's undo record is cleared too.
+ *
+ * @return array{deleted: int, linked: int}
+ */
+function prime_delete_retired_copies() {
+	$log     = get_option( PRIME_RETIRED_OPTION, array() );
+	$ids     = isset( $log['ids'] ) ? array_map( 'intval', (array) $log['ids'] ) : array();
+	$linked  = 0;
+	$deleted = 0;
+
+	foreach ( prime_find_unlinked_retired() as $arabic_id ) {
+		$english_id = prime_suggest_english_for( $arabic_id, $ids );
+
+		if ( $english_id ) {
+			prime_merge_one_product( $english_id, $arabic_id, false );
+			++$linked;
+		}
+	}
+
+	// A calculator is tied to its product's ID. When that product is one of the
+	// copies about to go, pin the calculator onto the product now on sale
+	// (Product data → General → "Price calculator"), or it would vanish.
+	foreach ( array_keys( prime_calculator_choices() ) as $calculator_id ) {
+		if ( in_array( $calculator_id, $ids, true ) ) {
+			$carrier = prime_live_product_for_copy( $calculator_id, $ids );
+
+			if ( $carrier ) {
+				update_post_meta( $carrier, PRIME_CALCULATOR_META, $calculator_id );
+			}
+		}
+	}
+
+	foreach ( $ids as $id ) {
+		if ( 'product' !== get_post_type( $id ) || 'publish' === get_post_status( $id ) ) {
+			continue; // Gone already, or put back on sale by hand: leave it.
+		}
+
+		$product = function_exists( 'wc_get_product' ) ? wc_get_product( $id ) : null;
+
+		if ( $product ) {
+			$product->delete( true ); // Variations go with it.
+		} else {
+			wp_delete_post( $id, true );
+		}
+
+		++$deleted;
+	}
+
+	delete_option( PRIME_RETIRED_OPTION );
+
+	if ( function_exists( 'wc_delete_product_transients' ) ) {
+		wc_delete_product_transients();
+	}
+
+	return array( 'deleted' => $deleted, 'linked' => $linked );
+}
+
+/**
+ * Give every product that still has no Arabic title its Arabic text from the
+ * translation file the September import used (prime_ar_import_json_path()).
+ * A product that already has Arabic text is left exactly as it is.
+ *
+ * @return int|false Products filled, or false when the file is missing.
+ */
+function prime_fill_arabic_from_file() {
+	$path = prime_ar_import_json_path();
+
+	if ( ! is_readable( $path ) ) {
+		return false;
+	}
+
+	$data   = json_decode( (string) file_get_contents( $path ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_file_get_contents
+	$filled = 0;
+
+	foreach ( (array) $data as $product_id => $entry ) {
+		$product_id = (int) $product_id;
+
+		if ( ! is_array( $entry ) || 'product' !== get_post_type( $product_id ) || 'publish' !== get_post_status( $product_id ) ) {
+			continue;
+		}
+
+		if ( '' !== trim( (string) get_post_meta( $product_id, PRIME_AR_TITLE, true ) ) ) {
+			continue;
+		}
+
+		$title = trim( wp_strip_all_tags( (string) ( $entry['title'] ?? '' ) ) );
+
+		if ( '' === $title ) {
+			continue;
+		}
+
+		update_post_meta( $product_id, PRIME_AR_TITLE, $title );
+
+		if ( ! empty( $entry['excerpt_html'] ) ) {
+			update_post_meta( $product_id, PRIME_AR_EXCERPT, wp_kses_post( $entry['excerpt_html'] ) );
+		}
+
+		if ( ! empty( $entry['content_html'] ) ) {
+			update_post_meta( $product_id, PRIME_AR_CONTENT, wp_kses_post( $entry['content_html'] ) );
+		}
+
+		// The Arabic URL, unless another product already answers to it.
+		$slug = sanitize_title( (string) ( $entry['slug'] ?? '' ) );
+
+		if ( '' !== $slug && ! get_post_meta( $product_id, PRIME_AR_SLUG, true ) ) {
+			$taken = get_posts(
+				array(
+					'post_type'   => 'product',
+					'post_status' => 'any',
+					'numberposts' => 1,
+					'fields'      => 'ids',
+					'exclude'     => array( $product_id ),
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- one-off admin action.
+					'meta_query'  => array( array( 'key' => PRIME_AR_SLUG, 'value' => prime_slug_spellings( $slug ), 'compare' => 'IN' ) ),
+				)
+			);
+
+			if ( ! $taken ) {
+				update_post_meta( $product_id, PRIME_AR_SLUG, $slug );
+			}
+		}
+
+		++$filled;
+	}
+
+	if ( function_exists( 'wc_delete_product_transients' ) ) {
+		wc_delete_product_transients();
+	}
+
+	return $filled;
+}
+
+/**
  * The Tools screen.
  */
 function prime_render_merge_page() {
@@ -308,6 +633,48 @@ function prime_render_merge_page() {
 			__( 'Done. One product now serves both languages, and %d duplicates were set to Draft.', 'prime-printing' ),
 			$result['retired']
 		);
+	}
+
+	if ( 'link' === $action && isset( $_POST['prime_link_from'], $_POST['prime_link_to'] ) ) {
+		$from    = absint( wp_unslash( $_POST['prime_link_from'] ) );
+		$targets = (array) wp_unslash( $_POST['prime_link_to'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- absint below.
+		$to      = isset( $targets[ $from ] ) ? absint( $targets[ $from ] ) : 0;
+
+		if ( $from && $to && $from !== $to && 'product' === get_post_type( $to ) && 'publish' === get_post_status( $to ) ) {
+			$result = prime_merge_one_product( $to, $from, false );
+
+			if ( function_exists( 'wc_delete_product_transients' ) ) {
+				wc_delete_product_transients( $to );
+			}
+
+			$report[] = sprintf( '#%d %s  ←  #%d %s — %s', $to, get_the_title( $to ), $from, get_the_title( $from ), $result['note'] );
+		} else {
+			$report[] = __( 'Nothing linked: enter the ID of a published English product.', 'prime-printing' );
+		}
+	}
+
+	if ( 'repair' === $action ) {
+		$result = prime_repair_swapped_products();
+		$report[] = sprintf( 'Swapped back: %d   Republished: %d', count( $result['swapped'] ), count( $result['restored'] ) );
+		$report   = array_merge( $report, $result['swapped'], $result['restored'] );
+	}
+
+	if ( 'delete_copies' === $action ) {
+		$result   = prime_delete_retired_copies();
+		$report[] = sprintf(
+			/* translators: 1: copies deleted, 2: copies linked first. */
+			__( 'Deleted %1$d Arabic copies for good (%2$d of them were linked to their English product first).', 'prime-printing' ),
+			$result['deleted'],
+			$result['linked']
+		);
+	}
+
+	if ( 'fill_arabic' === $action ) {
+		$filled   = prime_fill_arabic_from_file();
+		$report[] = false === $filled
+			? __( 'The translation file was not found, so nothing was filled.', 'prime-printing' )
+			/* translators: %d: products given Arabic text. */
+			: sprintf( __( '%d products without Arabic text got it from the translation file.', 'prime-printing' ), $filled );
 	}
 
 	if ( 'undo' === $action ) {
@@ -349,6 +716,27 @@ function prime_render_merge_page() {
 			</p>
 			<p class="description"><?php esc_html_e( 'Run them in order. Steps 1 and 2 change nothing a customer can see — the Arabic site keeps working exactly as it does now, so they are safe to run and re-run. Step 3 is the changeover, and it is only available once every pair has been copied.', 'prime-printing' ); ?></p>
 
+			<?php if ( function_exists( 'prime_single_product_mode' ) && prime_single_product_mode() ) : ?>
+				<hr>
+				<h2><?php esc_html_e( 'Start the Arabic side clean', 'prime-printing' ); ?></h2>
+				<?php if ( get_option( PRIME_RETIRED_OPTION ) ) : ?>
+					<p>
+						<button class="button button-primary" name="prime_merge_action" value="repair"><?php esc_html_e( '4. Repair products the switch got backwards', 'prime-printing' ); ?></button>
+						<span class="description"><?php esc_html_e( 'Puts the English original back on sale where its Arabic copy was kept instead. Safe to run again.', 'prime-printing' ); ?></span>
+					</p>
+				<?php endif; ?>
+				<p>
+					<button class="button" name="prime_merge_action" value="fill_arabic"><?php esc_html_e( '5. Fill missing Arabic text from the translation file', 'prime-printing' ); ?></button>
+					<span class="description"><?php esc_html_e( 'Only products with no Arabic title yet. Safe to run again.', 'prime-printing' ); ?></span>
+				</p>
+				<?php if ( get_option( PRIME_RETIRED_OPTION ) ) : ?>
+					<p>
+						<button class="button button-link-delete" name="prime_merge_action" value="delete_copies" onclick="return confirm('حذف كل النسخ العربية القديمة نهائياً؟ لا يمكن التراجع.');"><?php esc_html_e( '6. Delete the old Arabic copies for good', 'prime-printing' ); ?></button>
+						<span class="description"><?php esc_html_e( 'The drafts made in step 3. Your products stay. Cannot be undone.', 'prime-printing' ); ?></span>
+					</p>
+				<?php endif; ?>
+			<?php endif; ?>
+
 			<?php if ( get_option( PRIME_RETIRED_OPTION ) ) : ?>
 				<hr>
 				<p>
@@ -361,6 +749,38 @@ function prime_render_merge_page() {
 		<?php if ( $report ) : ?>
 			<h2><?php esc_html_e( 'Result', 'prime-printing' ); ?></h2>
 			<textarea readonly rows="20" style="width:100%;font-family:monospace"><?php echo esc_textarea( implode( "\n", $report ) ); ?></textarea>
+		<?php endif; ?>
+
+		<?php
+		$retired_log = get_option( PRIME_RETIRED_OPTION, array() );
+		$retired_ids = isset( $retired_log['ids'] ) ? array_map( 'intval', (array) $retired_log['ids'] ) : array();
+		$unlinked    = $retired_ids ? prime_find_unlinked_retired() : array();
+		?>
+		<?php if ( $unlinked ) : ?>
+			<h2><?php esc_html_e( 'Arabic products not linked to an English product', 'prime-printing' ); ?></h2>
+			<p><?php esc_html_e( 'These Arabic copies had no English partner on file, so their Arabic text was not copied anywhere and their Arabic link shows nothing to customers. Enter the English product each one belongs to (its ID is in the address bar when you edit it, post=…) and press Link: the Arabic title, description and link move onto that product. A suggestion is filled in when exactly one product shares the same main image.', 'prime-printing' ); ?></p>
+			<form method="post">
+				<?php wp_nonce_field( 'prime_merge' ); ?>
+				<input type="hidden" name="prime_merge_action" value="link">
+				<table class="widefat striped" style="max-width:900px">
+					<thead><tr><th><?php esc_html_e( 'Arabic copy (Draft)', 'prime-printing' ); ?></th><th><?php esc_html_e( 'English product ID', 'prime-printing' ); ?></th><th></th></tr></thead>
+					<tbody>
+						<?php foreach ( $unlinked as $arabic_id ) : ?>
+							<?php $suggested = prime_suggest_english_for( $arabic_id, $retired_ids ); ?>
+							<tr>
+								<td><a href="<?php echo esc_url( (string) get_edit_post_link( $arabic_id ) ); ?>">#<?php echo (int) $arabic_id; ?> <?php echo esc_html( get_the_title( $arabic_id ) ); ?></a></td>
+								<td>
+									<input type="number" min="1" name="prime_link_to[<?php echo (int) $arabic_id; ?>]" value="<?php echo $suggested ? (int) $suggested : ''; ?>" style="width:7em">
+									<?php if ( $suggested ) : ?>
+										<span class="description"><?php echo esc_html( get_the_title( $suggested ) ); ?></span>
+									<?php endif; ?>
+								</td>
+								<td><button class="button button-primary" name="prime_link_from" value="<?php echo (int) $arabic_id; ?>"><?php esc_html_e( 'Link', 'prime-printing' ); ?></button></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</form>
 		<?php endif; ?>
 
 		<?php if ( $orphans ) : ?>
