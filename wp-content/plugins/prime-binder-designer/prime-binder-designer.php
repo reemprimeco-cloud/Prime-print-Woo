@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:       Prime Binder Designer
- * Description:       Product-page design tool for the 4 Ring Binder: customers upload a finished design or design live in the browser, constrained to a locked print template. The order gets a print-ready CMYK PDF.
- * Version:           0.4.4
+ * Plugin Name:       Prime Designer
+ * Description:       Product-page design tool for stickers and binders: customers upload a finished design or design live in the browser, constrained to a locked print template. The order gets a print-ready CMYK PDF.
+ * Version:           0.4.5
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Prime Printing Co.
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PRIME_BINDER_VERSION', '0.4.4' );
+define( 'PRIME_BINDER_VERSION', '0.4.5' );
 define( 'PRIME_BINDER_FILE', __FILE__ );
 define( 'PRIME_BINDER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PRIME_BINDER_URL', plugin_dir_url( __FILE__ ) );

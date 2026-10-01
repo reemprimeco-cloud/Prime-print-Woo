@@ -1,6 +1,6 @@
 <?php
 /**
- * Settings → Binder Designer: where the render service lives (§2, §7).
+ * Settings → Prime Designer: where the render service lives (§2, §7).
  *
  * The URL and shared secret can also be fixed in wp-config.php with
  * BINDER_RENDER_URL / BINDER_RENDER_SECRET, which win over the saved options.
@@ -23,8 +23,8 @@ class Binder_Settings {
 
 	public static function menu() {
 		add_options_page(
-			__( 'Binder Designer', 'prime-binder-designer' ),
-			__( 'Binder Designer', 'prime-binder-designer' ),
+			__( 'Prime Designer', 'prime-binder-designer' ),
+			__( 'Prime Designer', 'prime-binder-designer' ),
 			'manage_options',
 			'binder-designer',
 			array( __CLASS__, 'render_page' )
@@ -112,7 +112,7 @@ class Binder_Settings {
 		$has_secret    = '' !== Binder_Render_Client::secret();
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Binder Designer', 'prime-binder-designer' ); ?></h1>
+			<h1><?php esc_html_e( 'Prime Designer', 'prime-binder-designer' ); ?></h1>
 
 			<?php if ( isset( $_GET['binder_test'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification ?>
 				<div class="notice notice-<?php echo '1' === ( $_GET['binder_ok'] ?? '' ) ? 'success' : 'error'; // phpcs:ignore WordPress.Security ?>"><p><?php echo esc_html( rawurldecode( wp_unslash( $_GET['binder_test'] ) ) ); // phpcs:ignore WordPress.Security ?></p></div>

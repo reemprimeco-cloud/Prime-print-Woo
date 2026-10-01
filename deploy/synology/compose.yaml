@@ -10,7 +10,7 @@ services:
       - "8787:8787"
     environment:
       # CHANGE: a long random string. Enter the same one in WordPress →
-      # Settings → Binder Designer → Shared secret.
+      # Settings → Prime Designer → Shared secret.
       BINDER_SECRET: "CHANGE-ME-to-a-long-random-string"
       # CHANGE: the public HTTPS address Tailscale Funnel gives this service,
       # e.g. https://nas-name.tail1234.ts.net (no slash at the end).

@@ -20,7 +20,7 @@ Needs: a NAS with **Container Manager** (DSM 7.2+), 4 GB RAM or more, and the
    It prints the public `https://….ts.net` address. If Funnel is not yet
    allowed for the tailnet, the command prints a link to turn it on.
    Put that address in PUBLIC_BASE_URL (step 3) and restart the project.
-5. **WordPress → Settings → Binder Designer**: Render service URL = the
+5. **WordPress → Settings → Prime Designer**: Render service URL = the
    Funnel address, Shared secret = BINDER_SECRET. **Test connection** must
    say Ghostscript, ICC profile and print page are all "yes".
 

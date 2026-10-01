@@ -128,6 +128,61 @@ class Binder_Files {
 	}
 
 	/**
+	 * What the downloaded PDF is called: the order number, the customer's name
+	 * and the product, then "print" (CMYK) or "proof" (RGB) — so a file on the
+	 * shop's desk says whose job it is (Reem, 2026-10-01), never "binder-16".
+	 * Before the design is on an order: design-16-<product>-print.pdf.
+	 *
+	 * @param array  $design wp_binder_designs row.
+	 * @param string $kind   'cmyk' | 'rgb'.
+	 * @return string
+	 */
+	public static function download_name( array $design, $kind ) {
+		$parts = array();
+		$order = ! empty( $design['order_id'] ) && function_exists( 'wc_get_order' ) ? wc_get_order( (int) $design['order_id'] ) : null;
+
+		if ( $order ) {
+			$parts[]  = 'order-' . $order->get_order_number();
+			$customer = trim( $order->get_formatted_billing_full_name() );
+			if ( '' === $customer ) {
+				$customer = trim( $order->get_formatted_shipping_full_name() );
+			}
+			if ( '' !== $customer ) {
+				$parts[] = $customer;
+			}
+		} else {
+			$parts[] = 'design-' . (int) $design['id'];
+		}
+
+		$product = get_the_title( (int) $design['product_id'] );
+		if ( '' !== $product ) {
+			$parts[] = $product;
+		}
+
+		$parts[] = 'cmyk' === $kind ? 'print' : 'proof';
+
+		$name = implode( ' ', $parts );
+		$name = str_replace( array( '\\', '/', ':', '*', '?', '"', '<', '>', '|' ), '', $name ); // What no file system accepts.
+		$name = preg_replace( '/\s+/u', '-', trim( $name ) );
+
+		return $name . '.pdf';
+	}
+
+	/**
+	 * A plain-ASCII fallback for browsers that ignore filename*: Arabic and
+	 * other non-ASCII letters are dropped rather than mangled.
+	 *
+	 * @param string $name UTF-8 file name.
+	 * @return string
+	 */
+	private static function ascii_name( $name ) {
+		$ascii = preg_replace( '/[^A-Za-z0-9._-]+/', '-', remove_accents( $name ) );
+		$ascii = trim( preg_replace( '/-+/', '-', $ascii ), '-' );
+
+		return '' === $ascii || '.pdf' === $ascii ? 'print-file.pdf' : $ascii;
+	}
+
+	/**
 	 * Stream a stored PDF if the request is allowed to have it.
 	 */
 	public static function maybe_download() {
@@ -166,7 +221,8 @@ class Binder_Files {
 		nocache_headers();
 		header( 'Content-Type: application/pdf' );
 		header( 'Content-Length: ' . filesize( $path ) );
-		header( 'Content-Disposition: attachment; filename="binder-' . $id . '-' . $kind . '.pdf"' );
+		$name = self::download_name( $design, $kind );
+		header( 'Content-Disposition: attachment; filename="' . self::ascii_name( $name ) . '"; filename*=UTF-8\'\'' . rawurlencode( $name ) );
 		header( 'X-Robots-Tag: noindex' );
 		readfile( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
 		exit;

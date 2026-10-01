@@ -600,7 +600,7 @@ class Binder_Rest_API {
 		$res = Binder_Render_Client::start_render( $row );
 
 		if ( is_wp_error( $res ) ) {
-			// The reason stays on the row for Settings → Binder Designer → Recent designs.
+			// The reason stays on the row for Settings → Prime Designer → Recent designs.
 			Binder_DB::update( $row['id'], array( 'status' => 'draft', 'render_error' => wp_json_encode( array( 'unreachable' => $res->get_error_message() ) ) ) );
 
 			return new WP_Error( 'binder_service_unreachable', __( 'The design service could not be reached. Please try again.', 'prime-binder-designer' ), array( 'status' => 502 ) );

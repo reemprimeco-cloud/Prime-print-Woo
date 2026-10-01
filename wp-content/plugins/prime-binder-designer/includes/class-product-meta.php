@@ -35,7 +35,7 @@ class Binder_Product_Meta {
 	 */
 	public static function add_tab( $tabs ) {
 		$tabs['binder'] = array(
-			'label'    => __( 'Binder Template', 'prime-binder-designer' ),
+			'label'    => __( 'Design Template', 'prime-binder-designer' ),
 			'target'   => 'binder_template_data',
 			'class'    => array( 'show_if_simple', 'show_if_variable' ),
 			'priority' => 65,

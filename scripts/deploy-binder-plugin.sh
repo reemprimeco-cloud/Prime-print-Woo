@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Upload the Binder Designer plugin to the live WordPress.com site over SFTP.
+# Upload the Prime Designer plugin to the live WordPress.com site over SFTP.
 #
 # Companion to deploy-theme.sh: same host, same password prompt, same batch
 # upload. The plugin ships with the built customer editor in assets/dist, so
@@ -15,8 +15,8 @@
 # Before running, set your SFTP user once per terminal session:
 #   export PRIME_SFTP_USER='...'               # from WP.com → Settings → Hosting Config
 #
-# After the first upload: WordPress → Plugins → activate "Prime Binder Designer",
-# then Settings → Binder Designer for the render service URL and secret, and
+# After the first upload: WordPress → Plugins → activate "Prime Designer",
+# then Settings → Prime Designer for the render service URL and secret, and
 # tick the design templates on each product that needs the designer.
 set -euo pipefail
 trap 'echo "deploy failed at line $LINENO (exit $?)" >&2' ERR
@@ -100,4 +100,4 @@ fi
 
 echo
 echo "Done. Plugin $VERSION is uploaded."
-echo "If this was the first upload: WordPress → Plugins → activate Prime Binder Designer."
+echo "If this was the first upload: WordPress → Plugins → activate Prime Designer."

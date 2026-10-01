@@ -53,7 +53,7 @@ class Binder_Render_Client {
 	 * @return array
 	 */
 	private static function payload( array $design ) {
-		$title = sprintf( 'Binder design #%d', (int) $design['id'] );
+		$title = sprintf( 'Prime Printing design #%d', (int) $design['id'] );
 		$name  = get_the_title( (int) $design['product_id'] );
 
 		return array(

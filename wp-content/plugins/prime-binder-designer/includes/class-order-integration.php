@@ -99,7 +99,7 @@ class Binder_Order_Integration {
 				}
 
 				if ( ! empty( $row['order_id'] ) && (int) $row['order_id'] !== (int) $order->get_id() ) {
-					$order->add_order_note( sprintf( 'Binder design #%d was already attached to order #%d — check this order before printing.', $design_id, (int) $row['order_id'] ) );
+					$order->add_order_note( sprintf( 'Design #%d was already attached to order #%d — check this order before printing.', $design_id, (int) $row['order_id'] ) );
 					continue;
 				}
 
@@ -171,7 +171,7 @@ class Binder_Order_Integration {
 		if ( $waiting ) {
 			// Once each, not on every status change.
 			if ( ! $order->get_meta( '_binder_waiting_noted' ) ) {
-				$order->add_order_note( 'Binder print file not ready yet for design ' . implode( ', ', $waiting ) . '. The shop is notified when it finishes; if it does not, open the order and check the design.' );
+				$order->add_order_note( 'Print file not ready yet for design ' . implode( ', ', $waiting ) . '. The shop is notified when it finishes; if it does not, open the order and check the design.' );
 				$order->update_meta_data( '_binder_waiting_noted', 1 );
 				$order->save();
 			}
@@ -190,7 +190,7 @@ class Binder_Order_Integration {
 		}
 
 		$order->update_meta_data( self::NOTIFIED, gmdate( 'c' ) );
-		$order->add_order_note( 'Binder print files are ready (' . count( $files ) . ' file' . ( 1 === count( $files ) ? '' : 's' ) . '). Download them from the Print Files box.' );
+		$order->add_order_note( 'Print files are ready (' . count( $files ) . ' file' . ( 1 === count( $files ) ? '' : 's' ) . '). Download them from the Print Files box.' );
 		$order->save();
 
 		/**
