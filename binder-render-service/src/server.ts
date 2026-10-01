@@ -157,6 +157,7 @@ export function createServer(cfg: Config): { app: express.Express; storage: Stor
     if (!v.ok) return res.status(v.status).json({ error: v.error, errors: v.errors, warnings: [] });
 
     const { req: rq, spec, result } = v;
+    console.log(JSON.stringify({ level: 'info', msg: 'render requested', design_id: rq.design_id, template: rq.template, callback: Boolean(rq.callback_url) }));
 
     if (!rate.allow(rq.session_token)) {
       res.setHeader('Retry-After', String(rate.retryAfter(rq.session_token)));
@@ -176,6 +177,7 @@ export function createServer(cfg: Config): { app: express.Express; storage: Stor
       process(rq, spec, base, selfBase)
         .then(async (outcome) => {
           jobs.set(job.id, { ...job, status: 'ready', outcome });
+          console.log(JSON.stringify({ level: 'info', msg: 'render ready', design_id: rq.design_id, job_id: job.id }));
           await deliver(callback, { job_id: job.id, ...outcome });
         })
         .catch(async (e: unknown) => {

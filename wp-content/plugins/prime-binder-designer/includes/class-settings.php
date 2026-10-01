@@ -89,6 +89,19 @@ class Binder_Settings {
 		exit;
 	}
 
+	/**
+	 * The newest rows of the designs table, for the diagnosis list.
+	 *
+	 * @return array[]
+	 */
+	private static function recent_designs() {
+		global $wpdb;
+
+		$table = Binder_DB::table();
+
+		return (array) $wpdb->get_results( "SELECT id, product_id, template, status, updated_at, order_id, render_error FROM {$table} ORDER BY id DESC LIMIT 20", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
 	public static function render_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
@@ -132,6 +145,33 @@ class Binder_Settings {
 				<?php wp_nonce_field( 'binder_test_connection' ); ?>
 				<?php submit_button( __( 'Test connection', 'prime-binder-designer' ), 'secondary', 'submit', false ); ?>
 			</form>
+
+			<h2><?php esc_html_e( 'Recent designs', 'prime-binder-designer' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'The last 20 designs and what happened to each. "Error" is the reason a render did not finish, as the service or the connection reported it.', 'prime-binder-designer' ); ?></p>
+			<table class="widefat striped">
+				<thead><tr>
+					<th>#</th>
+					<th><?php esc_html_e( 'Product', 'prime-binder-designer' ); ?></th>
+					<th><?php esc_html_e( 'Template', 'prime-binder-designer' ); ?></th>
+					<th><?php esc_html_e( 'Status', 'prime-binder-designer' ); ?></th>
+					<th><?php esc_html_e( 'Updated (UTC)', 'prime-binder-designer' ); ?></th>
+					<th><?php esc_html_e( 'Order', 'prime-binder-designer' ); ?></th>
+					<th><?php esc_html_e( 'Error', 'prime-binder-designer' ); ?></th>
+				</tr></thead>
+				<tbody>
+				<?php foreach ( self::recent_designs() as $d ) : ?>
+					<tr>
+						<td><?php echo (int) $d['id']; ?></td>
+						<td><?php echo esc_html( get_the_title( (int) $d['product_id'] ) ); ?></td>
+						<td><?php echo esc_html( $d['template'] ); ?></td>
+						<td><?php echo esc_html( $d['status'] ); ?></td>
+						<td><?php echo esc_html( $d['updated_at'] ); ?></td>
+						<td><?php echo $d['order_id'] ? (int) $d['order_id'] : '—'; ?></td>
+						<td style="font-family:monospace;font-size:11px;max-width:420px;word-break:break-all"><?php echo esc_html( (string) $d['render_error'] ); ?></td>
+					</tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table>
 		</div>
 		<?php
 	}

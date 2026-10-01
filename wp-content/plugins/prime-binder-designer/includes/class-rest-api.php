@@ -600,7 +600,8 @@ class Binder_Rest_API {
 		$res = Binder_Render_Client::start_render( $row );
 
 		if ( is_wp_error( $res ) ) {
-			Binder_DB::update( $row['id'], array( 'status' => 'draft' ) );
+			// The reason stays on the row for Settings → Binder Designer → Recent designs.
+			Binder_DB::update( $row['id'], array( 'status' => 'draft', 'render_error' => wp_json_encode( array( 'unreachable' => $res->get_error_message() ) ) ) );
 
 			return new WP_Error( 'binder_service_unreachable', __( 'The design service could not be reached. Please try again.', 'prime-binder-designer' ), array( 'status' => 502 ) );
 		}
@@ -620,7 +621,7 @@ class Binder_Rest_API {
 			return new WP_Error( 'binder_validation_failed', __( 'This design cannot be printed as it is.', 'prime-binder-designer' ), array( 'status' => 422, 'errors' => $errors ) );
 		}
 
-		Binder_DB::update( $row['id'], array( 'status' => 'draft' ) );
+		Binder_DB::update( $row['id'], array( 'status' => 'draft', 'render_error' => wp_json_encode( array( 'service_http' => $res['status'], 'body' => $res['body'] ) ) ) );
 		$http = in_array( $res['status'], array( 429, 503 ), true ) ? $res['status'] : 502;
 
 		return new WP_Error( 'binder_service_busy', __( 'The design service is busy. Please try again in a moment.', 'prime-binder-designer' ), array( 'status' => $http, 'retry_after' => $res['retry'] ) );
