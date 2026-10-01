@@ -714,3 +714,41 @@ function prime_save_arabic_meta( $post_id ) {
 	}
 }
 add_action( 'save_post_product', 'prime_save_arabic_meta' );
+
+/**
+ * Admin-only diagnosis box for a product page: add ?prime_debug=1 to the URL.
+ * Shows what the language and calculator code actually see on the live site,
+ * which cannot be reached from the development environment.
+ */
+function prime_render_language_debug() {
+	if ( empty( $_GET['prime_debug'] ) || ! current_user_can( 'manage_options' ) || ! is_singular( 'product' ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		return;
+	}
+
+	$id      = get_queried_object_id();
+	$options = get_option( 'polylang', array() );
+	$rows    = array(
+		'URL'                        => isset( $_SERVER['REQUEST_URI'] ) ? esc_html( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		'Product ID / status'        => $id . ' / ' . get_post_status( $id ),
+		'Own title'                  => get_post_field( 'post_title', $id ),
+		'Own slug'                   => rawurldecode( (string) get_post_field( 'post_name', $id ) ),
+		'Arabic title (box)'         => (string) get_post_meta( $id, PRIME_AR_TITLE, true ),
+		'Arabic slug (box)'          => rawurldecode( (string) get_post_meta( $id, PRIME_AR_SLUG, true ) ),
+		'Calculator pin'             => (string) get_post_meta( $id, '_prime_calculator_of', true ),
+		'pll_current_language'       => function_exists( 'pll_current_language' ) ? var_export( pll_current_language(), true ) : 'no Polylang', // phpcs:ignore WordPress.PHP.DevelopmentFunctions
+		'Single-product mode'        => var_export( prime_single_product_mode(), true ), // phpcs:ignore WordPress.PHP.DevelopmentFunctions
+		'prime_is_arabic'            => var_export( prime_is_arabic(), true ), // phpcs:ignore WordPress.PHP.DevelopmentFunctions
+		'is_rtl'                     => var_export( is_rtl(), true ), // phpcs:ignore WordPress.PHP.DevelopmentFunctions
+		'Polylang post types'        => implode( ', ', (array) ( $options['post_types'] ?? array() ) ),
+		'force_lang / hide_default'  => ( $options['force_lang'] ?? '?' ) . ' / ' . ( $options['hide_default'] ?? '?' ),
+		'Matches PP calculator (235)' => function_exists( 'prime_product_id_matches' ) ? var_export( prime_product_id_matches( $id, 235 ), true ) : '?', // phpcs:ignore WordPress.PHP.DevelopmentFunctions
+		'Theme version'              => wp_get_theme()->get( 'Version' ),
+	);
+
+	echo '<div dir="ltr" style="position:fixed;left:8px;bottom:8px;z-index:99999;background:#111;color:#0f0;font:12px/1.5 monospace;padding:10px 12px;max-width:95vw;border-radius:6px;text-align:left">';
+	foreach ( $rows as $label => $value ) {
+		echo esc_html( $label ) . ': <b>' . esc_html( (string) $value ) . '</b><br>';
+	}
+	echo '</div>';
+}
+add_action( 'wp_footer', 'prime_render_language_debug' );
