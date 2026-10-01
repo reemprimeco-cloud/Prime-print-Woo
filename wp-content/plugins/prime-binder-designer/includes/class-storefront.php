@@ -151,7 +151,10 @@ class Binder_Storefront {
 		$templates = Binder_Product_Meta::required_templates( $product_id );
 
 		$config = array(
+			// The version on the URL defeats the host's edge cache: a stale index.html
+			// would load the previous editor build (2026-10-01, the font fix never arrived).
 			'editor'  => PRIME_BINDER_URL . 'assets/dist/index.html',
+			'version' => PRIME_BINDER_VERSION,
 			'rest'    => untrailingslashit( (string) wp_parse_url( rest_url( 'binder/v1' ), PHP_URL_PATH ) ),
 			'product' => $product_id,
 			'lang'    => self::is_arabic() ? 'ar' : 'en',

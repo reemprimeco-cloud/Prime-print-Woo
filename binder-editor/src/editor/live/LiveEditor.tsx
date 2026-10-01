@@ -176,7 +176,8 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
       warm.appendChild(span);
     }
     try {
-      await document.fonts.load(`${weight} 24px "${family}"`, text);
+      // Never wait on this forever: WebKit has been seen leaving the promise pending.
+      await Promise.race([document.fonts.load(`${weight} 24px "${family}"`, text), new Promise((r) => setTimeout(r, 2500))]);
     } catch {
       /* the fallback face is used */
     }

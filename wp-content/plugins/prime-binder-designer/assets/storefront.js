@@ -279,6 +279,7 @@
 
 	function editorUrl( row, mode ) {
 		var q = [
+			[ 'v', cfg.version || '' ],
 			[ 'rest', cfg.rest ],
 			[ 'product', cfg.product ],
 			[ 'template', row.template ],
