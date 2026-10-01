@@ -23,11 +23,11 @@ export interface RenderedTransfer {
  * soft. Nothing where the artboard is transparent.
  */
 export const UVDTF_SPOTS = {
-  // Display only (Photoshop's "solidity" simulation): white under everything at
-  // 100 % would hide the artwork on screen, so it is shown at 0 % and the varnish
-  // as a faint tint. The ink data is full strength either way.
-  white: { name: 'White', display: [255, 255, 255] as [number, number, number], solidity: 0 },
-  varnish: { name: 'Varnish', display: [120, 200, 255] as [number, number, number], solidity: 15 },
+  // How Photoshop shows the channels (display only; the ink data is the same
+  // either way): black at 100 % solidity for both, which is what Reem's RIP
+  // workflow expects (2026-10-01: "both spot channels 100%").
+  white: { name: 'White', display: [0, 0, 0] as [number, number, number], solidity: 100 },
+  varnish: { name: 'Varnish', display: [0, 0, 0] as [number, number, number], solidity: 100 },
 } as const;
 
 /**
