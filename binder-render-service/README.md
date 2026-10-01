@@ -62,7 +62,7 @@ The `uvdtf` template is not a PDF job. The print route is captured as a transpar
 - `png` — sRGB + alpha, the exact artboard size; the customer's proof and a usable print file;
 - `tiff` — CMYK through the ICC profile, a transparency channel (Photoshop's "save transparency" layout, so
   the file does not open on paper white), plus two spot channels built from the artwork's coverage, named
-  **White** and **Varnish** the way Photoshop names them (image-resource block 1006/1045/1007/1077), with
+  **White** and **Varnish** the way Photoshop names them (image-resource block 1006/1045/1077), with
   the profile embedded, Deflate strips, 300 dpi. 0 = solid ink in a spot channel, as in Photoshop.
   `pipeline/tiff-spot.ts` writes it; `readSpotTiff()` there reads it back for the tests.
 

@@ -16,7 +16,7 @@ import { deflateSync, inflateSync } from 'node:zlib';
  *     mistakes them for transparency;
  *   - the Photoshop image-resource block (tag 34377) names each extra channel
  *     and marks it a spot colour, with a display colour and solidity, through
- *     resources 1006 (names), 1045 (Unicode names), 1007 and 1077 (DisplayInfo);
+ *     resources 1006 (names), 1045 (Unicode names) and 1077 (DisplayInfo);
  *   - the ICC profile the CMYK was converted to is embedded (tag 34675).
  *
  * Channel polarity follows Photoshop's spot channels: 0 = solid ink, 255 = no
@@ -107,15 +107,15 @@ export function photoshopResources(spots: SpotChannel[], dpi: number): Buffer {
     return b;
   };
 
-  // 1007 DisplayInfo (classic): per channel colour, opacity, kind (1 = protected, i.e. a spot colour), padding.
-  const classic = Buffer.concat(spots.map((s) => Buffer.concat([colour(s), Buffer.from([1, 0])])));
-
-  // 1077 DisplayInfo (current): version 1, then per channel colour, opacity, mode 2 = spot colour, padding 1.
+  // 1077 DisplayInfo: version 1, then per channel colour space + colour, opacity and
+  // mode (2 = spot colour): 13 bytes each, no padding — the layout Photoshop writes
+  // and psd_sdk / psd-tools read. A 14-byte entry misaligns the next channel and
+  // Photoshop then shows every spot channel as black (2026-10-01).
   const version = Buffer.alloc(4);
   version.writeUInt32BE(1, 0);
-  const current = Buffer.concat([version, ...spots.map((s) => Buffer.concat([colour(s), Buffer.from([2, 1])]))]);
+  const current = Buffer.concat([version, ...spots.map((s) => Buffer.concat([colour(s), Buffer.from([2])]))]);
 
-  return Buffer.concat([resource(1005, resInfo), resource(1006, names), resource(1045, unicode), resource(1007, classic), resource(1077, current)]);
+  return Buffer.concat([resource(1005, resInfo), resource(1006, names), resource(1045, unicode), resource(1077, current)]);
 }
 
 // --- TIFF ----------------------------------------------------------------------------------------------

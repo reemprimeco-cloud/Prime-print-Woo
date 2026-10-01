@@ -23,8 +23,11 @@ export interface RenderedTransfer {
  * soft. Nothing where the artboard is transparent.
  */
 export const UVDTF_SPOTS = {
-  white: { name: 'White', display: [255, 255, 255] as [number, number, number], solidity: 100 },
-  varnish: { name: 'Varnish', display: [120, 200, 255] as [number, number, number], solidity: 30 },
+  // Display only (Photoshop's "solidity" simulation): white under everything at
+  // 100 % would hide the artwork on screen, so it is shown at 0 % and the varnish
+  // as a faint tint. The ink data is full strength either way.
+  white: { name: 'White', display: [255, 255, 255] as [number, number, number], solidity: 0 },
+  varnish: { name: 'Varnish', display: [120, 200, 255] as [number, number, number], solidity: 15 },
 } as const;
 
 /**
