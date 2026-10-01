@@ -29,6 +29,7 @@ class Binder_Order_Integration {
 		add_action( 'binder_design_ready', array( __CLASS__, 'on_design_ready' ) );
 
 		add_action( 'add_meta_boxes', array( __CLASS__, 'add_meta_box' ) );
+		add_action( 'woocommerce_after_order_itemmeta', array( __CLASS__, 'render_item_files' ), 10, 2 );
 		add_action( 'woocommerce_order_details_after_order_table', array( __CLASS__, 'render_customer_proofs' ) );
 	}
 
@@ -260,6 +261,45 @@ class Binder_Order_Integration {
 		}
 
 		echo '</tbody></table>';
+	}
+
+	/**
+	 * The download buttons right under the item on the order screen, so the
+	 * files are where the shop looks first (Reem, 2026-10-01: "no design
+	 * attached" — they were in the Print Files box further down).
+	 *
+	 * @param int                   $item_id Order item ID.
+	 * @param WC_Order_Item_Product $item    The item.
+	 */
+	public static function render_item_files( $item_id, $item ) {
+		if ( ! $item instanceof WC_Order_Item_Product || ! is_admin() || ! Binder_Files::is_shop_staff() ) {
+			return;
+		}
+
+		foreach ( self::designs_of( $item ) as $id ) {
+			$row = Binder_DB::get( (int) $id );
+
+			if ( ! $row ) {
+				continue;
+			}
+
+			$cmyk = Binder_Files::link_for( $row, 'cmyk' );
+			$rgb  = Binder_Files::link_for( $row, 'rgb' );
+
+			echo '<div class="binder-item-files" style="margin:4px 0 6px">';
+
+			if ( $cmyk ) {
+				echo '<a class="button button-small button-primary" href="' . esc_url( $cmyk ) . '">' . esc_html__( 'Print file (CMYK PDF)', 'prime-binder-designer' ) . '</a> ';
+			}
+			if ( $rgb ) {
+				echo '<a class="button button-small" href="' . esc_url( $rgb ) . '">' . esc_html__( 'Customer proof', 'prime-binder-designer' ) . '</a> ';
+			}
+			if ( ! $cmyk && ! $rgb ) {
+				echo '<em>' . esc_html( sprintf( /* translators: %s: design status */ __( 'Design #%1$d: %2$s — no file yet', 'prime-binder-designer' ), (int) $id, $row['status'] ) ) . '</em>';
+			}
+
+			echo '</div>';
+		}
 	}
 
 	/* ------------------------------------------------------ the customer */
