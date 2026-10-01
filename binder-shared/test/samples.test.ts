@@ -17,7 +17,7 @@ describe('generated sample designs against the validator', () => {
   });
 
   it('sticker-round and sticker-star: clean, spec rebuilt from the design itself', () => {
-    for (const n of ['sticker-round', 'sticker-star']) {
+    for (const n of ['sticker-round', 'sticker-star', 'sticker-custom']) {
       const d = sample(n);
       const r = validateDesign(d, stickerSpec(d.sticker!));
       expect(r.errors).toEqual([]);

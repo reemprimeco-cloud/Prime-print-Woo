@@ -11,8 +11,9 @@ import { mmToPt, stickerOutlines, type PathCmd, type Spec } from '@binder/shared
  * Applied after Ghostscript: the CMYK conversion would otherwise fold the spot
  * colour into process magenta and the plotter would never see it.
  */
-export async function stampCutLine(pdf: Uint8Array, spec: Spec): Promise<Uint8Array> {
+export async function stampCutLine(pdf: Uint8Array, spec: Spec, cut?: PathCmd[]): Promise<Uint8Array> {
   if (!spec.sticker) return pdf;
+  if (cut && cut.length === 0) return pdf; // a custom shape with nothing to trace: no cut line
 
   const doc = await PDFDocument.load(pdf);
   const page = doc.getPage(0);
@@ -43,7 +44,7 @@ export async function stampCutLine(pdf: Uint8Array, spec: Spec): Promise<Uint8Ar
   colorSpaces.set(PDFName.of('CSCutContour'), colorSpace);
   page.node.setExtGState(PDFName.of('GSCutContour'), overprint);
 
-  const ops = pathOps(stickerOutlines(spec).cut, H);
+  const ops = pathOps(cut ?? stickerOutlines(spec).cut, H);
   const stream = ctx.register(ctx.stream(`q /GSCutContour gs /CSCutContour CS 1 SCN 0.25 w 0 J 0 j\n${ops} S\nQ\n`));
   (page.node.Contents() as PDFArray).push(stream);
 

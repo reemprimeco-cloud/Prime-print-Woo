@@ -53,6 +53,14 @@ Chromium can only write RGB. Each text colour is painted as a unique "sentinel" 
 in the PDF to the design's own DeviceCMYK numbers, so pure black text stays `0 0 0 1 k` (colour-managed
 RGB→CMYK would make a four-colour rich black). Photos are converted by Ghostscript through the ICC profile.
 
+## Custom-shape stickers
+
+A sticker whose shape is `custom` is cut along its artwork. The print page is captured once more as a
+transparent raster (100 dpi), and `@binder/shared` `contour.ts` traces the outline: alpha threshold,
+grown by `STICKER.custom_border_mm` (2 mm) with a distance transform, holes filled, each piece's boundary
+traced, simplified and rounded, clamped to the trim box. The editor runs the same code on its own canvas
+to show the customer the line, so the two agree. The path replaces the shape outline in `stampCutLine()`.
+
 ## UV DTF transfers
 
 The `uvdtf` template is not a PDF job. The print route is captured as a transparent raster at 300 dpi

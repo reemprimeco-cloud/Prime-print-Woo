@@ -397,3 +397,27 @@ describe('async mode with a signed callback', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('custom-shape sticker: the cut line follows the artwork', () => {
+  it('stamps a traced CutContour path (many segments, not the trim rectangle) on both files', async () => {
+    const d = sample('sticker-custom');
+    const spec = stickerSpec(d.sticker!);
+    const { cmyk, rgb } = await ok('sticker-custom');
+    expect(verifyPdf(cmyk, 'sticker', [], spec)).toContain('SUMMARY  OK');
+    for (const pdf of [cmyk, rgb]) {
+      const raw = Buffer.from(pdf).toString('latin1');
+      const stream = raw.slice(raw.indexOf('/CSCutContour CS 1 SCN'));
+      const segments = (stream.slice(0, stream.indexOf('\nQ')).match(/ l\n/g) ?? []).length;
+      expect(segments).toBeGreaterThan(24);
+      // Every point stays inside the trim box (1..61 mm in canvas coordinates -> 2.83..172.9 pt).
+      const pts = [...stream.slice(0, stream.indexOf('\nQ')).matchAll(/([\d.]+) ([\d.]+) [ml]\n/g)].map((m) => [Number(m[1]), Number(m[2])]);
+      expect(pts.length).toBeGreaterThan(24);
+      for (const [x, y] of pts) {
+        expect(x).toBeGreaterThanOrEqual(2.8);
+        expect(x).toBeLessThanOrEqual(173);
+        expect(y).toBeGreaterThanOrEqual(2.8);
+        expect(y).toBeLessThanOrEqual(173);
+      }
+    }
+  }, 120_000);
+});

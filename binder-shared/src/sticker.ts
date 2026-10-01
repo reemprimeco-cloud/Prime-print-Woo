@@ -20,6 +20,11 @@ export const STICKER = {
   min_mm: 10,
   max_mm: 1000,
   dpi: 300,
+  /**
+   * "Custom shape": the cut line follows the artwork (contour.ts), this far
+   * outside it — the white border of a die-cut sticker.
+   */
+  custom_border_mm: 2,
 } as const;
 
 /**
@@ -310,4 +315,28 @@ export function stickerOverlaySvg(spec: Spec): string {
 
 export function stickerOverlayDataUrl(spec: Spec): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(stickerOverlaySvg(spec))}`;
+}
+
+/**
+ * The guide for a custom-shape sticker: the traced cut line (contour.ts) over
+ * a dimmed outside, and the trim box the artwork must stay within. No bleed
+ * or safe outline — the border already keeps the cut clear of the artwork.
+ */
+export function customOverlaySvg(spec: Spec, cut: PathCmd[]): string {
+  const { w, h } = spec.canvas_with_bleed_mm;
+  const stroke = Math.max(0.2, Math.min(w, h) / 250);
+  const dash = `${f(stroke * 4)} ${f(stroke * 3)}`;
+  const trim: Box = { x: spec.bleed_mm, y: spec.bleed_mm, w: spec.trim_mm.w, h: spec.trim_mm.h };
+  const cutD = cut.length ? svgPathData(cut) : '';
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${f(w)} ${f(h)}" width="${f(w)}mm" height="${f(h)}mm">` +
+    (cutD ? `<path d="M0 0H${f(w)}V${f(h)}H0Z ${cutD}" fill="#ffffff" fill-opacity="0.45" fill-rule="evenodd"/>` : '') +
+    `<path d="${svgPathData(shapePath('rectangle', trim))}" fill="none" stroke="${STICKER_GUIDES.bleed}" stroke-width="${f(stroke)}" stroke-dasharray="${dash}"/>` +
+    (cutD ? `<path d="${cutD}" fill="none" stroke="${STICKER_GUIDES.cut}" stroke-width="${f(stroke)}"/>` : '') +
+    `</svg>`
+  );
+}
+
+export function customOverlayDataUrl(spec: Spec, cut: PathCmd[]): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(customOverlaySvg(spec, cut))}`;
 }

@@ -2,10 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } 
 import { Canvas, Control, FabricImage, Path, Rect, Textbox, type FabricObject, type TPointerEventInfo } from 'fabric';
 import {
   cmykToRgbCss,
+  customCutPath,
+  customOverlayDataUrl,
   effectiveDpi,
   FONT_LIST,
   panelsInCanvas,
   SHAPE_KINDS,
+  STICKER,
   stickerOutlines,
   svgPathData,
   THRESHOLDS,
@@ -13,6 +16,7 @@ import {
   type Cmyk,
   type DesignElement,
   type DesignJSON,
+  type PathCmd,
   type ShapeKind,
   type Spec,
 } from '@binder/shared';
@@ -123,6 +127,9 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   const isBinder = !spec.sticker;
   // A UV DTF transfer: a transparent artboard of the typed size, text and pictures only.
   const isTransfer = spec.template === 'uvdtf';
+  // A custom-shape sticker: transparent sheet, and the cut line is traced around whatever is placed.
+  const isCustom = spec.template === 'sticker' && spec.sticker?.shape === 'custom';
+  const transparentSheet = isTransfer || isCustom;
 
   const stageRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLElement>(null);
@@ -220,7 +227,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   // ---- Canvas -------------------------------------------------------------------------------------------------------
   useEffect(() => {
     if (!canvasEl.current) return;
-    const c = new Canvas(canvasEl.current, { width: W, height: H, backgroundColor: isTransfer ? '' : '#ffffff', preserveObjectStacking: true, selection: false, enableRetinaScaling: true });
+    const c = new Canvas(canvasEl.current, { width: W, height: H, backgroundColor: transparentSheet ? '' : '#ffffff', preserveObjectStacking: true, selection: false, enableRetinaScaling: true });
     fabric.current = c;
     // Test hook for the browser checks; only with ?debug=1.
     if (new URLSearchParams(location.search).get('debug') === '1') (window as unknown as { __studioCanvas?: Canvas }).__studioCanvas = c;
@@ -437,6 +444,29 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [spec, commit],
   );
+
+  // ---- Custom shape: the cut line follows the artwork ---------------------------------------------------------------------
+  // Traced from the canvas itself (contour.ts, the same code the render service
+  // runs on its own capture), a border outside the artwork, a moment after each change.
+  const [cutPath, setCutPath] = useState<PathCmd[]>([]);
+  const traceCut = useCallback(() => {
+    const c = fabric.current;
+    if (!c || !isCustom) return;
+    if (c.getObjects().length === 0) return setCutPath([]);
+    const long = Math.max(c.getWidth(), c.getHeight());
+    const el = c.toCanvasElement(Math.min(640, Math.max(long, spec.canvas_with_bleed_mm.w * 4)) / long);
+    const ctx = el.getContext('2d');
+    if (!ctx) return;
+    const { data } = ctx.getImageData(0, 0, el.width, el.height);
+    const alpha = new Uint8Array(el.width * el.height);
+    for (let i = 0; i < alpha.length; i++) alpha[i] = data[i * 4 + 3]!;
+    setCutPath(customCutPath(alpha, el.width, el.height, spec.canvas_with_bleed_mm, STICKER.custom_border_mm, { x: spec.bleed_mm, y: spec.bleed_mm, w: spec.trim_mm.w, h: spec.trim_mm.h }));
+  }, [isCustom, spec]);
+  useEffect(() => {
+    if (!isCustom) return;
+    const id = window.setTimeout(traceCut, 250);
+    return () => window.clearTimeout(id);
+  }, [isCustom, snap.design, traceCut]);
 
   // ---- Checks, session, reopening ------------------------------------------------------------------------------------------
   const result = useMemo(() => validateDesign(snap.design, spec), [snap.design, spec]);
@@ -719,6 +749,8 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
       ctx.strokeStyle = '#EC008C';
       if (isTransfer) {
         // Nothing is cut: no line.
+      } else if (isCustom) {
+        if (cutPath.length) ctx.stroke(new Path2D(svgPathData(cutPath)));
       } else if (spec.sticker) {
         ctx.stroke(new Path2D(svgPathData(stickerOutlines(spec).cut)));
       } else {
@@ -868,9 +900,9 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
           )}
           <div className={`studio-sheet${picking ? ' is-picking' : ''}`} tabIndex={0} onKeyDown={onKey} aria-label={productTitle}>
             <div className="studio-fontwarm" ref={fontWarm} aria-hidden="true" />
-            <div className={`binder-frame${isTransfer ? ' binder-frame--transparent' : ''}`} style={{ width: Math.round(viewW), height: viewH }} dir="ltr">
+            <div className={`binder-frame${transparentSheet ? ' binder-frame--transparent' : ''}`} style={{ width: Math.round(viewW), height: viewH }} dir="ltr">
               <canvas ref={canvasEl} />
-              <img className="binder-overlay" src={overlayUrlFor(tpl)} alt="" draggable={false} />
+              <img className="binder-overlay" src={isCustom ? customOverlayDataUrl(spec, cutPath) : overlayUrlFor(tpl)} alt="" draggable={false} />
             </div>
           </div>
           <Legend spec={spec} t={t} />

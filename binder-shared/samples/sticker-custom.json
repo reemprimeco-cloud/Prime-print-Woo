@@ -1,0 +1,18 @@
+{
+  "template": "sticker",
+  "mode": "live",
+  "canvas_mm": { "w": 62, "h": 62 },
+  "sticker": { "w_mm": 60, "h_mm": 60, "shape": "custom" },
+  "elements": [
+    {
+      "type": "image",
+      "src": "/samples/assets/logo.png",
+      "x_mm": 11,
+      "y_mm": 11,
+      "w_mm": 40,
+      "h_mm": 40,
+      "rotation_deg": 0,
+      "source_px": { "w": 1200, "h": 1200 }
+    }
+  ]
+}

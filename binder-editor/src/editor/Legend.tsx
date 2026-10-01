@@ -28,6 +28,15 @@ const STICKER_ITEMS: Item[] = [
 /** Persistent guide legend (§4.2), shown beside the stage, never drawn on the canvas. */
 export function Legend({ spec, t }: { spec: Spec; t: T }) {
   if (spec.template === 'uvdtf') return <p className="binder-legend binder-legend--note"><small>{t('legend_uvdtf')}</small></p>;
+  if (spec.sticker?.shape === 'custom') {
+    return (
+      <div className="binder-legend" aria-label={t('legend')}>
+        <span><i style={{ background: STICKER_GUIDES.cut }} />{t('legend_trim')}</span>
+        <span><i style={{ background: `repeating-linear-gradient(90deg, ${STICKER_GUIDES.bleed} 0 0.3rem, transparent 0.3rem 0.5rem)` }} />{t('legend_sticker_size')}</span>
+        <small>{t('legend_custom')}</small>
+      </div>
+    );
+  }
   const mm = { bleed: spec.bleed_mm, safe: spec.safe_margin_mm, turnin: spec.turn_in_mm };
   const items = spec.sticker ? STICKER_ITEMS : BINDER_ITEMS.filter((l) => l.mm !== 'turnin' || spec.turn_in_mm > 0);
   return (
