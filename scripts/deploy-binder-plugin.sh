@@ -55,7 +55,11 @@ echo "Uploading to   : $USER_NAME@$HOST:$REMOTE"
 echo
 echo "$FILES" | sed 's/^/  /'
 echo
-read -r -p "Upload these $(echo "$FILES" | wc -l | tr -d ' ') file(s)? [y/N] " reply
+if [ "${PRIME_ASSUME_YES:-}" = "1" ]; then
+  reply=y   # the GitHub deploy job (.github/workflows/deploy-live.yml) answers for you
+else
+  read -r -p "Upload these $(echo "$FILES" | wc -l | tr -d ' ') file(s)? [y/N] " reply
+fi
 [ "$reply" = "y" ] || [ "$reply" = "Y" ] || { echo "Cancelled."; exit 1; }
 
 BATCH=$(mktemp)
@@ -85,8 +89,14 @@ trap 'rm -f "$BATCH"' EXIT
 # password prompting, and WordPress.com SFTP is password-only. The password
 # prompt comes through the terminal; the "-mkdir" lines ignore "already
 # exists", any failed "put" stops the run with a non-zero exit.
-echo "Enter the SFTP password when asked (from WP.com → Hosting Configuration)."
-sftp "$USER_NAME@$HOST" < "$BATCH"
+if [ -n "${PRIME_SFTP_PASSWORD:-}" ]; then
+  # Unattended (the GitHub deploy job): the password comes from an encrypted
+  # repository secret through the environment, never the command line.
+  SSHPASS="$PRIME_SFTP_PASSWORD" sshpass -e sftp -o StrictHostKeyChecking=accept-new "$USER_NAME@$HOST" < "$BATCH"
+else
+  echo "Enter the SFTP password when asked (from WP.com → Hosting Configuration)."
+  sftp "$USER_NAME@$HOST" < "$BATCH"
+fi
 
 echo
 echo "Done. Plugin $VERSION is uploaded."

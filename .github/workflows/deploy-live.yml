@@ -1,0 +1,100 @@
+# Upload the theme and/or the designer plugin to the live WordPress.com site,
+# without anyone's Mac. Same scripts as a manual deploy (scripts/deploy-*.sh),
+# run unattended with the SFTP login from encrypted repository secrets.
+#
+# One-time setup (github.com → this repo → Settings → Secrets and variables →
+# Actions → New repository secret):
+#   PRIME_SFTP_USER       the SFTP username from WP.com → Hosting Configuration
+#   PRIME_SFTP_PASSWORD   the SFTP password from the same page
+#
+# How it runs: a push to main-0t9dg8 whose commit message contains
+#   [deploy theme]    theme files changed since the last theme deploy
+#   [deploy plugin]   the designer plugin (editor rebuilt first)
+#   [deploy all]      both
+# or by hand: Actions → "Deploy to live site" → Run workflow.
+#
+# The last deployed theme commit is remembered in the tag "live-theme", so each
+# theme deploy uploads only what changed (plus style.css, the cache buster).
+name: Deploy to live site
+
+on:
+  push:
+    branches: [main-0t9dg8]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: What to upload
+        type: choice
+        options: [theme, plugin, all]
+        default: all
+
+permissions:
+  contents: write # to move the live-theme tag after a theme deploy
+
+concurrency:
+  group: deploy-live
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[deploy theme]') ||
+      contains(github.event.head_commit.message, '[deploy plugin]') ||
+      contains(github.event.head_commit.message, '[deploy all]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PRIME_SFTP_USER: ${{ secrets.PRIME_SFTP_USER }}
+      PRIME_SFTP_PASSWORD: ${{ secrets.PRIME_SFTP_PASSWORD }}
+      PRIME_ASSUME_YES: '1'
+      MSG: ${{ github.event.head_commit.message }}
+      TARGET: ${{ github.event.inputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decide what to upload
+        id: what
+        run: |
+          theme=false; plugin=false
+          case "$TARGET" in theme) theme=true;; plugin) plugin=true;; all) theme=true; plugin=true;; esac
+          case "$MSG" in *"[deploy theme]"*) theme=true;; esac
+          case "$MSG" in *"[deploy plugin]"*) plugin=true;; esac
+          case "$MSG" in *"[deploy all]"*) theme=true; plugin=true;; esac
+          echo "theme=$theme" >> "$GITHUB_OUTPUT"
+          echo "plugin=$plugin" >> "$GITHUB_OUTPUT"
+          echo "Theme: $theme   Plugin: $plugin"
+
+      - name: Check the SFTP secrets are set
+        run: |
+          if [ -z "$PRIME_SFTP_USER" ] || [ -z "$PRIME_SFTP_PASSWORD" ]; then
+            echo "::error::Add PRIME_SFTP_USER and PRIME_SFTP_PASSWORD under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass >/dev/null
+
+      - name: Upload theme
+        if: steps.what.outputs.theme == 'true'
+        run: |
+          git fetch --tags --force -q
+          if ! git rev-parse -q --verify refs/tags/live-theme >/dev/null; then
+            echo "::error::No live-theme tag: nothing records which theme commit is live."
+            exit 1
+          fi
+          export PRIME_LAST_DEPLOYED=$(git rev-parse live-theme)
+          scripts/deploy-theme.sh
+          git tag -f live-theme HEAD
+          git push -f origin refs/tags/live-theme
+
+      - uses: actions/setup-node@v4
+        if: steps.what.outputs.plugin == 'true'
+        with:
+          node-version: 22
+
+      - name: Build the editor and upload the plugin
+        if: steps.what.outputs.plugin == 'true'
+        run: |
+          (cd binder-editor && npm ci --no-audit --no-fund)
+          scripts/deploy-binder-plugin.sh
