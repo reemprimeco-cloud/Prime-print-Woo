@@ -50,12 +50,13 @@ describe('UV DTF transfer: a transparent PNG and a CMYK TIFF with White and Varn
 
     // TIFF: CMYK + White + Varnish, no ink where transparent, solid spot ink under the logo.
     const t = readSpotTiff(tiff.bytes);
-    expect(t).toMatchObject({ width: 591, height: 354, samplesPerPixel: 6, photometric: 5, dpi: 300, spotNames: ['White', 'Varnish'], hasIcc: true });
-    const px = (x: number, y: number) => Array.from(t.pixels.subarray((y * 591 + x) * 6, (y * 591 + x) * 6 + 6));
-    expect(px(585, 348)).toEqual([0, 0, 0, 0, 255, 255]);
+    expect(t).toMatchObject({ width: 591, height: 354, samplesPerPixel: 7, photometric: 5, extraSamples: [2, 0, 0], dpi: 300, spotNames: ['White', 'Varnish'], hasIcc: true });
+    const px = (x: number, y: number) => Array.from(t.pixels.subarray((y * 591 + x) * 7, (y * 591 + x) * 7 + 7));
+    expect(px(585, 348)).toEqual([0, 0, 0, 0, 0, 255, 255]); // no ink, transparent, no white, no varnish
     const logo = px(150, 150);
-    expect(logo[4]).toBe(0);
-    expect(logo[5]).toBe(0);
+    expect(logo[4]).toBe(255); // opaque
+    expect(logo[5]).toBe(0); // solid white
+    expect(logo[6]).toBe(0); // solid varnish
     expect(logo.slice(0, 4).some((v) => v > 0)).toBe(true);
   }, 90_000);
 

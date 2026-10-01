@@ -7,10 +7,13 @@ import { deflateSync, inflateSync } from 'node:zlib';
  * and 2 is varnish").
  *
  * Layout (TIFF 6 + Adobe's Photoshop additions):
- *   - Photometric Separated, InkSet CMYK, 8 bits, 4 + N samples per pixel,
- *     interleaved, Deflate-compressed strips, 300 dpi;
- *   - the extra samples are declared "unspecified" (not alpha) so a reader
- *     that knows nothing about Photoshop does not treat them as transparency;
+ *   - Photometric Separated, InkSet CMYK, 8 bits, 4 (+1) + N samples per
+ *     pixel, interleaved, Deflate-compressed strips, 300 dpi;
+ *   - an optional transparency channel first among the extra samples,
+ *     declared unassociated alpha (2) exactly as Photoshop saves "transparency"
+ *     in a TIFF, so the file opens with a see-through background rather than
+ *     paper white; the spot samples after it are "unspecified" (0) so no reader
+ *     mistakes them for transparency;
  *   - the Photoshop image-resource block (tag 34377) names each extra channel
  *     and marks it a spot colour, with a display colour and solidity, through
  *     resources 1006 (names), 1045 (Unicode names), 1007 and 1077 (DisplayInfo);
@@ -36,6 +39,8 @@ export interface SpotTiffInput {
   height: number;
   /** Interleaved C, M, Y, K ink amounts, 0..255, length = width * height * 4. */
   cmyk: Uint8Array;
+  /** Optional transparency, 255 = opaque, length = width * height. Written as Photoshop's transparency channel. */
+  alpha?: Uint8Array;
   spots: SpotChannel[];
   dpi: number;
   /** The CMYK profile the data is in; embedded as-is. */
@@ -138,10 +143,11 @@ const rational = (n: number, d: number): Buffer => u32(n, d);
 
 /** Build the file. Little-endian ("II"), one IFD, strips after the IFD. */
 export function encodeSpotTiff(input: SpotTiffInput): Buffer {
-  const { width, height, cmyk, spots, dpi } = input;
-  const extra = spots.length;
+  const { width, height, cmyk, spots, dpi, alpha } = input;
+  const extra = (alpha ? 1 : 0) + spots.length;
   const spp = 4 + extra;
   if (cmyk.length !== width * height * 4) throw new Error('cmyk buffer has the wrong length');
+  if (alpha && alpha.length !== width * height) throw new Error('alpha buffer has the wrong length');
   for (const s of spots) if (s.ink.length !== width * height) throw new Error(`spot channel "${s.name}" has the wrong length`);
 
   const rowsPerStrip = Math.max(1, Math.min(height, input.rowsPerStrip ?? 64));
@@ -163,7 +169,8 @@ export function encodeSpotTiff(input: SpotTiffInput): Buffer {
         raw[o++] = cmyk[src + 1]!;
         raw[o++] = cmyk[src + 2]!;
         raw[o++] = cmyk[src + 3]!;
-        for (let k = 0; k < extra; k++) raw[o++] = spots[k]!.ink[p]!;
+        if (alpha) raw[o++] = alpha[p]!;
+        for (let k = 0; k < spots.length; k++) raw[o++] = spots[k]!.ink[p]!;
         src += 4;
         p++;
       }
@@ -190,7 +197,7 @@ export function encodeSpotTiff(input: SpotTiffInput): Buffer {
     { tag: 296, type: TYPE.SHORT, count: 1, value: u16(2) }, // ResolutionUnit: inch
     { tag: 305, type: TYPE.ASCII, count: software.length, value: software }, // Software
     { tag: 332, type: TYPE.SHORT, count: 1, value: u16(1) }, // InkSet: CMYK
-    ...(extra ? [{ tag: 338, type: TYPE.SHORT, count: extra, value: u16(...Array(extra).fill(0)) }] : []), // ExtraSamples: unspecified
+    ...(extra ? [{ tag: 338, type: TYPE.SHORT, count: extra, value: u16(...(alpha ? [2] : []), ...Array(spots.length).fill(0)) }] : []), // ExtraSamples: transparency (unassociated alpha), then unspecified
     { tag: 34377, type: TYPE.BYTE, count: photoshop.length, value: photoshop }, // Photoshop image resources
     ...(input.icc ? [{ tag: 34675, type: TYPE.UNDEFINED, count: input.icc.length, value: Buffer.from(input.icc) }] : []), // ICC profile
   ].sort((a, b) => a.tag - b.tag);

@@ -31,8 +31,9 @@ export const UVDTF_SPOTS = {
  * The UV DTF pipeline: the print route captured as a transparent raster at
  * the template's dpi, then
  *   - PNG: the raster as is (sRGB + alpha, 300 dpi);
- *   - TIFF: colours converted to CMYK through the FOGRA39 profile, plus the
- *     two spot channels built from the alpha.
+ *   - TIFF: colours converted to CMYK through the FOGRA39 profile, the alpha
+ *     kept as Photoshop-style transparency (so the file does not open on a
+ *     white background), plus the two spot channels built from the alpha.
  * There is no PDF, no page box and no cut line: the file is the artboard.
  */
 export async function renderTransfer(
@@ -90,6 +91,7 @@ export async function renderTransfer(
     width,
     height,
     cmyk: c,
+    alpha: new Uint8Array(alpha.buffer, alpha.byteOffset, alpha.length),
     spots: [
       { ...UVDTF_SPOTS.white, ink },
       { ...UVDTF_SPOTS.varnish, ink },

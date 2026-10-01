@@ -8,7 +8,9 @@ describe('spot-channel TIFF', () => {
   const cmyk = new Uint8Array(w * h * 4);
   const white = new Uint8Array(w * h);
   const varnish = new Uint8Array(w * h);
+  const alpha = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i++) {
+    alpha[i] = 255 - i * 5;
     cmyk.set([i * 10, 255 - i * 10, 7, i % 2 ? 255 : 0], i * 4);
     white[i] = i * 17;
     varnish[i] = 255 - i * 17;
@@ -17,6 +19,7 @@ describe('spot-channel TIFF', () => {
     width: w,
     height: h,
     cmyk,
+    alpha,
     spots: [
       { name: 'White', ink: white, display: [255, 255, 255], solidity: 100 },
       { name: 'Varnish', ink: varnish, display: [120, 200, 255], solidity: 30 },
@@ -28,24 +31,25 @@ describe('spot-channel TIFF', () => {
 
   it('is CMYK + two named spot channels at 300 dpi, Deflate, with the profile embedded', () => {
     const info = readSpotTiff(file);
-    expect(info).toMatchObject({ width: w, height: h, samplesPerPixel: 6, photometric: 5, compression: 8, extraSamples: [0, 0], dpi: 300, spotNames: ['White', 'Varnish'], hasIcc: true });
+    expect(info).toMatchObject({ width: w, height: h, samplesPerPixel: 7, photometric: 5, compression: 8, extraSamples: [2, 0, 0], dpi: 300, spotNames: ['White', 'Varnish'], hasIcc: true });
   });
 
   it('round-trips every sample, across strips', () => {
     const { pixels } = readSpotTiff(file);
-    expect(pixels.length).toBe(w * h * 6);
+    expect(pixels.length).toBe(w * h * 7);
     for (let i = 0; i < w * h; i++) {
-      expect(Array.from(pixels.subarray(i * 6, i * 6 + 6))).toEqual([...cmyk.subarray(i * 4, i * 4 + 4), white[i], varnish[i]]);
+      expect(Array.from(pixels.subarray(i * 7, i * 7 + 7))).toEqual([...cmyk.subarray(i * 4, i * 4 + 4), alpha[i], white[i], varnish[i]]);
     }
   });
 
-  it('is a TIFF libtiff can open: 6 channels, CMYK, 300 dpi', async () => {
+  it('is a TIFF libtiff can open: CMYK with transparency, 300 dpi', async () => {
     const meta = await sharp(Buffer.from(file)).metadata();
     expect(meta.format).toBe('tiff');
     expect(meta.width).toBe(w);
     expect(meta.height).toBe(h);
-    expect(meta.channels).toBe(6);
+    expect(meta.channels).toBe(7);
     expect(meta.space).toBe('cmyk');
+    expect(meta.hasAlpha).toBe(true);
     expect(meta.density).toBe(300);
   });
 });
