@@ -281,6 +281,24 @@ export function validateRules(design: DesignJSON, spec: Spec): Issue[] {
   design.elements.forEach((el, i) => {
     const at = { element: i };
 
+    // A UV DTF transfer has no bleed, no safe zone and nothing to fill: the only
+    // layout question is whether the element stays on the artboard.
+    if (spec.template === 'uvdtf') {
+      if (el.type === 'image') {
+        const dpi = effectiveDpi(el);
+        const shown = Math.round(dpi);
+        if (dpi < THRESHOLDS.blockDpi) {
+          issues.push(err('dpi.block', `Image resolution is only ${shown} DPI at this size — too low to print. Use a larger file or make the image smaller.`, { ...at, detail: { dpi: shown, min: THRESHOLDS.blockDpi } }));
+        } else if (dpi < THRESHOLDS.warnDpi) {
+          issues.push(warn('dpi.warn', `Image resolution is ${shown} DPI at this size — it may print blurry.`, { ...at, detail: { dpi: shown, recommended: THRESHOLDS.warnDpi } }));
+        }
+      }
+      if (!boxInside(boundingBox(el), canvas)) {
+        issues.push(warn('artboard.outside', 'Part of this element is outside the artboard and will not be printed.', at));
+      }
+      return;
+    }
+
     // 1. Resolution ------------------------------------------------------------
     if (el.type === 'image') {
       const dpi = effectiveDpi(el);
@@ -331,7 +349,7 @@ export function validateRules(design: DesignJSON, spec: Spec): Issue[] {
 
   // 3. Empty bleed (warning) --------------------------------------------------------
   const bottom = design.elements[0];
-  if (bottom && (bottom.type === 'image' || bottom.type === 'rect' || bottom.type === 'shape')) {
+  if (spec.template !== 'uvdtf' && bottom && (bottom.type === 'image' || bottom.type === 'rect' || bottom.type === 'shape')) {
     const share = (bottom.w_mm * bottom.h_mm) / (canvas.w * canvas.h);
     const intendedBackground = (design.mode === 'upload' && bottom.type === 'image') || share >= THRESHOLDS.backgroundShare;
     if (intendedBackground && !elementCovers(bottom, canvas)) {

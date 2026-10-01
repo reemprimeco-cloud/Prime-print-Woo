@@ -76,6 +76,8 @@ export function useDesignSession(cfg: EditorConfig, api: Api, t: T, getSnapshot:
         if (e.status === 429 || e.status === 503) return { message: t('err_busy'), issues: [] };
         if (e.status === 502 || e.code === 'binder_not_configured') return { message: t('err_unavailable'), issues: [] };
         if (e.status === 0) return { message: t('err_network'), issues: [] };
+        // Anything else: say what the server said, so a failure can be read, not guessed.
+        if (e.message && e.message !== e.code) return { message: `${t('err_generic')} (${e.status}: ${e.message})`, issues: e.errors };
       }
       return { message: t('err_generic'), issues: [] };
     },
@@ -110,7 +112,7 @@ export function useDesignSession(cfg: EditorConfig, api: Api, t: T, getSnapshot:
           if (e instanceof ApiError && e.status !== 0 && e.status < 500) break; // a real refusal, not a blip
         }
       }
-      setFailure({ message: t('err_generic'), issues: [] });
+      setFailure({ message: `${t('err_generic')} (${t('err_timeout')})`, issues: [] });
       setPhase('failed');
     },
     [api, finishDone, t],

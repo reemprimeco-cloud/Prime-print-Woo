@@ -705,7 +705,9 @@ class Binder_Rest_API {
 
 			$tmp = Binder_Render_Client::download( $url, $kind );
 			if ( is_wp_error( $tmp ) ) {
-				// Leave the design 'rendering': the service retries the callback, and status() can recover it.
+				// Leave the design 'rendering': the service retries the callback, and status() can
+				// recover it. The reason is kept on the row (Settings → Prime Designer → Recent designs).
+				Binder_DB::update( $row['id'], array( 'render_error' => wp_json_encode( array( 'download' => $kind, 'error' => $tmp->get_error_message() ) ) ) );
 				return new WP_Error( 'binder_download_failed', $tmp->get_error_message(), array( 'status' => 502 ) );
 			}
 			Binder_Files::adopt( $row['id'], $kind, $tmp );
