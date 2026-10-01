@@ -828,6 +828,25 @@ function prime_render_merge_page() {
 		$retired_ids = isset( $retired_log['ids'] ) ? array_map( 'intval', (array) $retired_log['ids'] ) : array();
 		$unlinked    = $retired_ids ? prime_find_unlinked_retired() : array();
 		?>
+		<?php
+		// Products on sale whose own (English) title is Arabic: the English
+		// original of a backwards pair was deleted before it could be repaired,
+		// so there is no English text left to swap in. Fixed by hand.
+		$arabic_titled = array_filter(
+			get_posts( array( 'post_type' => 'product', 'post_status' => 'publish', 'numberposts' => -1, 'fields' => 'ids' ) ),
+			static fn( $id ) => prime_has_arabic( get_post_field( 'post_title', $id ) )
+		);
+		?>
+		<?php if ( $arabic_titled ) : ?>
+			<h2><?php esc_html_e( 'Products with an Arabic title on the English site', 'prime-printing' ); ?></h2>
+			<p><?php esc_html_e( 'For each: open it, cut the Arabic title into the Arabic box below the editor, type the English title at the top, set the permalink to an English slug, check Product data → General → Price calculator if it is a sticker, and Update.', 'prime-printing' ); ?></p>
+			<ul>
+				<?php foreach ( $arabic_titled as $product_id ) : ?>
+					<li><a href="<?php echo esc_url( (string) get_edit_post_link( $product_id ) ); ?>">#<?php echo (int) $product_id; ?> <?php echo esc_html( get_post_field( 'post_title', $product_id ) ); ?></a></li>
+				<?php endforeach; ?>
+			</ul>
+		<?php endif; ?>
+
 		<?php if ( $unlinked ) : ?>
 			<h2><?php esc_html_e( 'Arabic products not linked to an English product', 'prime-printing' ); ?></h2>
 			<p><?php esc_html_e( 'These Arabic copies had no English partner on file, so their Arabic text was not copied anywhere and their Arabic link shows nothing to customers. Enter the English product each one belongs to (its ID is in the address bar when you edit it, post=…) and press Link: the Arabic title, description and link move onto that product. A suggestion is filled in when exactly one product shares the same main image.', 'prime-printing' ); ?></p>
