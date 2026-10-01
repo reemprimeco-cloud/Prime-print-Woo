@@ -38,39 +38,37 @@ const PRIME_UV_DTF_PRODUCT_ID = 4641;
 
 /**
  * Reem's real cost basis, ported verbatim from her latest reference file
- * (UV_DTF_Calculator_30cm.html, 2026-09-07 — supersedes the original 60cm-roll
- * UV_DTF_WooCommerce_Calculator.html this was first built from). A real cost
- * basis, not a setting — a wrong number here changes what a customer is
- * charged, so it stays in code rather than a wp-admin field a misclick could
- * break pricing on.
+ * (UV_DTF_Calculator_60cm.html, 2026-10-01 — back to the 60 cm roll, replacing
+ * the 30 cm figures of 2026-09-07). A real cost basis, not a setting — a wrong
+ * number here changes what a customer is charged, so it stays in code rather
+ * than a wp-admin field a misclick could break pricing on.
  *
  * @return array
  */
 function prime_uv_dtf_constants() {
 	return array(
-		'roll_width_cm' => 30,
-		// Film: 30cm x 100m roll @ 45 KD — given by Reem as a working figure,
-		// not yet backed by a real 30cm-roll invoice like the old 60cm figure
-		// was (confirm/replace when a real invoice exists).
-		'film_per_cm'     => 0.0045,
+		'roll_width_cm'   => 60,
+		// Film: A-roll (0.62m x 50m, $44.80) + B-roll (0.615m x 100m, $22.06)
+		// — Nocai invoice, USD->KWD @0.310.
+		'film_per_cm'     => 0.0034615,
 		// Ink: CMYK+White @ $21/500ml, Varnish @ $28/500ml — real coverage
-		// from 4 actual print jobs (CMYK 1.8195, White 1.8851, Varnish
-		// (V12+GL) 3.7701 ml/m²), scaled to the 30cm roll width.
-		'ink_per_cm'      => 0.0003410,
+		// measured from 4 actual print jobs (RIP "Assess" reports): CMYK
+		// 1.8195 ml/m², White 1.8851 ml/m², Varnish (V12+GL) 3.7701 ml/m².
+		'ink_per_cm'      => 0.0006821,
 		// ~30 KD/order avg x 12 orders/yr, spread over 1700m annual volume.
 		'shipping_per_cm' => 0.0021176,
 		// Machine dep. (2647.400 KWD / 2yrs) + overhead (rent 350 + labor 700 +
 		// admin 500)/mo, spread over annualized output (11 busy months @3 rolls
-		// + 1 slow month @1 roll = 1700m/yr). Same fixed-cost pool as before —
-		// flag for a recalculation if the 30cm line turns out to run on its
-		// own separate machine/labor/output rather than sharing the 60cm one's.
+		// + 1 slow month @1 roll = 1700m/yr).
 		'fixed_per_cm'    => 0.1171982,
 		'margin'          => 0.50,
 		'min_order'       => 5.0,
 		'spacing_cm'      => 0.5,
 		// Cutting is a flat per-piece add-on, not part of the roll-cost rate
 		// above — it's added to the sheet total afterwards, not blended into
-		// it, so the 5 KD minimum never absorbs it (Reem, 2026-09-07).
+		// it, so the 5 KD minimum never absorbs it (Reem, 2026-09-07). Not in
+		// the reference file, which prices the sheet only; kept as the
+		// optional extra it always was.
 		'cutting_per_piece' => 0.020,
 	);
 }
