@@ -162,6 +162,26 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     const loads = [document.fonts.load('700 24px "Tajawal"', 'Aa الصف'), document.fonts.load('700 24px "Poppins"', 'Aa')];
     Promise.allSettled(loads).then(() => setFontsReady(true));
   }, []);
+  // Then every other face, one at a time in the background: WebKit's canvas
+  // has been seen sticking with the fallback for a family it first met before
+  // that family was loaded, so by the time a font is chosen it is already there.
+  useEffect(() => {
+    if (!fontsReady) return;
+    let stop = false;
+    const w = window as unknown as { requestIdleCallback?: (f: () => void) => void };
+    const idle = (fn: () => void) => (w.requestIdleCallback ? w.requestIdleCallback(fn) : window.setTimeout(fn, 400));
+    idle(() => {
+      void (async () => {
+        for (const f of FONT_LIST) {
+          if (stop) return;
+          for (const w of ['400', '700']) await ensureFontRef.current(f.name, w, f.script === 'ar' ? 'عيد ميلاد' : 'Aa');
+        }
+      })();
+    });
+    return () => {
+      stop = true;
+    };
+  }, [fontsReady]);
   /**
    * Make a face usable by the canvas. document.fonts.load() is enough for
    * Chromium, but WebKit (Safari, every iPhone browser) hands the canvas a
@@ -190,8 +210,11 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     }
     await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
     fabric.current?.getObjects().forEach((o) => {
-      const tb = o as Textbox & BObject;
+      const tb = o as Textbox & BObject & { _cacheCanvas?: unknown; _cacheContext?: unknown };
       if (tb.binder?.kind === 'text' && tb.fontFamily === family) {
+        // Drop the object's cached bitmap outright, so the next paint measures and draws with the loaded face.
+        (tb as { _cacheCanvas?: unknown })._cacheCanvas = undefined;
+        (tb as { _cacheContext?: unknown })._cacheContext = undefined;
         tb.initDimensions?.();
         tb.setCoords();
         tb.dirty = true;
@@ -199,6 +222,8 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     });
     fabric.current?.requestRenderAll();
   };
+  const ensureFontRef = useRef(ensureFont);
+  ensureFontRef.current = ensureFont;
 
   // ---- Design snapshot ------------------------------------------------------------------------------------------
   const readDesign = useCallback((): { design: DesignJSON; indexOf: number[] } => {
