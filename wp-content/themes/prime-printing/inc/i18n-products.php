@@ -537,10 +537,8 @@ function prime_product_hreflang() {
 	}
 
 	$product_id = get_queried_object_id();
-	$base       = prime_permalink_base( 'product' );
-	$english    = home_url( '/' . $base . '/' . get_post_field( 'post_name', $product_id ) . '/' );
-	$arabic_slug = (string) get_post_meta( $product_id, PRIME_AR_SLUG, true );
-	$arabic     = home_url( '/ar/' . $base . '/' . ( $arabic_slug ? $arabic_slug : get_post_field( 'post_name', $product_id ) ) . '/' );
+	$english    = prime_product_url_in( $product_id, 'en' );
+	$arabic     = prime_product_url_in( $product_id, 'ar' );
 
 	printf( '<link rel="alternate" href="%s" hreflang="en" />' . "\n", esc_url( $english ) );
 	printf( '<link rel="alternate" href="%s" hreflang="ar" />' . "\n", esc_url( $arabic ) );
@@ -548,6 +546,74 @@ function prime_product_hreflang() {
 	printf( '<link rel="canonical" href="%s" />' . "\n", esc_url( prime_is_arabic() ? $arabic : $english ) );
 }
 add_action( 'wp_head', 'prime_product_hreflang', 1 );
+
+/**
+ * A product's URL in a given language, whatever language this page is in.
+ *
+ * @param int    $product_id Product ID.
+ * @param string $lang       Language slug.
+ * @return string
+ */
+function prime_product_url_in( $product_id, $lang ) {
+	$base   = prime_permalink_base( 'product' );
+	$slug   = (string) get_post_field( 'post_name', $product_id );
+	$prefix = prime_lang_prefix( $lang );
+
+	if ( '' !== $prefix ) {
+		$arabic_slug = (string) get_post_meta( $product_id, PRIME_AR_SLUG, true );
+		$slug        = $arabic_slug ? $arabic_slug : $slug;
+	}
+
+	return home_url( ( '' !== $prefix ? '/' . $prefix : '' ) . '/' . $base . '/' . $slug . '/' );
+}
+
+/**
+ * Where the language switcher should send a visitor: this same page in the
+ * other language.
+ *
+ * Polylang only knows the pages it translates itself. Products and their
+ * categories are single posts now (this file), so for them it has no
+ * "translation" to offer and falls back to the other language's home page.
+ * Reem, 2026-10-01: choosing العربية on a product must turn that product
+ * Arabic, not drop her on the home page.
+ *
+ * @param string $lang     Target language slug.
+ * @param string $fallback Polylang's own URL for it.
+ * @return string
+ */
+function prime_language_switch_url( $lang, $fallback ) {
+	if ( ! prime_single_product_mode() ) {
+		return $fallback;
+	}
+
+	if ( is_singular( 'product' ) ) {
+		return prime_product_url_in( get_queried_object_id(), $lang );
+	}
+
+	if ( is_tax( prime_single_post_types()['taxonomies'] ) ) {
+		// Category and tag URLs differ only by the /ar/ prefix (same slug), so
+		// swap the prefix on the path being viewed; pagination and filters in
+		// the query string carry over.
+		$request = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$home    = (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH );
+		$path    = ltrim( substr( $request, strlen( rtrim( $home, '/' ) ) ), '/' );
+
+		foreach ( (array) pll_languages_list() as $code ) {
+			$p = prime_lang_prefix( $code );
+
+			if ( '' !== $p && ( $path === $p || 0 === strpos( $path, $p . '/' ) ) ) {
+				$path = ltrim( substr( $path, strlen( $p ) ), '/' );
+				break;
+			}
+		}
+
+		$prefix = prime_lang_prefix( $lang );
+
+		return home_url( '/' . ( '' !== $prefix ? $prefix . '/' : '' ) . $path );
+	}
+
+	return $fallback;
+}
 
 /**
  * WordPress prints its own canonical for a single product, which would name

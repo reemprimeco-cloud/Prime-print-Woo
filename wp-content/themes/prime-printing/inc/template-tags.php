@@ -201,6 +201,16 @@ function prime_language_switcher( $style = 'button' ) {
 		return;
 	}
 
+	// The same page in the other language, where Polylang alone would send
+	// products and shop categories to the home page (inc/i18n-products.php).
+	if ( function_exists( 'prime_language_switch_url' ) ) {
+		foreach ( $languages as $key => $language ) {
+			if ( empty( $language['current_lang'] ) ) {
+				$languages[ $key ]['url'] = prime_language_switch_url( $language['slug'], $language['url'] );
+			}
+		}
+	}
+
 	if ( 'segmented' === $style ) {
 		echo '<div class="prime-seg">';
 
