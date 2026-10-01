@@ -53,6 +53,21 @@ Chromium can only write RGB. Each text colour is painted as a unique "sentinel" 
 in the PDF to the design's own DeviceCMYK numbers, so pure black text stays `0 0 0 1 k` (colour-managed
 RGB→CMYK would make a four-colour rich black). Photos are converted by Ghostscript through the ICC profile.
 
+## UV DTF transfers
+
+The `uvdtf` template is not a PDF job. The print route is captured as a transparent raster at 300 dpi
+(`pipeline/uvdtf.ts`) and the service returns two files, listed under `files` in the result with
+`proof_kind: "png"` and `print_kind: "tiff"`:
+
+- `png` — sRGB + alpha, the exact artboard size; the customer's proof and a usable print file;
+- `tiff` — CMYK through the ICC profile, plus two spot channels built from the artwork's coverage, named
+  **White** and **Varnish** the way Photoshop names them (image-resource block 1006/1045/1007/1077), with
+  the profile embedded, Deflate strips, 300 dpi. 0 = solid ink in a spot channel, as in Photoshop.
+  `pipeline/tiff-spot.ts` writes it; `readSpotTiff()` there reads it back for the tests.
+
+No bleed, no cut line: the artboard is the size typed in the calculator, and nothing prints where
+nothing was placed. `scripts/export-uvdtf.ts` renders the sample to files for a look.
+
 ## Tests
 
 ```bash

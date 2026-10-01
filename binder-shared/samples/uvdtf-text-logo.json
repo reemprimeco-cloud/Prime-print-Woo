@@ -1,0 +1,64 @@
+{
+  "template": "uvdtf",
+  "mode": "live",
+  "canvas_mm": {
+    "w": 50,
+    "h": 30
+  },
+  "sticker": {
+    "w_mm": 50,
+    "h_mm": 30,
+    "shape": "rectangle"
+  },
+  "elements": [
+    {
+      "type": "image",
+      "src": "/samples/assets/logo.png",
+      "x_mm": 4,
+      "y_mm": 4,
+      "w_mm": 22,
+      "h_mm": 22,
+      "rotation_deg": 0,
+      "source_px": {
+        "w": 1200,
+        "h": 1200
+      }
+    },
+    {
+      "type": "text",
+      "text": "PRIME",
+      "font": "Montserrat",
+      "size_pt": 14,
+      "weight": "700",
+      "color_cmyk": [
+        0,
+        0,
+        0,
+        100
+      ],
+      "x_mm": 26,
+      "y_mm": 8,
+      "w_mm": 23,
+      "align": "center",
+      "rtl": false
+    },
+    {
+      "type": "text",
+      "text": "برايم",
+      "font": "Tajawal",
+      "size_pt": 14,
+      "weight": "700",
+      "color_cmyk": [
+        100,
+        0,
+        0,
+        0
+      ],
+      "x_mm": 26,
+      "y_mm": 17,
+      "w_mm": 23,
+      "align": "center",
+      "rtl": true
+    }
+  ]
+}

@@ -20,6 +20,7 @@ class Binder_Product_Meta {
 		'binder_inner' => array( 'binder_inner' ),
 		'binder_set'   => array( 'binder_outer', 'binder_inner' ),
 		'sticker'      => array( 'sticker' ),
+		'uvdtf'        => array( 'uvdtf' ),
 	);
 
 	public static function init() {
@@ -64,6 +65,7 @@ class Binder_Product_Meta {
 					'binder_inner' => __( 'Inner cover only', 'prime-binder-designer' ),
 					'binder_set'   => __( 'Set — outer and inner cover', 'prime-binder-designer' ),
 					'sticker'      => __( 'Sticker — size and shape from the product\'s calculator', 'prime-binder-designer' ),
+					'uvdtf'        => __( 'UV DTF transfer — size from the calculator; text and images on a transparent artboard, TIFF with White and Varnish channels', 'prime-binder-designer' ),
 				),
 				'desc_tip'    => true,
 				'description' => __( 'Customers must add a finished design for each cover before Add to Cart is enabled. A set asks for both. A sticker takes its size and shape from the calculator on the product page (bleed 1 mm, safe zone 2 mm).', 'prime-binder-designer' ),

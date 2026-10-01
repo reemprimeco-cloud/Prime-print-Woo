@@ -22,6 +22,7 @@ class Binder_Templates {
 		'binder_outer' => 'binder-outer',
 		'binder_inner' => 'binder-inner',
 		'sticker'      => '',
+		'uvdtf'        => '',
 	);
 
 	/**
@@ -31,7 +32,7 @@ class Binder_Templates {
 	 * @return bool
 	 */
 	public static function is_parametric( $template ) {
-		return 'sticker' === $template;
+		return 'sticker' === $template || 'uvdtf' === $template;
 	}
 
 	/**
@@ -91,7 +92,7 @@ class Binder_Templates {
 	 */
 	public static function spec( $template, $params = null ) {
 		if ( self::is_parametric( $template ) ) {
-			return is_array( $params ) ? Binder_Sticker::spec( $params ) : null;
+			return is_array( $params ) ? Binder_Sticker::spec( $params, $template ) : null;
 		}
 
 		$path = self::path( $template, 'spec' );

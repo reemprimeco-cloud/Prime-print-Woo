@@ -22,6 +22,22 @@ export const STICKER = {
   dpi: 300,
 } as const;
 
+/**
+ * The UV DTF transfer (Reem, 2026-10-01): text and pictures only, printed with
+ * white ink and varnish exactly where there is artwork, and no cut line — the
+ * film is cut by hand around the transfer. The artboard is the size typed in
+ * the calculator, so there is no bleed and no safe zone, and the background is
+ * transparent (nothing prints where nothing is placed).
+ */
+export const UVDTF = {
+  bleed_mm: 0,
+  safe_margin_mm: 0,
+  min_mm: 10,
+  /** The roll is 60 cm wide; longer transfers are cut into pieces by the shop. */
+  max_mm: 600,
+  dpi: 300,
+} as const;
+
 export const STICKER_SHAPES: readonly StickerShape[] = ['rectangle', 'square', 'round', 'hexagon', 'triangle', 'star', 'heart', 'custom'];
 
 /** Names the product calculators use for the same shapes. */
@@ -54,6 +70,27 @@ export function normalizeStickerParams(input: unknown): StickerParams | null {
   if (!STICKER_SHAPES.includes(shape)) return null;
 
   return { w_mm: w1, h_mm: h1, shape };
+}
+
+/**
+ * The same for a UV DTF transfer: a rectangle of the typed size. Any shape in
+ * the input is ignored; the transfer is not cut to a shape.
+ */
+export function normalizeUvdtfParams(input: unknown): StickerParams | null {
+  if (typeof input !== 'object' || input === null) return null;
+  const p = input as Record<string, unknown>;
+  const w = Number(p.w_mm);
+  const h = Number(p.h_mm);
+  if (!Number.isFinite(w) || !Number.isFinite(h)) return null;
+  const w1 = round1(w);
+  const h1 = round1(h);
+  if (w1 < UVDTF.min_mm || h1 < UVDTF.min_mm || w1 > UVDTF.max_mm || h1 > UVDTF.max_mm) return null;
+  return { w_mm: w1, h_mm: h1, shape: 'rectangle' };
+}
+
+/** normalizeStickerParams or normalizeUvdtfParams, by template. */
+export function normalizeParametricParams(template: 'sticker' | 'uvdtf', input: unknown): StickerParams | null {
+  return template === 'uvdtf' ? normalizeUvdtfParams(input) : normalizeStickerParams(input);
 }
 
 export function sameStickerParams(a: StickerParams, b: StickerParams): boolean {
@@ -90,6 +127,33 @@ export function stickerSpec(params: StickerParams): Spec {
     fold_lines_y_mm_from_trim_top: [],
     sticker: { w_mm: w, h_mm: h, shape },
   };
+}
+
+/** The Spec for one UV DTF transfer: the artboard is the trim, nothing around it. */
+export function uvdtfSpec(params: StickerParams): Spec {
+  const { w_mm: w, h_mm: h } = params;
+
+  return {
+    template: 'uvdtf',
+    unit: 'mm',
+    dpi: UVDTF.dpi,
+    color: 'CMYK (FOGRA39 / ISO Coated v2) + White + Varnish',
+    bleed_mm: UVDTF.bleed_mm,
+    safe_margin_mm: UVDTF.safe_margin_mm,
+    turn_in_mm: 0,
+    trim_mm: { w, h },
+    canvas_with_bleed_mm: { w, h },
+    canvas_with_bleed_px: { w: Math.round(mmToPx(w, UVDTF.dpi)), h: Math.round(mmToPx(h, UVDTF.dpi)) },
+    panels_relative_to_trim: [{ name: 'transfer', trim_mm: { x: 0, y: 0, w, h }, safe_mm: { x: 0, y: 0, w, h } }],
+    fold_lines_x_mm_from_trim_left: [],
+    fold_lines_y_mm_from_trim_top: [],
+    sticker: { w_mm: w, h_mm: h, shape: 'rectangle' },
+  };
+}
+
+/** stickerSpec or uvdtfSpec, by template. */
+export function parametricSpec(template: 'sticker' | 'uvdtf', params: StickerParams): Spec {
+  return template === 'uvdtf' ? uvdtfSpec(params) : stickerSpec(params);
 }
 
 // ---- Outline geometry -----------------------------------------------------------------------

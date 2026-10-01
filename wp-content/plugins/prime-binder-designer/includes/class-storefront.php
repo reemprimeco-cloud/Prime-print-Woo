@@ -55,6 +55,7 @@ class Binder_Storefront {
 			'binder_outer' => array( 'Outer cover', 'الغلاف الخارجي' ),
 			'binder_inner' => array( 'Inner cover', 'الغلاف الداخلي' ),
 			'sticker'     => array( 'Sticker', 'الملصق' ),
+			'uvdtf'       => array( 'UV DTF transfer', 'ملصق UV DTF' ),
 			'size_first'  => array( 'Enter the sticker size and shape first, then add your design.', 'أدخل مقاس الملصق وشكله أولاً، ثم أضف تصميمك.' ),
 			'size_changed' => array( 'The size or shape changed. Please add your design again for the new size.', 'تغيّر المقاس أو الشكل. الرجاء إضافة تصميمك من جديد للمقاس الجديد.' ),
 			'size_mismatch' => array( 'Your design was made for a different sticker size. Please add it again.', 'تصميمك مُعدّ لمقاس ملصق مختلف. الرجاء إضافته من جديد.' ),
@@ -164,8 +165,10 @@ class Binder_Storefront {
 			'rows'    => array(),
 		);
 
-		if ( in_array( 'sticker', $templates, true ) ) {
-			// The editor needs the size and shape; the page's calculator fields carry them (in cm).
+		$parametric = array_values( array_filter( $templates, array( 'Binder_Templates', 'is_parametric' ) ) );
+
+		if ( $parametric ) {
+			// The editor needs the size (and shape); the page's calculator fields carry them (in cm).
 			$config['sticker'] = array(
 				'fields'       => Binder_Sticker::size_fields( $product_id ),
 				'min_mm'       => Binder_Sticker::MIN_MM,
@@ -183,7 +186,7 @@ class Binder_Storefront {
 		}
 
 		$hint      = count( $templates ) > 1 ? self::copy( 'hint_set' ) : self::copy( 'hint' );
-		$is_binder = ! in_array( 'sticker', $templates, true );
+		$is_binder = ! $parametric;
 
 		if ( $is_binder ) {
 			$config['binding'] = array(
@@ -332,7 +335,9 @@ class Binder_Storefront {
 		$token   = self::posted_token();
 		$binding = self::posted_binding();
 
-		if ( ! in_array( 'sticker', $required, true ) && '' === $binding ) {
+		$parametric = (bool) array_filter( $required, array( 'Binder_Templates', 'is_parametric' ) );
+
+		if ( ! $parametric && '' === $binding ) {
 			wc_add_notice( self::copy( 'binding_missing' ), 'error' );
 			return false;
 		}
@@ -350,14 +355,14 @@ class Binder_Storefront {
 				return false;
 			}
 
-			// A sticker design is only good for the size and shape it was made for.
-			if ( 'sticker' === $template && ! Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) ) {
+			// A sticker or transfer design is only good for the size (and shape) it was made for.
+			if ( Binder_Templates::is_parametric( $template ) && ! Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) ) {
 				wc_add_notice( self::copy( 'size_mismatch' ), 'error' );
 				return false;
 			}
 
 			// A binder design is only good for the language (opening side) it was made for.
-			if ( 'sticker' !== $template && self::design_binding( Binder_DB::get( $id ) ) !== $binding ) {
+			if ( ! Binder_Templates::is_parametric( $template ) && self::design_binding( Binder_DB::get( $id ) ) !== $binding ) {
 				wc_add_notice( self::copy( 'binding_mismatch' ), 'error' );
 				return false;
 			}
@@ -388,14 +393,14 @@ class Binder_Storefront {
 			if ( ! self::design_is_orderable( $id, $product_id, $template, $token ) ) {
 				continue;
 			}
-			if ( 'sticker' === $template ? Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) : self::design_binding( Binder_DB::get( $id ) ) === $binding ) {
+			if ( Binder_Templates::is_parametric( $template ) ? Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) : self::design_binding( Binder_DB::get( $id ) ) === $binding ) {
 				$keep[ $template ] = $id;
 			}
 		}
 
 		if ( $keep ) {
 			$data[ self::ITEM_KEY ] = $keep;
-			if ( ! in_array( 'sticker', $required, true ) ) {
+			if ( ! array_filter( $required, array( 'Binder_Templates', 'is_parametric' ) ) ) {
 				$data[ self::ITEM_BINDING ] = $binding;
 			}
 		}

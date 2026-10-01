@@ -9,18 +9,25 @@ import { loadConfig, type Config } from './config.ts';
 import { createAppRouter } from './app-router.ts';
 import { closeBrowser, renderPreviewPng } from './pipeline/browser.ts';
 import { renderDesign, type RenderedPdfs } from './pipeline/index.ts';
+import { renderTransfer } from './pipeline/uvdtf.ts';
 import { AssetError, prepareAssets } from './pipeline/assets.ts';
-import { Storage } from './storage.ts';
+import { FILE_KINDS, Storage, type FileKind } from './storage.ts';
 import { Limiter, QueueFullError, RateLimiter, hmacHex, safeEqual } from './util.ts';
 import { validateRequest, type RenderRequest } from './validate-request.ts';
 
 interface RenderOutcome {
   design_id: number;
   status: 'ready';
-  pdf_rgb_url: string;
-  pdf_cmyk_url: string;
+  /** Binder covers and stickers: the two PDFs. Absent for a UV DTF transfer. */
+  pdf_rgb_url?: string;
+  pdf_cmyk_url?: string;
+  /** Every file produced, by kind: the proof ('rgb' PDF or 'png') and the print file ('cmyk' PDF or 'tiff'). */
+  files: Partial<Record<FileKind, string>>;
+  /** Which of `files` is the proof and which the print file. */
+  proof_kind: FileKind;
+  print_kind: FileKind;
   warnings: Issue[];
-  timings_ms: RenderedPdfs['timingsMs'];
+  timings_ms: RenderedPdfs['timingsMs'] | Record<string, number>;
 }
 
 type Job =
@@ -67,14 +74,14 @@ export function createServer(cfg: Config): { app: express.Express; storage: Stor
   });
 
   app.get('/files/:token/:file', (req, res) => {
-    const kind = String(req.params.file).replace(/\.pdf$/, '');
+    const kind = String(req.params.file).replace(/\.(pdf|png|tif)$/, '');
     if (!storage.verify(String(req.params.token), kind, String(req.query.exp ?? ''), String(req.query.sig ?? ''))) {
       return res.status(403).json({ error: 'invalid_or_expired_link' });
     }
-    const path = storage.path(String(req.params.token), kind as 'rgb' | 'cmyk');
+    const path = storage.path(String(req.params.token), kind as FileKind);
     if (!existsSync(path)) return res.status(404).json({ error: 'not_found' });
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="binder-${kind}.pdf"`);
+    res.setHeader('Content-Type', FILE_KINDS[kind as FileKind].mime);
+    res.setHeader('Content-Disposition', `attachment; filename="design-${kind}.${FILE_KINDS[kind as FileKind].ext}"`);
     res.setHeader('Cache-Control', 'private, no-store');
     createReadStream(path).pipe(res);
   });
@@ -107,14 +114,19 @@ export function createServer(cfg: Config): { app: express.Express; storage: Stor
       const recheck = validateDesign(assets.design, spec);
       if (!recheck.ok) throw new RenderFailure('validation_failed', 'Design failed validation on the real image sizes.', recheck.errors, 422);
 
-      // 2. Render.
-      const pdfs = await limiter.run(() =>
-        renderDesign(cfg, selfBase, spec, assets.design, rq.title ?? `Binder design ${rq.design_id}`, assets),
-      );
+      // 2. Render: PDFs for the covers and stickers, a raster PNG + spot-channel TIFF for a transfer.
+      const out = await limiter.run(async () => {
+        if (spec.template === 'uvdtf') {
+          const r = await renderTransfer(cfg, selfBase, spec, assets.design, assets);
+          return { files: { png: r.png, tiff: r.tiff } as Partial<Record<FileKind, Uint8Array>>, proof: 'png' as FileKind, print: 'tiff' as FileKind, measured: r.measured, timings: r.timingsMs as Record<string, number> };
+        }
+        const r = await renderDesign(cfg, selfBase, spec, assets.design, rq.title ?? `Prime Printing design ${rq.design_id}`, assets);
+        return { files: { rgb: r.rgb, cmyk: r.cmyk } as Partial<Record<FileKind, Uint8Array>>, proof: 'rgb' as FileKind, print: 'cmyk' as FileKind, measured: r.measured, timings: r.timingsMs as Record<string, number> };
+      });
 
       // 3. Final, authoritative check (§5.3): the browser measured every text box, so text
       // heights are real rather than claimed. A hard block here refuses the file.
-      const measured = new Map(pdfs.measured.map((m) => [m.index, m.h_mm]));
+      const measured = new Map(out.measured.map((m) => [m.index, m.h_mm]));
       const withHeights: DesignJSON = {
         ...assets.design,
         elements: assets.design.elements.map((el, i) => (el.type === 'text' && measured.has(i) ? { ...el, h_mm: measured.get(i)! } : el)),
@@ -123,14 +135,17 @@ export function createServer(cfg: Config): { app: express.Express; storage: Stor
       const errors = issues.filter((x) => x.severity === 'error');
       if (errors.length) throw new RenderFailure('validation_failed', 'Design failed the final check.', errors, 422);
 
-      const { token } = await storage.save(rq.design_id, rq.template, { rgb: pdfs.rgb, cmyk: pdfs.cmyk });
+      const { token } = await storage.save(rq.design_id, rq.template, out.files);
+      const files = Object.fromEntries((Object.keys(out.files) as FileKind[]).map((k) => [k, storage.signedUrl(base, token, k)])) as Partial<Record<FileKind, string>>;
       return {
         design_id: rq.design_id,
         status: 'ready',
-        pdf_rgb_url: storage.signedUrl(base, token, 'rgb'),
-        pdf_cmyk_url: storage.signedUrl(base, token, 'cmyk'),
+        ...(files.rgb && files.cmyk ? { pdf_rgb_url: files.rgb, pdf_cmyk_url: files.cmyk } : {}),
+        files,
+        proof_kind: out.proof,
+        print_kind: out.print,
         warnings: [...assets.issues, ...issues],
-        timings_ms: pdfs.timingsMs,
+        timings_ms: out.timings,
       };
     } finally {
       await assets.cleanup();

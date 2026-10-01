@@ -134,3 +134,35 @@ describe('validation on the sticker template', () => {
     expect(r.warnings.map((w) => w.code)).toContain('safe.outside');
   });
 });
+
+describe('uvdtf (UV DTF transfer)', async () => {
+  const { normalizeUvdtfParams, uvdtfSpec, UVDTF, isParametricTemplate } = await import('../src/index.ts');
+
+  it('is a rectangle of the typed size, whatever shape was sent', () => {
+    expect(normalizeUvdtfParams({ w_mm: 50, h_mm: 100.04, shape: 'star' })).toEqual({ w_mm: 50, h_mm: 100, shape: 'rectangle' });
+    expect(normalizeUvdtfParams({ w_mm: UVDTF.min_mm - 1, h_mm: 50 })).toBeNull();
+    expect(normalizeUvdtfParams({ w_mm: 50, h_mm: UVDTF.max_mm + 1 })).toBeNull();
+    expect(isParametricTemplate('uvdtf')).toBe(true);
+    expect(isParametricTemplate('binder_outer')).toBe(false);
+  });
+
+  it('has no bleed and no safe margin: the artboard is the trim', () => {
+    const s = uvdtfSpec({ w_mm: 50, h_mm: 100, shape: 'rectangle' });
+    expect(s.template).toBe('uvdtf');
+    expect(s.bleed_mm).toBe(0);
+    expect(s.canvas_with_bleed_mm).toEqual({ w: 50, h: 100 });
+    expect(s.canvas_with_bleed_px).toEqual({ w: 591, h: 1181 });
+    expect(s.panels_relative_to_trim[0]!.safe_mm).toEqual({ x: 0, y: 0, w: 50, h: 100 });
+  });
+
+  it('refuses fills and shapes, accepts text and images, and reports the size it is for', () => {
+    const s = uvdtfSpec({ w_mm: 50, h_mm: 50, shape: 'rectangle' });
+    const base: DesignJSON = { template: 'uvdtf', mode: 'live', canvas_mm: { w: 50, h: 50 }, sticker: { w_mm: 50, h_mm: 50, shape: 'rectangle' }, elements: [] };
+    const text = { type: 'text' as const, text: 'Hi', font: 'Poppins' as const, size_pt: 24, weight: '700', color_cmyk: [0, 0, 0, 100] as [number, number, number, number], x_mm: 5, y_mm: 5, w_mm: 40, align: 'center' as const, rtl: false };
+    expect(validateDesign({ ...base, elements: [text] }, s).ok).toBe(true);
+    const r = validateDesign({ ...base, elements: [{ type: 'rect', x_mm: 0, y_mm: 0, w_mm: 50, h_mm: 50, color_cmyk: [0, 0, 0, 100] }] }, s);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0]!.code).toBe('shape.uvdtf_element');
+    expect(validateDesign({ ...base, sticker: { w_mm: 60, h_mm: 50, shape: 'rectangle' }, elements: [text] }, s).errors[0]!.code).toBe('shape.sticker');
+  });
+});

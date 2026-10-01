@@ -205,9 +205,9 @@ class Binder_Rest_API {
 		$params   = null;
 
 		if ( Binder_Templates::is_parametric( $template ) ) {
-			$params = Binder_Sticker::normalize( $request['w'], $request['h'], $request['shape'] );
+			$params = Binder_Sticker::normalize( $request['w'], $request['h'], $request['shape'], $template );
 			if ( ! $params ) {
-				return new WP_Error( 'binder_bad_size', __( 'Enter a sticker size between 1 and 100 cm and choose a shape.', 'prime-binder-designer' ), array( 'status' => 400 ) );
+				return new WP_Error( 'binder_bad_size', __( 'Enter a size between 1 and 100 cm (60 cm for a UV DTF transfer) and choose a shape.', 'prime-binder-designer' ), array( 'status' => 400 ) );
 			}
 		}
 
@@ -432,14 +432,14 @@ class Binder_Rest_API {
 			'mode'                => $row['mode'],
 			'status'              => $row['status'],
 			'preview_url'         => $row['preview_url'],
-			'proof_url'           => Binder_Files::link_for( $row, 'rgb' ),
+			'proof_url'           => Binder_Files::link_for( $row, Binder_Files::proof_kind( $row ) ),
 			'validation_warnings' => $row['validation_warnings'] ? json_decode( $row['validation_warnings'], true ) : array(),
 			'errors'              => $errors,
 			'updated_at'          => $row['updated_at'],
 		);
 
 		if ( Binder_Files::is_shop_staff() ) {
-			$out['print_url'] = Binder_Files::link_for( $row, 'cmyk' );
+			$out['print_url'] = Binder_Files::link_for( $row, Binder_Files::print_kind( $row ) );
 		}
 
 		return $out;
@@ -464,7 +464,7 @@ class Binder_Rest_API {
 			return new WP_Error( 'binder_bad_design', __( 'The design does not match its template.', 'prime-binder-designer' ), array( 'status' => 400 ) );
 		}
 		// A sticker design must say which size and shape it is for, and its canvas must be that size.
-		if ( Binder_Templates::is_parametric( $template ) && ! Binder_Sticker::design_params( $design ) ) {
+		if ( Binder_Templates::is_parametric( $template ) && ! Binder_Sticker::design_params( $design, $template ) ) {
 			return new WP_Error( 'binder_bad_design', __( 'The design does not carry a valid sticker size and shape.', 'prime-binder-designer' ), array( 'status' => 400 ) );
 		}
 		// A binder design must say which way the binder opens (English: left, Arabic: right).
@@ -688,13 +688,22 @@ class Binder_Rest_API {
 	 * @return true|WP_Error
 	 */
 	private static function finish_ready( array $row, array $outcome ) {
-		foreach ( array( 'rgb' => 'pdf_rgb_url', 'cmyk' => 'pdf_cmyk_url' ) as $kind => $key ) {
-			if ( empty( $outcome[ $key ] ) ) {
-				self::finish_failed( $row, array(), 'missing_pdf' );
-				return new WP_Error( 'binder_missing_pdf', __( 'The render result had no PDF.', 'prime-binder-designer' ), array( 'status' => 400 ) );
+		// The proof and the print file, by kind: PDFs for the covers and stickers (also
+		// sent under the older pdf_*_url keys), a PNG and a TIFF for a UV DTF transfer.
+		$proof = Binder_Files::proof_kind( $row );
+		$print = Binder_Files::print_kind( $row );
+		$urls  = array(
+			$proof => $outcome['files'][ $proof ] ?? ( 'rgb' === $proof ? ( $outcome['pdf_rgb_url'] ?? '' ) : '' ),
+			$print => $outcome['files'][ $print ] ?? ( 'cmyk' === $print ? ( $outcome['pdf_cmyk_url'] ?? '' ) : '' ),
+		);
+
+		foreach ( $urls as $kind => $url ) {
+			if ( empty( $url ) ) {
+				self::finish_failed( $row, array(), 'missing_file' );
+				return new WP_Error( 'binder_missing_file', __( 'The render result had no print file.', 'prime-binder-designer' ), array( 'status' => 400 ) );
 			}
 
-			$tmp = Binder_Render_Client::download( $outcome[ $key ] );
+			$tmp = Binder_Render_Client::download( $url, $kind );
 			if ( is_wp_error( $tmp ) ) {
 				// Leave the design 'rendering': the service retries the callback, and status() can recover it.
 				return new WP_Error( 'binder_download_failed', $tmp->get_error_message(), array( 'status' => 502 ) );
@@ -708,8 +717,8 @@ class Binder_Rest_API {
 			$row['id'],
 			array(
 				'status'              => 'ready',
-				'pdf_url'             => Binder_Files::base_url( $row['id'], 'rgb' ),
-				'pdf_cmyk_url'        => Binder_Files::base_url( $row['id'], 'cmyk' ),
+				'pdf_url'             => Binder_Files::base_url( $row['id'], $proof ),
+				'pdf_cmyk_url'        => Binder_Files::base_url( $row['id'], $print ),
 				'validation_warnings' => wp_json_encode( $warnings ),
 				'render_error'        => null,
 			)

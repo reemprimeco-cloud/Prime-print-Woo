@@ -1,4 +1,4 @@
-import { stickerOverlayDataUrl, withBinding, type Binding, type DesignJSON, type Issue, type Spec, type StickerParams, type TemplateKey } from '@binder/shared';
+import { isParametricTemplate, stickerOverlayDataUrl, withBinding, type Binding, type DesignJSON, type Issue, type Spec, type StickerParams, type TemplateKey } from '@binder/shared';
 import type { EditorConfig } from './config';
 
 export class ApiError extends Error {
@@ -21,6 +21,7 @@ export interface TemplateInfo {
 
 /** The guide image an editor lays over the canvas. */
 export function overlayUrlFor(tpl: TemplateInfo): string {
+  if (tpl.spec.template === 'uvdtf') return ''; // No bleed, no cut line: nothing to draw over the artboard.
   return tpl.overlay_url || (tpl.spec.sticker ? stickerOverlayDataUrl(tpl.spec) : '');
 }
 
@@ -75,14 +76,15 @@ export function createApi(cfg: EditorConfig) {
      * panels named for that side (and the matching guide drawing).
      */
     template(t: TemplateKey, opts: { sticker?: StickerParams; binding?: Binding } = {}) {
+      const parametric = isParametricTemplate(t);
       const q =
-        t === 'sticker' && opts.sticker
+        parametric && opts.sticker
           ? `?w=${opts.sticker.w_mm}&h=${opts.sticker.h_mm}&shape=${encodeURIComponent(opts.sticker.shape)}`
-          : t !== 'sticker'
+          : !parametric
             ? `?binding=${opts.binding ?? 'ltr'}`
             : '';
       return json<TemplateInfo>(`/template/${t}${q}`, 'GET').then((info) =>
-        t === 'sticker' ? info : { ...info, spec: withBinding(info.spec, opts.binding ?? 'ltr') },
+        parametric ? info : { ...info, spec: withBinding(info.spec, opts.binding ?? 'ltr') },
       );
     },
 

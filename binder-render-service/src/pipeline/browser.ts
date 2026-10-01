@@ -163,3 +163,62 @@ export async function renderPreviewPng(
     await context.close();
   }
 }
+
+
+/**
+ * The print route captured as a transparent raster: `size` pixels for the
+ * whole canvas, so a 50 x 50 mm artboard at 300 dpi comes back 591 x 591.
+ * Used for the UV DTF transfer, whose print file is the raster itself.
+ */
+export async function renderArtboardPng(
+  cfg: Config,
+  baseUrl: string,
+  spec: Spec,
+  design: DesignJSON,
+  assets: Pick<PreparedAssets, 'files'> | undefined,
+  size: { width: number; height: number },
+): Promise<{ png: Buffer; measured: MeasuredText[] }> {
+  const b = await getBrowser(cfg);
+  const { w, h } = spec.canvas_with_bleed_mm;
+  const vw = cssPx(w);
+  const vh = cssPx(h);
+  // One scale for both axes keeps the artwork undistorted; the caller trims the odd pixel.
+  const scale = Math.max(size.width / vw, size.height / vh);
+  const context = await b.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: scale });
+  const baseOrigin = new URL(baseUrl).origin;
+  const blocked: string[] = [];
+
+  try {
+    await context.route('**/*', (route) => {
+      const url = new URL(route.request().url());
+      const asset = assets?.files.get(url.href);
+      if (asset) return route.fulfill({ path: asset.path, contentType: asset.mime });
+      if (url.origin === baseOrigin) return route.continue();
+      blocked.push(url.href);
+      return route.abort('blockedbyclient');
+    });
+    await context.addInitScript((d) => {
+      (window as unknown as { __BINDER_DESIGN__: unknown }).__BINDER_DESIGN__ = d;
+    }, design);
+
+    const page = await context.newPage();
+    // proof=1: real colours (no sentinels) — the raster IS the artwork, nothing is rewritten afterwards.
+    await page.goto(`${baseUrl}/print-render/${spec.template}?proof=1`, { waitUntil: 'load', timeout: cfg.renderTimeoutMs });
+    await page.waitForFunction(
+      () => {
+        const win = window as unknown as { __RENDER_READY__?: boolean; __RENDER_ERROR__?: string };
+        return win.__RENDER_READY__ === true || !!win.__RENDER_ERROR__;
+      },
+      undefined,
+      { timeout: cfg.renderTimeoutMs },
+    );
+    const error = await page.evaluate(() => (window as unknown as { __RENDER_ERROR__?: string }).__RENDER_ERROR__);
+    if (error) throw new Error(`Print route failed: ${error}${blocked.length ? ` (blocked requests: ${blocked.join(', ')})` : ''}`);
+
+    const measured = await page.evaluate(() => (window as unknown as { __MEASURED__?: MeasuredText[] }).__MEASURED__ ?? []);
+    const png = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: vw, height: vh }, omitBackground: true });
+    return { png, measured };
+  } finally {
+    await context.close();
+  }
+}

@@ -4,7 +4,23 @@ import { join } from 'node:path';
 import type { Config } from './config.ts';
 import { hmacHex, safeEqual } from './util.ts';
 
-export type FileKind = 'rgb' | 'cmyk';
+/**
+ * What a render can produce. The binder covers and cut stickers give two PDFs
+ * (the RGB proof and the CMYK print file); a UV DTF transfer gives a PNG and a
+ * TIFF with spot channels.
+ */
+export type FileKind = 'rgb' | 'cmyk' | 'png' | 'tiff';
+
+export const FILE_KINDS: Record<FileKind, { ext: string; mime: string }> = {
+  rgb: { ext: 'pdf', mime: 'application/pdf' },
+  cmyk: { ext: 'pdf', mime: 'application/pdf' },
+  png: { ext: 'png', mime: 'image/png' },
+  tiff: { ext: 'tif', mime: 'image/tiff' },
+};
+
+export function isFileKind(v: unknown): v is FileKind {
+  return typeof v === 'string' && v in FILE_KINDS;
+}
 
 /**
  * Generated PDFs live briefly on this service's disk. The WordPress plugin
@@ -20,12 +36,12 @@ export class Storage {
     return this.cfg.secret || 'dev-only-signing-key';
   }
 
-  async save(designId: number, template: string, pdfs: Record<FileKind, Uint8Array>): Promise<{ token: string }> {
+  async save(designId: number, template: string, files: Partial<Record<FileKind, Uint8Array>>): Promise<{ token: string }> {
     const token = randomBytes(16).toString('hex');
     const dir = join(this.cfg.outputDir, token);
     await mkdir(dir, { recursive: true });
     await Promise.all(
-      (Object.keys(pdfs) as FileKind[]).map((k) => writeFile(join(dir, `${k}.pdf`), pdfs[k])),
+      (Object.keys(files) as FileKind[]).map((k) => writeFile(this.path(token, k), files[k]!)),
     );
     await writeFile(join(dir, 'meta.json'), JSON.stringify({ designId, template, created: Date.now() }));
     return { token };
@@ -34,17 +50,17 @@ export class Storage {
   signedUrl(base: string, token: string, kind: FileKind, ttlSeconds = 3600): string {
     const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
     const sig = hmacHex(this.key(), `${token}|${kind}|${exp}`);
-    return `${base}/files/${token}/${kind}.pdf?exp=${exp}&sig=${sig}`;
+    return `${base}/files/${token}/${kind}.${FILE_KINDS[kind].ext}?exp=${exp}&sig=${sig}`;
   }
 
   verify(token: string, kind: string, exp: string, sig: string): boolean {
-    if (!/^[a-f0-9]{32}$/.test(token) || (kind !== 'rgb' && kind !== 'cmyk')) return false;
+    if (!/^[a-f0-9]{32}$/.test(token) || !isFileKind(kind)) return false;
     if (!/^\d+$/.test(exp) || Number(exp) < Date.now() / 1000) return false;
     return safeEqual(hmacHex(this.key(), `${token}|${kind}|${exp}`), sig);
   }
 
   path(token: string, kind: FileKind): string {
-    return join(this.cfg.outputDir, token, `${kind}.pdf`);
+    return join(this.cfg.outputDir, token, `${kind}.${FILE_KINDS[kind].ext}`);
   }
 
   /** Delete render folders older than the retention window. */

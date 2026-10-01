@@ -1,4 +1,4 @@
-import { isBinding, normalizeStickerParams, type Binding, type DesignMode, type StickerParams, type TemplateKey } from '@binder/shared';
+import { isBinding, isParametricTemplate, normalizeParametricParams, type Binding, type DesignMode, type StickerParams, type TemplateKey } from '@binder/shared';
 
 export type Lang = 'en' | 'ar';
 
@@ -13,7 +13,7 @@ export interface EditorConfig {
   sessionToken: string;
   /** Reopen an existing design (cart / account "Edit design"). */
   designId?: number;
-  /** Sticker template only: the size and shape chosen on the product page (w, h in mm and shape on the URL). */
+  /** Sticker and UV DTF templates: the size (and shape) chosen on the product page (w, h in mm and shape on the URL). */
   sticker?: StickerParams;
   /** Binder covers: which way the binder opens, chosen on the product page (binding=ltr|rtl on the URL). */
   binding?: Binding;
@@ -72,19 +72,19 @@ export function readConfig(search = window.location.search): EditorConfig {
   const mode = q.get('mode');
   const lang = q.get('lang');
 
-  const sticker = template === 'sticker' ? normalizeStickerParams({ w_mm: q.get('w'), h_mm: q.get('h'), shape: q.get('shape') ?? 'rectangle' }) : null;
+  const sticker = isParametricTemplate(template) ? normalizeParametricParams(template, { w_mm: q.get('w'), h_mm: q.get('h'), shape: q.get('shape') ?? 'rectangle' }) : null;
   const binding = q.get('binding');
 
   return {
     rest: (q.get('rest') ?? '/wp-json/binder/v1').replace(/\/$/, ''),
     productId: Number(q.get('product') ?? 0),
-    template: template === 'binder_inner' ? 'binder_inner' : template === 'sticker' ? 'sticker' : 'binder_outer',
+    template: template === 'binder_inner' ? 'binder_inner' : isParametricTemplate(template) ? template : 'binder_outer',
     mode: mode === 'live' ? 'live' : 'upload',
     lang: lang === 'ar' ? 'ar' : 'en',
     sessionToken: sessionToken(),
     ...(q.get('design') ? { designId: Number(q.get('design')) } : {}),
     ...(sticker ? { sticker } : {}),
-    ...(template !== 'sticker' && isBinding(binding) ? { binding } : {}),
+    ...(!isParametricTemplate(template) && isBinding(binding) ? { binding } : {}),
     ...(readOrder(q.get('order')) ? { order: readOrder(q.get('order'))! } : {}),
   };
 }

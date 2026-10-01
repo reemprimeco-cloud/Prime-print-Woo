@@ -22,7 +22,7 @@ import {
   EPS_MM,
 } from './geometry.ts';
 import { isBinding } from './binding.ts';
-import { normalizeStickerParams, sameStickerParams } from './sticker.ts';
+import { normalizeParametricParams, sameStickerParams } from './sticker.ts';
 import {
   FONTS,
   SHAPE_KINDS,
@@ -100,10 +100,17 @@ export function validateShape(input: unknown, spec: Spec): Issue[] {
     }
   }
   if (spec.sticker) {
-    const p = normalizeStickerParams(d.sticker);
+    const p = normalizeParametricParams(spec.template === 'uvdtf' ? 'uvdtf' : 'sticker', d.sticker);
     if (!p || !sameStickerParams(p, spec.sticker)) {
-      issues.push(err('shape.sticker', `Design must be for a ${spec.sticker.w_mm} x ${spec.sticker.h_mm} mm ${spec.sticker.shape} sticker.`));
+      issues.push(err('shape.sticker', `Design must be for a ${spec.sticker.w_mm} x ${spec.sticker.h_mm} mm ${spec.template === 'uvdtf' ? 'transfer' : `${spec.sticker.shape} sticker`}.`));
     }
+  }
+  if (spec.template === 'uvdtf') {
+    // A transfer is text and pictures only: there is no background to fill and nothing to cut.
+    (Array.isArray(d.elements) ? d.elements : []).forEach((raw: unknown, i: number) => {
+      const type = isObj(raw) ? raw.type : undefined;
+      if (type === 'rect' || type === 'shape') issues.push(err('shape.uvdtf_element', `Element ${i}: a UV DTF transfer takes text and images only.`, { element: i }));
+    });
   }
 
   const c = d.canvas_mm;

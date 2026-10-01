@@ -38,6 +38,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .binder-stage:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
 .binder-frame { position: relative; max-width: 100%; background: #fff; box-shadow: 0 1px 0 var(--line), 0 10px 30px rgba(8, 19, 42, 0.12); }
 .binder-frame canvas { position: absolute; inset: 0; }
+/* A UV DTF transfer prints nothing where nothing is placed: show that as a checkerboard, as design apps do. */
+.binder-frame--transparent {
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #d9dee5 25%, transparent 25%, transparent 75%, #d9dee5 75%), linear-gradient(45deg, #d9dee5 25%, transparent 25%, transparent 75%, #d9dee5 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+.binder-legend--note { text-align: center; }
 .binder-frame .canvas-container { position: absolute !important; inset: 0; }
 .binder-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; z-index: 5; }
 

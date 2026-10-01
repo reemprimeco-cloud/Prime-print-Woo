@@ -15,7 +15,56 @@ defined( 'ABSPATH' ) || exit;
 
 class Binder_Files {
 
-	const KINDS = array( 'rgb', 'cmyk' );
+	/**
+	 * What a design can have on file, and what each is: the PDF proof and CMYK
+	 * print file of a cover or sticker, the PNG proof and spot-channel TIFF of
+	 * a UV DTF transfer.
+	 */
+	const KINDS = array( 'rgb', 'cmyk', 'png', 'tiff' );
+
+	const KIND_INFO = array(
+		'rgb'  => array( 'ext' => 'pdf', 'mime' => 'application/pdf', 'role' => 'proof' ),
+		'cmyk' => array( 'ext' => 'pdf', 'mime' => 'application/pdf', 'role' => 'print' ),
+		'png'  => array( 'ext' => 'png', 'mime' => 'image/png', 'role' => 'proof' ),
+		'tiff' => array( 'ext' => 'tif', 'mime' => 'image/tiff', 'role' => 'print' ),
+	);
+
+	/**
+	 * Which kind is a design's customer proof: 'png' for a UV DTF transfer, else 'rgb'.
+	 *
+	 * @param array $row wp_binder_designs row.
+	 * @return string
+	 */
+	public static function proof_kind( array $row ) {
+		return 'uvdtf' === ( $row['template'] ?? '' ) ? 'png' : 'rgb';
+	}
+
+	/**
+	 * Which kind is a design's print file: 'tiff' for a UV DTF transfer, else 'cmyk'.
+	 *
+	 * @param array $row wp_binder_designs row.
+	 * @return string
+	 */
+	public static function print_kind( array $row ) {
+		return 'uvdtf' === ( $row['template'] ?? '' ) ? 'tiff' : 'cmyk';
+	}
+
+	/**
+	 * The button label for a kind, for the shop.
+	 *
+	 * @param string $kind File kind.
+	 * @return string
+	 */
+	public static function kind_label( $kind ) {
+		$labels = array(
+			'cmyk' => __( 'Print file (CMYK PDF)', 'prime-binder-designer' ),
+			'rgb'  => __( 'Customer proof', 'prime-binder-designer' ),
+			'tiff' => __( 'Print file (TIFF · White + Varnish)', 'prime-binder-designer' ),
+			'png'  => __( 'PNG (transparent)', 'prime-binder-designer' ),
+		);
+
+		return $labels[ $kind ] ?? $kind;
+	}
 
 	public static function init() {
 		add_action( 'template_redirect', array( __CLASS__, 'maybe_download' ), 1 );
@@ -46,7 +95,7 @@ class Binder_Files {
 	public static function path( $id, $kind ) {
 		$name = substr( hash_hmac( 'sha256', "binder|{$id}|{$kind}", wp_salt( 'auth' ) ), 0, 32 );
 
-		return self::private_dir() . '/' . $name . '.pdf';
+		return self::private_dir() . '/' . $name . '.' . ( self::KIND_INFO[ $kind ]['ext'] ?? 'pdf' );
 	}
 
 	/**
@@ -96,7 +145,8 @@ class Binder_Files {
 			return add_query_arg( '_wpnonce', wp_create_nonce( "binder_dl_{$id}_{$kind}" ), self::base_url( $id, $kind ) );
 		}
 
-		return 'rgb' === $kind ? add_query_arg( 't', $design['session_token'], self::base_url( $id, $kind ) ) : '';
+		// A customer sees proofs only, never the production file.
+		return 'proof' === ( self::KIND_INFO[ $kind ]['role'] ?? '' ) ? add_query_arg( 't', $design['session_token'], self::base_url( $id, $kind ) ) : '';
 	}
 
 	/**
@@ -159,13 +209,13 @@ class Binder_Files {
 			$parts[] = $product;
 		}
 
-		$parts[] = 'cmyk' === $kind ? 'print' : 'proof';
+		$parts[] = self::KIND_INFO[ $kind ]['role'] ?? 'print';
 
 		$name = implode( ' ', $parts );
 		$name = str_replace( array( '\\', '/', ':', '*', '?', '"', '<', '>', '|' ), '', $name ); // What no file system accepts.
 		$name = preg_replace( '/\s+/u', '-', trim( $name ) );
 
-		return $name . '.pdf';
+		return $name . '.' . ( self::KIND_INFO[ $kind ]['ext'] ?? 'pdf' );
 	}
 
 	/**
@@ -179,7 +229,7 @@ class Binder_Files {
 		$ascii = preg_replace( '/[^A-Za-z0-9._-]+/', '-', remove_accents( $name ) );
 		$ascii = trim( preg_replace( '/-+/', '-', $ascii ), '-' );
 
-		return '' === $ascii || '.pdf' === $ascii ? 'print-file.pdf' : $ascii;
+		return '' === $ascii || '.' === $ascii[0] ? 'print-file' . $ascii : $ascii;
 	}
 
 	/**
@@ -206,7 +256,7 @@ class Binder_Files {
 				$allowed = $exp >= time() && hash_equals( self::sign( $id, $kind, $exp ), sanitize_text_field( wp_unslash( $_GET['sig'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 			} elseif ( self::is_shop_staff() ) {
 				$allowed = isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), "binder_dl_{$id}_{$kind}" ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
-			} elseif ( 'rgb' === $kind && isset( $_GET['t'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			} elseif ( 'proof' === ( self::KIND_INFO[ $kind ]['role'] ?? '' ) && isset( $_GET['t'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$allowed = hash_equals( (string) $design['session_token'], sanitize_text_field( wp_unslash( $_GET['t'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 			}
 		}
@@ -219,7 +269,7 @@ class Binder_Files {
 		$path = self::path( $id, $kind );
 
 		nocache_headers();
-		header( 'Content-Type: application/pdf' );
+		header( 'Content-Type: ' . self::KIND_INFO[ $kind ]['mime'] );
 		header( 'Content-Length: ' . filesize( $path ) );
 		$name = self::download_name( $design, $kind );
 		header( 'Content-Disposition: attachment; filename="' . self::ascii_name( $name ) . '"; filename*=UTF-8\'\'' . rawurlencode( $name ) );

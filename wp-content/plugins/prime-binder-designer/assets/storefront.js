@@ -67,6 +67,11 @@
 	// read when the editor opens, and a design is dropped if they change after.
 	var sticker = cfg.sticker || null;
 
+	// Templates whose geometry comes from the calculator's size fields.
+	function isParametric( template ) {
+		return 'sticker' === template || 'uvdtf' === template;
+	}
+
 	function stickerFields() {
 		if ( ! sticker ) {
 			return null;
@@ -125,7 +130,7 @@
 		var total = '';
 		var note = '';
 
-		if ( 'sticker' === row.template ) {
+		if ( isParametric( row.template ) ) {
 			var f = stickerFields();
 			var set = f && sticker.fields.filter( function ( s ) { return s.w === f.w.name; } )[ 0 ];
 			if ( f && f.shape && f.shape.selectedOptions && f.shape.selectedOptions[ 0 ] ) {
@@ -285,11 +290,11 @@
 			q.push( [ 'design', row.draft ] );
 		}
 
-		if ( 'sticker' === row.template && row.params ) {
+		if ( isParametric( row.template ) && row.params ) {
 			q.push( [ 'w', row.params.w ], [ 'h', row.params.h ], [ 'shape', row.params.shape ] );
 		}
 
-		if ( 'sticker' !== row.template && row.binding ) {
+		if ( ! isParametric( row.template ) && row.binding ) {
 			q.push( [ 'binding', row.binding ] );
 		}
 
@@ -307,7 +312,7 @@
 			return;
 		}
 
-		if ( 'sticker' !== row.template && binding ) {
+		if ( ! isParametric( row.template ) && binding ) {
 			var chosen = chosenBinding();
 
 			if ( ! chosen ) {
@@ -331,7 +336,7 @@
 			}
 		}
 
-		if ( 'sticker' === row.template ) {
+		if ( isParametric( row.template ) ) {
 			var params = stickerParams();
 
 			if ( ! params ) {
@@ -445,7 +450,7 @@
 			Object.keys( rows ).forEach( function ( t ) {
 				var row = rows[ t ];
 
-				if ( 'sticker' === row.template && row.sizeKey && row.sizeKey !== key && ( row.input.value || row.draft ) ) {
+				if ( isParametric( row.template ) && row.sizeKey && row.sizeKey !== key && ( row.input.value || row.draft ) ) {
 					row.input.value = '';
 					row.draft = 0;
 					row.proof.removeAttribute( 'href' );
@@ -475,7 +480,7 @@
 			Object.keys( rows ).forEach( function ( t ) {
 				var row = rows[ t ];
 
-				if ( 'sticker' !== row.template && row.binding && row.binding !== chosen && ( row.input.value || row.draft ) ) {
+				if ( ! isParametric( row.template ) && row.binding && row.binding !== chosen && ( row.input.value || row.draft ) ) {
 					row.input.value = '';
 					row.draft = 0;
 					row.proof.removeAttribute( 'href' );

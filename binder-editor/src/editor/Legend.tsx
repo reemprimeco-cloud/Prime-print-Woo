@@ -27,6 +27,7 @@ const STICKER_ITEMS: Item[] = [
 
 /** Persistent guide legend (§4.2), shown beside the stage, never drawn on the canvas. */
 export function Legend({ spec, t }: { spec: Spec; t: T }) {
+  if (spec.template === 'uvdtf') return <p className="binder-legend binder-legend--note"><small>{t('legend_uvdtf')}</small></p>;
   const mm = { bleed: spec.bleed_mm, safe: spec.safe_margin_mm, turnin: spec.turn_in_mm };
   const items = spec.sticker ? STICKER_ITEMS : BINDER_ITEMS.filter((l) => l.mm !== 'turnin' || spec.turn_in_mm > 0);
   return (

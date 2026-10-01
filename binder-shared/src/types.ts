@@ -11,7 +11,17 @@
  * bleed_mm before use (see geometry.ts).
  */
 
-export type TemplateKey = 'binder_outer' | 'binder_inner' | 'sticker';
+export type TemplateKey = 'binder_outer' | 'binder_inner' | 'sticker' | 'uvdtf';
+
+/**
+ * Templates whose geometry is derived from a size the customer typed rather
+ * than read from a spec.json: the cut sticker, and the UV DTF transfer (an
+ * artboard of exactly the size in the calculator, no bleed, no cut line).
+ */
+export const PARAMETRIC_TEMPLATES: readonly TemplateKey[] = ['sticker', 'uvdtf'];
+export function isParametricTemplate(t: unknown): t is 'sticker' | 'uvdtf' {
+  return t === 'sticker' || t === 'uvdtf';
+}
 export type DesignMode = 'upload' | 'live';
 
 /**
@@ -64,7 +74,7 @@ export interface Spec {
   panels_relative_to_trim: PanelSpec[];
   fold_lines_x_mm_from_trim_left: number[];
   fold_lines_y_mm_from_trim_top: number[];
-  /** Present on the sticker template only. */
+  /** Present on the parametric templates (sticker, uvdtf): the size (and, for a sticker, the shape) it was made for. */
   sticker?: StickerParams;
   /** Binder covers: which way the binder opens (panel names are already mirrored for 'rtl'). */
   binding?: Binding;
@@ -185,7 +195,7 @@ export interface DesignJSON {
   mode: DesignMode;
   canvas_mm: { w: number; h: number };
   elements: DesignElement[];
-  /** Required when template is "sticker": the size and shape the design was made for. */
+  /** Required when template is "sticker" or "uvdtf": the size (and shape) the design was made for. */
   sticker?: StickerParams;
   /** Required for the binder covers: which way the binder opens. */
   binding?: Binding;

@@ -185,7 +185,7 @@ class Binder_Order_Integration {
 				'template'  => $d['template'],
 				'label'     => Binder_Storefront::copy( $d['template'] ),
 				'product'   => $d['item']->get_name(),
-				'cmyk_url'  => Binder_Files::signed_url( $d['id'], 'cmyk' ),
+				'cmyk_url'  => Binder_Files::signed_url( $d['id'], $d['row'] ? Binder_Files::print_kind( $d['row'] ) : 'cmyk' ),
 			);
 		}
 
@@ -237,8 +237,10 @@ class Binder_Order_Integration {
 
 		foreach ( $designs as $d ) {
 			$row    = $d['row'];
-			$cmyk   = $row ? Binder_Files::link_for( $row, 'cmyk' ) : '';
-			$rgb    = $row ? Binder_Files::link_for( $row, 'rgb' ) : '';
+			$pk     = $row ? Binder_Files::print_kind( $row ) : 'cmyk';
+			$fk     = $row ? Binder_Files::proof_kind( $row ) : 'rgb';
+			$cmyk   = $row ? Binder_Files::link_for( $row, $pk ) : '';
+			$rgb    = $row ? Binder_Files::link_for( $row, $fk ) : '';
 			$status = $row ? $row['status'] : 'missing';
 			$warns  = $row && $row['validation_warnings'] ? count( (array) json_decode( $row['validation_warnings'], true ) ) : 0;
 
@@ -248,10 +250,10 @@ class Binder_Order_Integration {
 			echo '<td>' . esc_html( ucfirst( $status ) ) . ( $warns ? '<br><small>' . esc_html( sprintf( '%d warning(s)', $warns ) ) . '</small>' : '' ) . '</td><td>';
 
 			if ( $cmyk ) {
-				echo '<a class="button button-primary" href="' . esc_url( $cmyk ) . '">' . esc_html__( 'Print file (CMYK PDF)', 'prime-binder-designer' ) . '</a> ';
+				echo '<a class="button button-primary" href="' . esc_url( $cmyk ) . '">' . esc_html( Binder_Files::kind_label( $pk ) ) . '</a> ';
 			}
 			if ( $rgb ) {
-				echo '<a class="button" href="' . esc_url( $rgb ) . '">' . esc_html__( 'Customer proof', 'prime-binder-designer' ) . '</a>';
+				echo '<a class="button" href="' . esc_url( $rgb ) . '">' . esc_html( Binder_Files::kind_label( $fk ) ) . '</a>';
 			}
 			if ( ! $cmyk && ! $rgb ) {
 				echo '<em>' . esc_html__( 'No file yet', 'prime-binder-designer' ) . '</em>';
@@ -283,16 +285,18 @@ class Binder_Order_Integration {
 				continue;
 			}
 
-			$cmyk = Binder_Files::link_for( $row, 'cmyk' );
-			$rgb  = Binder_Files::link_for( $row, 'rgb' );
+			$pk   = Binder_Files::print_kind( $row );
+			$fk   = Binder_Files::proof_kind( $row );
+			$cmyk = Binder_Files::link_for( $row, $pk );
+			$rgb  = Binder_Files::link_for( $row, $fk );
 
 			echo '<div class="binder-item-files" style="margin:4px 0 6px">';
 
 			if ( $cmyk ) {
-				echo '<a class="button button-small button-primary" href="' . esc_url( $cmyk ) . '">' . esc_html__( 'Print file (CMYK PDF)', 'prime-binder-designer' ) . '</a> ';
+				echo '<a class="button button-small button-primary" href="' . esc_url( $cmyk ) . '">' . esc_html( Binder_Files::kind_label( $pk ) ) . '</a> ';
 			}
 			if ( $rgb ) {
-				echo '<a class="button button-small" href="' . esc_url( $rgb ) . '">' . esc_html__( 'Customer proof', 'prime-binder-designer' ) . '</a> ';
+				echo '<a class="button button-small" href="' . esc_url( $rgb ) . '">' . esc_html( Binder_Files::kind_label( $fk ) ) . '</a> ';
 			}
 			if ( ! $cmyk && ! $rgb ) {
 				echo '<em>' . esc_html( sprintf( /* translators: %s: design status */ __( 'Design #%1$d: %2$s — no file yet', 'prime-binder-designer' ), (int) $id, $row['status'] ) ) . '</em>';
@@ -321,7 +325,7 @@ class Binder_Order_Integration {
 		echo '<section class="binder-proofs"><h2>' . esc_html( Binder_Storefront::copy( 'heading' ) ) . '</h2><ul>';
 
 		foreach ( $designs as $d ) {
-			$url = $d['row'] ? Binder_Files::link_for( $d['row'], 'rgb' ) : '';
+			$url = $d['row'] ? Binder_Files::link_for( $d['row'], Binder_Files::proof_kind( $d['row'] ) ) : '';
 
 			echo '<li>' . esc_html( $d['item']->get_name() . ' — ' . Binder_Storefront::copy( $d['template'] ) );
 			if ( $url ) {

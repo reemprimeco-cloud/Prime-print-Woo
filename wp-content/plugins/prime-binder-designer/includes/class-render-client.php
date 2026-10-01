@@ -161,11 +161,11 @@ class Binder_Render_Client {
 	 * @param string $url Signed URL from the service.
 	 * @return string|WP_Error Path of the temp file.
 	 */
-	public static function download( $url ) {
+	public static function download( $url, $kind = 'cmyk' ) {
 		// wp_tempnam() lives in the admin file API, which REST and front-end requests do not load.
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 
-		$tmp = wp_tempnam( 'binder-pdf' );
+		$tmp = wp_tempnam( 'binder-file' );
 		$res = wp_remote_get( $url, array( 'timeout' => 180, 'redirection' => 0, 'stream' => true, 'filename' => $tmp ) );
 
 		if ( is_wp_error( $res ) || 200 !== wp_remote_retrieve_response_code( $res ) ) {
@@ -173,10 +173,23 @@ class Binder_Render_Client {
 			return is_wp_error( $res ) ? $res : new WP_Error( 'binder_download_failed', __( 'Could not download the PDF from the render service.', 'prime-binder-designer' ) );
 		}
 
-		$head = (string) file_get_contents( $tmp, false, null, 0, 5 ); // phpcs:ignore WordPress.WP.AlternativeFunctions
-		if ( '%PDF-' !== $head ) {
+		// The file must be what its kind says: a PDF, a PNG or a TIFF.
+		$head  = (string) file_get_contents( $tmp, false, null, 0, 8 ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+		$magic = array(
+			'rgb'  => array( '%PDF-' ),
+			'cmyk' => array( '%PDF-' ),
+			'png'  => array( "\x89PNG" ),
+			'tiff' => array( "II*\0", "MM\0*" ),
+		);
+		$ok    = false;
+		foreach ( $magic[ $kind ] ?? $magic['cmyk'] as $m ) {
+			if ( 0 === strncmp( $head, $m, strlen( $m ) ) ) {
+				$ok = true;
+			}
+		}
+		if ( ! $ok ) {
 			@unlink( $tmp ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions
-			return new WP_Error( 'binder_download_invalid', __( 'The render service returned something that is not a PDF.', 'prime-binder-designer' ) );
+			return new WP_Error( 'binder_download_invalid', __( 'The render service returned a file of the wrong type.', 'prime-binder-designer' ) );
 		}
 
 		return $tmp;

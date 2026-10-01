@@ -27,6 +27,13 @@ class Binder_Sticker {
 
 	const SHAPES = array( 'rectangle', 'square', 'round', 'hexagon', 'triangle', 'star', 'heart', 'custom' );
 
+	/**
+	 * The UV DTF transfer (binder-shared/src/sticker.ts UVDTF): a rectangle of
+	 * the typed size, no bleed, no safe zone, no cut line. Reem, 2026-10-01.
+	 */
+	const UVDTF_MIN_MM = 10.0;
+	const UVDTF_MAX_MM = 600.0;
+
 	/** Names the calculators use for the same shapes. */
 	const ALIASES = array(
 		'circle'  => 'round',
@@ -43,12 +50,22 @@ class Binder_Sticker {
 	 * @param mixed $shape Shape name.
 	 * @return array{w_mm: float, h_mm: float, shape: string}|null
 	 */
-	public static function normalize( $w_mm, $h_mm, $shape ) {
+	public static function normalize( $w_mm, $h_mm, $shape, $template = 'sticker' ) {
 		if ( ! is_numeric( $w_mm ) || ! is_numeric( $h_mm ) ) {
 			return null;
 		}
 		$w = round( (float) $w_mm, 1 );
 		$h = round( (float) $h_mm, 1 );
+
+		if ( 'uvdtf' === $template ) {
+			// A transfer is not cut to a shape: whatever was sent, it is a rectangle.
+			if ( $w < self::UVDTF_MIN_MM || $h < self::UVDTF_MIN_MM || $w > self::UVDTF_MAX_MM || $h > self::UVDTF_MAX_MM ) {
+				return null;
+			}
+
+			return array( 'w_mm' => $w, 'h_mm' => $h, 'shape' => 'rectangle' );
+		}
+
 		if ( $w < self::MIN_MM || $h < self::MIN_MM || $w > self::MAX_MM || $h > self::MAX_MM ) {
 			return null;
 		}
@@ -81,19 +98,19 @@ class Binder_Sticker {
 	 * @param array $p Normalised params.
 	 * @return array
 	 */
-	public static function spec( array $p ) {
+	public static function spec( array $p, $template = 'sticker' ) {
 		$w  = (float) $p['w_mm'];
 		$h  = (float) $p['h_mm'];
-		$b  = self::BLEED_MM;
-		$s  = self::SAFE_MM;
+		$b  = 'uvdtf' === $template ? 0.0 : self::BLEED_MM;
+		$s  = 'uvdtf' === $template ? 0.0 : self::SAFE_MM;
 		$cw = round( $w + 2 * $b, 1 );
 		$ch = round( $h + 2 * $b, 1 );
 
 		return array(
-			'template'                       => 'sticker',
+			'template'                       => 'uvdtf' === $template ? 'uvdtf' : 'sticker',
 			'unit'                           => 'mm',
 			'dpi'                            => self::DPI,
-			'color'                          => 'CMYK (FOGRA39 / ISO Coated v2)',
+			'color'                          => 'uvdtf' === $template ? 'CMYK (FOGRA39 / ISO Coated v2) + White + Varnish' : 'CMYK (FOGRA39 / ISO Coated v2)',
 			'bleed_mm'                       => $b,
 			'safe_margin_mm'                 => $s,
 			'turn_in_mm'                     => 0,
@@ -105,7 +122,7 @@ class Binder_Sticker {
 			),
 			'panels_relative_to_trim'        => array(
 				array(
-					'name'    => 'sticker',
+					'name'    => 'uvdtf' === $template ? 'transfer' : 'sticker',
 					'trim_mm' => array( 'x' => 0, 'y' => 0, 'w' => $w, 'h' => $h ),
 					'safe_mm' => array( 'x' => $s, 'y' => $s, 'w' => round( max( 0, $w - 2 * $s ), 1 ), 'h' => round( max( 0, $h - 2 * $s ), 1 ) ),
 				),
@@ -122,17 +139,17 @@ class Binder_Sticker {
 	 * @param array $design Decoded design_json.
 	 * @return array|null Normalised params.
 	 */
-	public static function design_params( array $design ) {
+	public static function design_params( array $design, $template = 'sticker' ) {
 		if ( empty( $design['sticker'] ) || ! is_array( $design['sticker'] ) ) {
 			return null;
 		}
 		$st = $design['sticker'];
-		$p  = self::normalize( $st['w_mm'] ?? null, $st['h_mm'] ?? null, $st['shape'] ?? null );
+		$p  = self::normalize( $st['w_mm'] ?? null, $st['h_mm'] ?? null, $st['shape'] ?? null, $template );
 		if ( ! $p ) {
 			return null;
 		}
 		// The canvas must be the one those params give.
-		$spec = self::spec( $p );
+		$spec = self::spec( $p, $template );
 		$c    = $design['canvas_mm'] ?? array();
 		if ( ! isset( $c['w'], $c['h'] ) || abs( (float) $c['w'] - $spec['canvas_with_bleed_mm']['w'] ) > 0.05 || abs( (float) $c['h'] - $spec['canvas_with_bleed_mm']['h'] ) > 0.05 ) {
 			return null;
@@ -175,7 +192,7 @@ class Binder_Sticker {
 	 * @param int $product_id Product id.
 	 * @return array|null Normalised params in mm, or null when none were posted or they are invalid.
 	 */
-	public static function posted_params( $product_id ) {
+	public static function posted_params( $product_id, $template = 'sticker' ) {
 		// phpcs:disable WordPress.Security.NonceVerification -- WooCommerce's add-to-cart request; the calculators validate the same fields.
 		foreach ( self::size_fields( $product_id ) as $f ) {
 			if ( ! isset( $_POST[ $f['w'] ] ) ) {
@@ -186,7 +203,7 @@ class Binder_Sticker {
 			$h     = isset( $_POST[ $f['h'] ] ) ? (float) wp_unslash( $_POST[ $f['h'] ] ) * $k : 0;
 			$shape = $f['shape'] && isset( $_POST[ $f['shape'] ] ) ? sanitize_key( wp_unslash( $_POST[ $f['shape'] ] ) ) : 'rectangle';
 
-			return self::normalize( $w, $h, $shape );
+			return self::normalize( $w, $h, $shape, $template );
 		}
 		// phpcs:enable
 
@@ -201,12 +218,13 @@ class Binder_Sticker {
 	 * @return bool
 	 */
 	public static function design_matches_request( array $row, $product_id ) {
-		$posted = self::posted_params( $product_id );
+		$template = 'uvdtf' === ( $row['template'] ?? '' ) ? 'uvdtf' : 'sticker';
+		$posted   = self::posted_params( $product_id, $template );
 		if ( ! $posted ) {
 			return false;
 		}
 		$design = json_decode( (string) $row['design_json'], true );
-		$made   = is_array( $design ) ? self::design_params( $design ) : null;
+		$made   = is_array( $design ) ? self::design_params( $design, $template ) : null;
 
 		return $made ? self::same( $made, $posted ) : false;
 	}

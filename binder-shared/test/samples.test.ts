@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { stickerSpec, validateDesign, type DesignJSON, type Spec } from '../src/index.ts';
+import { stickerSpec, uvdtfSpec, validateDesign, type DesignJSON, type Spec } from '../src/index.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (p: string) => JSON.parse(readFileSync(join(here, '..', p), 'utf8'));
@@ -23,6 +23,13 @@ describe('generated sample designs against the validator', () => {
       expect(r.errors).toEqual([]);
       expect(r.warnings).toEqual([]);
     }
+  });
+
+  it('uvdtf-text-logo: clean, spec rebuilt from the design itself', () => {
+    const d = sample('uvdtf-text-logo');
+    const r = validateDesign(d, uvdtfSpec(d.sticker!));
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toEqual([]);
   });
 
   it('outer-image-only: clean', () => {

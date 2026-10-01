@@ -44,6 +44,12 @@ import { STARTERS } from './templates';
 /** A Fabric object with the editor's own bookkeeping on it. */
 type BObject = FabricObject & { binder?: BinderMeta };
 type Tool = 'text' | 'image' | 'shapes' | 'colours' | 'templates';
+
+const TOOLS_EXTRA: Array<{ id: Tool; icon: ReactElement }> = [
+  { id: 'shapes', icon: <path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z" /> },
+  { id: 'colours', icon: <><circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 0 0 16c1.2 0 1.8-.8 1.8-1.7 0-1.6-1.4-1.8-1.4-3.1 0-1 .8-1.7 1.8-1.7H17a3 3 0 0 0 3-3C20 6.5 16.4 4 12 4z" /></> },
+  { id: 'templates', icon: <><rect x="4" y="4" width="7" height="7" rx="1" /><rect x="13" y="4" width="7" height="7" rx="1" /><rect x="4" y="13" width="7" height="7" rx="1" /><rect x="13" y="13" width="7" height="7" rx="1" /></> },
+];
 type PickTarget = 'selected' | 'background' | 'spine';
 
 const TEXT_WEIGHTS = ['400', '500', '700'] as const;
@@ -115,6 +121,8 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   const W = spec.canvas_with_bleed_mm.w * PX_PER_MM; // working px (96 per inch)
   const H = spec.canvas_with_bleed_mm.h * PX_PER_MM;
   const isBinder = !spec.sticker;
+  // A UV DTF transfer: a transparent artboard of the typed size, text and pictures only.
+  const isTransfer = spec.template === 'uvdtf';
 
   const stageRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLElement>(null);
@@ -181,7 +189,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   // ---- Canvas -------------------------------------------------------------------------------------------------------
   useEffect(() => {
     if (!canvasEl.current) return;
-    const c = new Canvas(canvasEl.current, { width: W, height: H, backgroundColor: '#ffffff', preserveObjectStacking: true, selection: false, enableRetinaScaling: true });
+    const c = new Canvas(canvasEl.current, { width: W, height: H, backgroundColor: isTransfer ? '' : '#ffffff', preserveObjectStacking: true, selection: false, enableRetinaScaling: true });
     fabric.current = c;
     // Test hook for the browser checks; only with ?debug=1.
     if (new URLSearchParams(location.search).get('debug') === '1') (window as unknown as { __studioCanvas?: Canvas }).__studioCanvas = c;
@@ -503,8 +511,9 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
       const res = await api.upload(file, (f) => setUploadPct(Math.round(f * 100)));
       let el: Extract<DesignElement, { type: 'image' }>;
       if (firstUpload.current && !hasContent) {
-        // Upload mode: the first picture fills the whole sheet, like a finished design.
-        const scale = Math.max(spec.canvas_with_bleed_mm.w / res.source_px.w, spec.canvas_with_bleed_mm.h / res.source_px.h);
+        // Upload mode: the first picture fills the whole sheet, like a finished design. A
+        // transfer is never cropped: its picture fits inside the artboard instead.
+        const scale = (isTransfer ? Math.min : Math.max)(spec.canvas_with_bleed_mm.w / res.source_px.w, spec.canvas_with_bleed_mm.h / res.source_px.h);
         const w = res.source_px.w * scale;
         const h = res.source_px.h * scale;
         el = { type: 'image', src: res.url, x_mm: (spec.canvas_with_bleed_mm.w - w) / 2, y_mm: (spec.canvas_with_bleed_mm.h - h) / 2, w_mm: w, h_mm: h, rotation_deg: 0, source_px: res.source_px };
@@ -677,7 +686,9 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
       ctx.scale(perMm, perMm);
       ctx.lineWidth = 0.4;
       ctx.strokeStyle = '#EC008C';
-      if (spec.sticker) {
+      if (isTransfer) {
+        // Nothing is cut: no line.
+      } else if (spec.sticker) {
         ctx.stroke(new Path2D(svgPathData(stickerOutlines(spec).cut)));
       } else {
         ctx.strokeRect(spec.bleed_mm, spec.bleed_mm, spec.trim_mm.w, spec.trim_mm.h);
@@ -703,7 +714,9 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   const objects = (fabric.current?.getObjects() ?? []) as BObject[];
   const bgCmyk = (objects.find((o) => o.binder?.kind === 'background')?.binder?.cmyk ?? null) as Cmyk | null;
   const spineCmyk = (objects.find((o) => o.binder?.kind === 'spine')?.binder?.cmyk ?? null) as Cmyk | null;
-  const subtitle = spec.sticker
+  const subtitle = isTransfer
+    ? t('subtitle_uvdtf', { w: spec.trim_mm.w, h: spec.trim_mm.h })
+    : spec.sticker
     ? t('subtitle_sticker', { shape: t(`shape_${spec.sticker.shape}`), w: spec.trim_mm.w, h: spec.trim_mm.h })
     : `${t(`binding_${spec.binding ?? 'ltr'}`)} · ${t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}`;
   const productTitle = cfg.order?.title || t(`title_${cfg.template}`);
@@ -712,9 +725,8 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   const tools: Array<{ id: Tool; icon: ReactElement }> = [
     { id: 'text', icon: <path d="M5 5h14M12 5v14" /> },
     { id: 'image', icon: <><rect x="4" y="5" width="16" height="14" rx="1.5" /><circle cx="9" cy="10" r="1.6" /><path d="M5 17l5-5 4 4 2-2 3 3" /></> },
-    { id: 'shapes', icon: <path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z" /> },
-    { id: 'colours', icon: <><circle cx="12" cy="12" r="8" /><path d="M12 4a8 8 0 0 0 0 16c1.2 0 1.8-.8 1.8-1.7 0-1.6-1.4-1.8-1.4-3.1 0-1 .8-1.7 1.8-1.7H17a3 3 0 0 0 3-3C20 6.5 16.4 4 12 4z" /></> },
-    { id: 'templates', icon: <><rect x="4" y="4" width="7" height="7" rx="1" /><rect x="13" y="4" width="7" height="7" rx="1" /><rect x="4" y="13" width="7" height="7" rx="1" /><rect x="13" y="13" width="7" height="7" rx="1" /></> },
+    // A transfer has no fills, no shapes and no background: text and pictures only.
+    ...(isTransfer ? [] : TOOLS_EXTRA),
   ];
 
   return (
@@ -824,7 +836,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
             </div>
           )}
           <div className={`studio-sheet${picking ? ' is-picking' : ''}`} tabIndex={0} onKeyDown={onKey} aria-label={productTitle}>
-            <div className="binder-frame" style={{ width: Math.round(viewW), height: viewH }} dir="ltr">
+            <div className={`binder-frame${isTransfer ? ' binder-frame--transparent' : ''}`} style={{ width: Math.round(viewW), height: viewH }} dir="ltr">
               <canvas ref={canvasEl} />
               <img className="binder-overlay" src={overlayUrlFor(tpl)} alt="" draggable={false} />
             </div>
@@ -937,7 +949,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
               <button type="button" className="studio-mini" onClick={() => setPreview(null)} aria-label={t('close')}>×</button>
             </div>
             <img src={preview} alt="" />
-            <p className="studio-muted">{spec.sticker ? t('preview_note') : t('preview_note_binder')}</p>
+            <p className="studio-muted">{isTransfer ? t('preview_note_uvdtf') : spec.sticker ? t('preview_note') : t('preview_note_binder')}</p>
           </div>
         </div>
       )}
@@ -1157,8 +1169,8 @@ function Selected({ o, t, design, indexOf, objects, onChange, ensureFont, pickin
     <>
       {quality && <p className={`studio-quality studio-quality--${quality}`}>{t('dpi', { dpi })} · {t(`quality_${quality}`)}</p>}
       <div className="studio-actions">
-        <button type="button" className="studio-btn studio-btn--ghost studio-btn--small" onClick={() => actions.fillWith('sheet')}>{t('fill_canvas')}</button>
-        {design.template !== 'sticker' && <button type="button" className="studio-btn studio-btn--ghost studio-btn--small" onClick={() => actions.fillWith('panel')}>{t('fill_panel')}</button>}
+        {design.template !== 'uvdtf' && <button type="button" className="studio-btn studio-btn--ghost studio-btn--small" onClick={() => actions.fillWith('sheet')}>{t('fill_canvas')}</button>}
+        {design.template !== 'sticker' && design.template !== 'uvdtf' && <button type="button" className="studio-btn studio-btn--ghost studio-btn--small" onClick={() => actions.fillWith('panel')}>{t('fill_panel')}</button>}
       </div>
       {opacityRow}
       {alignRow}
