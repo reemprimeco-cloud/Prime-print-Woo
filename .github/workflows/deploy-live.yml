@@ -7,7 +7,7 @@
 #   PRIME_SFTP_USER       the SFTP username from WP.com → Hosting Configuration
 #   PRIME_SFTP_PASSWORD   the SFTP password from the same page
 #
-# How it runs: a push to main-0t9dg8 whose commit message contains
+# How it runs: a push to main-0t9dg8 whose commit TITLE (first line) contains
 #   [deploy theme]    theme files changed since the last theme deploy
 #   [deploy plugin]   the designer plugin (editor rebuilt first)
 #   [deploy all]      both
@@ -62,14 +62,18 @@ jobs:
         run: |
           theme=false; plugin=false
           case "$TARGET" in theme) theme=true;; plugin) plugin=true;; all) theme=true; plugin=true;; esac
-          case "$MSG" in *"[deploy theme]"*) theme=true;; esac
-          case "$MSG" in *"[deploy plugin]"*) plugin=true;; esac
-          case "$MSG" in *"[deploy all]"*) theme=true; plugin=true;; esac
+          # Only the commit title counts, so a message that merely mentions a
+          # trigger in its body (like the one that added this job) uploads nothing.
+          title=$(printf '%s\n' "$MSG" | head -n 1)
+          case "$title" in *"[deploy theme]"*) theme=true;; esac
+          case "$title" in *"[deploy plugin]"*) plugin=true;; esac
+          case "$title" in *"[deploy all]"*) theme=true; plugin=true;; esac
           echo "theme=$theme" >> "$GITHUB_OUTPUT"
           echo "plugin=$plugin" >> "$GITHUB_OUTPUT"
           echo "Theme: $theme   Plugin: $plugin"
 
       - name: Check the SFTP secrets are set
+        if: steps.what.outputs.theme == 'true' || steps.what.outputs.plugin == 'true'
         run: |
           if [ -z "$PRIME_SFTP_USER" ] || [ -z "$PRIME_SFTP_PASSWORD" ]; then
             echo "::error::Add PRIME_SFTP_USER and PRIME_SFTP_PASSWORD under Settings → Secrets and variables → Actions."
