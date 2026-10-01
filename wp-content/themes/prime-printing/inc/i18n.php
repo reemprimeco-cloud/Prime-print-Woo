@@ -180,6 +180,15 @@ function prime_product_id_matches( $candidate_id, $canonical_id ) {
 		return true;
 	}
 
+	// The calculator's product by its URL slug, for when the product the ID
+	// names is gone (the Arabic clean-up of 2026-10-01 deleted two PP sticker
+	// posts in a row) and the one on sale is a fresh post under a known slug.
+	$slugs = (array) apply_filters( 'prime_calculator_product_slugs', array(), $canonical_id );
+
+	if ( $slugs && in_array( get_post_field( 'post_name', $candidate_id ), $slugs, true ) ) {
+		return true;
+	}
+
 	// Pinned by hand on the product (Product data → General → "Price calculator").
 	if ( (int) get_post_meta( $candidate_id, PRIME_CALCULATOR_META, true ) === $canonical_id ) {
 		return true;

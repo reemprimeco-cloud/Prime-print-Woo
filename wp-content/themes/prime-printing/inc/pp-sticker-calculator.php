@@ -29,6 +29,24 @@ defined( 'ABSPATH' ) || exit;
 const PRIME_PP_STICKER_PRODUCT_ID = 6073;
 
 /**
+ * The PP sticker product by URL, whichever post ID it has today. 6073 was
+ * deleted as a duplicate the same day; the one on sale is /product/stickers/.
+ *
+ * @param string[] $slugs        Slugs so far.
+ * @param int      $canonical_id Calculator product ID being asked about.
+ * @return string[]
+ */
+function prime_pp_sticker_product_slugs( $slugs, $canonical_id ) {
+	if ( PRIME_PP_STICKER_PRODUCT_ID === (int) $canonical_id ) {
+		$slugs[] = 'stickers';
+		$slugs[] = 'pp-stickers-waterproof';
+	}
+
+	return $slugs;
+}
+add_filter( 'prime_calculator_product_slugs', 'prime_pp_sticker_product_slugs', 10, 2 );
+
+/**
  * Reem's real figures, ported verbatim from the reference calculator.
  *
  * @return array
