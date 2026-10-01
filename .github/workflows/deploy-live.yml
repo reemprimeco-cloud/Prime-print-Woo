@@ -15,6 +15,8 @@
 #
 # The last deployed theme commit is remembered in the tag "live-theme", so each
 # theme deploy uploads only what changed (plus style.css, the cache buster).
+# Before the first theme deploy there is no tag; .github/live-theme-base holds
+# the commit that was live when this job was set up.
 name: Deploy to live site
 
 on:
@@ -79,11 +81,13 @@ jobs:
         if: steps.what.outputs.theme == 'true'
         run: |
           git fetch --tags --force -q
-          if ! git rev-parse -q --verify refs/tags/live-theme >/dev/null; then
-            echo "::error::No live-theme tag: nothing records which theme commit is live."
-            exit 1
+          if git rev-parse -q --verify refs/tags/live-theme >/dev/null; then
+            export PRIME_LAST_DEPLOYED=$(git rev-parse live-theme)
+          else
+            # First run: the theme commit that was live when this job was set up.
+            export PRIME_LAST_DEPLOYED=$(cat .github/live-theme-base)
           fi
-          export PRIME_LAST_DEPLOYED=$(git rev-parse live-theme)
+          echo "Uploading theme changes since $PRIME_LAST_DEPLOYED" 
           scripts/deploy-theme.sh
           git tag -f live-theme HEAD
           git push -f origin refs/tags/live-theme
