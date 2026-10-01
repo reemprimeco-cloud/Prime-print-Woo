@@ -46,14 +46,42 @@ jobs:
 
       - name: Fetch the ECI FOGRA39 colour profile
         run: |
+          set -u
           mkdir -p binder-render-service/assets/icc /tmp/eci
-          curl -fsSL -o /tmp/eci/eci.zip https://www.eci.org/_media/downloads/icc_profiles_from_eci/eci_offset_2009.zip
-          unzip -q -o /tmp/eci/eci.zip -d /tmp/eci
-          icc=$(find /tmp/eci -iname 'ISOcoated_v2_300_eci.icc' | head -n 1)
-          if [ -z "$icc" ]; then
-            echo "::error::ISOcoated_v2_300_eci.icc not found in the ECI download"; find /tmp/eci -iname '*.icc'; exit 1
+          out=binder-render-service/assets/icc/FOGRA39.icc
+          UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36'
+          pick() { find /tmp/eci -type f -iname 'ISOcoated_v2_300_eci.icc' | head -n 1; }
+
+          # 1) ECI's own download (blocks plain curl, so look like a browser).
+          for url in \
+            https://www.eci.org/_media/downloads/icc_profiles_from_eci/eci_offset_2009.zip \
+            https://eci.org/_media/downloads/icc_profiles_from_eci/eci_offset_2009.zip; do
+            if curl -fsSL -A "$UA" -e https://www.eci.org/en/downloads -o /tmp/eci/eci.zip "$url" \
+               && unzip -q -o /tmp/eci/eci.zip -d /tmp/eci/zip 2>/dev/null; then
+              break
+            fi
+            echo "::warning::$url did not give a zip: $(file -b /tmp/eci/eci.zip 2>/dev/null)"
+            head -c 300 /tmp/eci/eci.zip 2>/dev/null || true; echo
+          done
+
+          # 2) Ubuntu's icc-profiles package carries the same ECI profiles.
+          if [ -z "$(pick)" ]; then
+            sudo sed -i 's/^Components: main restricted$/Components: main restricted universe multiverse/' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true
+            sudo apt-get update -qq || true
+            (cd /tmp/eci && apt-get download icc-profiles 2>&1 | tail -n 2 || true)
+            for deb in /tmp/eci/icc-profiles_*.deb; do [ -f "$deb" ] && dpkg-deb -x "$deb" /tmp/eci/deb || true; done
           fi
-          cp "$icc" binder-render-service/assets/icc/FOGRA39.icc
+
+          icc=$(pick)
+          if [ -z "$icc" ]; then
+            echo "::error::ISOcoated_v2_300_eci.icc (FOGRA39) not found in any source"
+            find /tmp/eci -iname '*.ic[cm]' | head -n 40
+            exit 1
+          fi
+          echo "Using $icc"
+          cp "$icc" "$out"
+          # An ICC profile has the signature "acsp" at byte 36.
+          [ "$(dd if="$out" bs=1 skip=36 count=4 2>/dev/null)" = "acsp" ] || { echo "::error::$out is not an ICC profile"; exit 1; }
           ls -l binder-render-service/assets/icc
 
       - uses: docker/setup-qemu-action@v3
