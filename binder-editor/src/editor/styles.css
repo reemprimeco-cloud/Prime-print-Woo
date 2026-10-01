@@ -46,6 +46,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   background-position: 0 0, 8px 8px;
 }
 .binder-legend--note { text-align: center; }
+/* Off-screen text in every face the design uses, so WebKit activates the font for the canvas. Not display:none — that would not load it. */
+.studio-fontwarm { position: absolute; left: -10000px; top: 0; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
 .binder-frame .canvas-container { position: absolute !important; inset: 0; }
 .binder-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; z-index: 5; }
 

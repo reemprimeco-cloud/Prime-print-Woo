@@ -128,6 +128,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   const topRef = useRef<HTMLElement>(null);
   const selRef = useRef<HTMLElement>(null);
   const canvasEl = useRef<HTMLCanvasElement>(null);
+  const fontWarm = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const fabric = useRef<Canvas | null>(null);
   const applying = useRef(false);
@@ -154,12 +155,41 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     const loads = [document.fonts.load('700 24px "Tajawal"', 'Aa الصف'), document.fonts.load('700 24px "Poppins"', 'Aa')];
     Promise.allSettled(loads).then(() => setFontsReady(true));
   }, []);
+  /**
+   * Make a face usable by the canvas. document.fonts.load() is enough for
+   * Chromium, but WebKit (Safari, every iPhone browser) hands the canvas a
+   * web font only once the page has actually drawn text in it — the font
+   * menu's own preview does not count. So each face is also set on a hidden
+   * element, and the canvas is told to repaint once the browser has laid it
+   * out (Reem, 2026-10-01: "the Arabic font is not changing").
+   */
   const ensureFont = async (family: string, weight: string, sample: string) => {
+    const text = sample || 'Aa الصف';
+    const warm = fontWarm.current;
+    const key = `${family}|${weight}`;
+    if (warm && !warm.querySelector(`[data-face="${CSS.escape(key)}"]`)) {
+      const span = document.createElement('span');
+      span.dataset.face = key;
+      span.style.fontFamily = `"${family}"`;
+      span.style.fontWeight = weight;
+      span.textContent = text;
+      warm.appendChild(span);
+    }
     try {
-      await document.fonts.load(`${weight} 24px "${family}"`, sample || 'Aa الصف');
+      await document.fonts.load(`${weight} 24px "${family}"`, text);
     } catch {
       /* the fallback face is used */
     }
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+    fabric.current?.getObjects().forEach((o) => {
+      const tb = o as Textbox & BObject;
+      if (tb.binder?.kind === 'text' && tb.fontFamily === family) {
+        tb.initDimensions?.();
+        tb.setCoords();
+        tb.dirty = true;
+      }
+    });
+    fabric.current?.requestRenderAll();
   };
 
   // ---- Design snapshot ------------------------------------------------------------------------------------------
@@ -836,6 +866,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
             </div>
           )}
           <div className={`studio-sheet${picking ? ' is-picking' : ''}`} tabIndex={0} onKeyDown={onKey} aria-label={productTitle}>
+            <div className="studio-fontwarm" ref={fontWarm} aria-hidden="true" />
             <div className={`binder-frame${isTransfer ? ' binder-frame--transparent' : ''}`} style={{ width: Math.round(viewW), height: viewH }} dir="ltr">
               <canvas ref={canvasEl} />
               <img className="binder-overlay" src={overlayUrlFor(tpl)} alt="" draggable={false} />
