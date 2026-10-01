@@ -188,17 +188,60 @@ function prime_paid_order_status( $status, $order_id, $order = null ) {
 add_filter( 'woocommerce_payment_complete_order_status', 'prime_paid_order_status', 20, 3 );
 
 /**
+ * Is this request the shop owner completing an order by hand?
+ *
+ * Completed is the shop's own decision ("once it's ready I click complete"),
+ * so it only counts when it comes from where a person completes orders: the
+ * order screens and list in wp-admin (including the list's one-click
+ * "Complete" button, an admin-ajax call), the WooCommerce mobile app and any
+ * other signed-in REST client, or WP-CLI. A payment gateway's callback, its
+ * return page or a webhook runs on the front end or through its own endpoint,
+ * so it never qualifies — even when the person paying happens to be signed in
+ * as an admin (a test order, an order taken for a customer).
+ *
+ * @return bool
+ */
+function prime_is_manual_order_completion() {
+	if ( defined( 'WP_CLI' ) && WP_CLI ) {
+		return true;
+	}
+
+	if ( ! current_user_can( 'edit_shop_orders' ) ) {
+		return false;
+	}
+
+	$rest = function_exists( 'wp_is_serving_rest_request' ) ? wp_is_serving_rest_request() : ( defined( 'REST_REQUEST' ) && REST_REQUEST );
+	if ( $rest ) {
+		return true;
+	}
+
+	if ( wp_doing_ajax() ) {
+		// phpcs:ignore WordPress.Security.NonceVerification -- reading which action this is, not acting on it.
+		$action = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( $_REQUEST['action'] ) ) : '';
+
+		return in_array( $action, array( 'woocommerce_mark_order_status', 'woocommerce_save_order_items', 'inline-save' ), true );
+	}
+
+	return is_admin();
+}
+
+/**
  * The same rule, for a gateway that sets the status itself.
  *
  * Not every gateway goes through payment_complete() — some call
  * `$order->update_status( 'completed' )` from their payment callback, which no
- * filter above can reach. What gives that away is the jump: an order going
- * straight from unpaid to Completed without ever passing through Processing,
- * with nobody signed in who could have clicked it.
+ * filter above can reach. UPayments, set to "Completed" after payment, even
+ * does both: payment_complete() (which the filter above turns into
+ * Processing) and then a second update to Completed.
  *
- * That last part is what keeps this out of Reem's way. When she marks an order
- * Completed herself — in wp-admin or from the WooCommerce app — she is signed
- * in and able to edit orders, so her click is left exactly as she made it.
+ * So any move to Completed that is not the shop owner's own click
+ * (prime_is_manual_order_completion()) is put back to Processing, whatever
+ * status it came from — including Processing itself and WooCommerce's block
+ * checkout draft. Reem's own Complete, from wp-admin or the app, stands.
+ *
+ * Reem, 2026-10-01: new orders were still arriving Completed. The earlier
+ * version only caught a jump from an unpaid status, and trusted anyone who
+ * could edit orders, which let both of the cases above through.
  *
  * @param int      $order_id Order ID.
  * @param string   $from     Previous status.
@@ -206,11 +249,11 @@ add_filter( 'woocommerce_payment_complete_order_status', 'prime_paid_order_statu
  * @param WC_Order $order    Order.
  */
 function prime_keep_paid_orders_in_processing( $order_id, $from, $to, $order = null ) {
-	if ( 'completed' !== $to || ! in_array( $from, array( 'pending', 'failed', 'on-hold', 'cancelled' ), true ) ) {
+	if ( 'completed' !== $to || 'completed' === $from ) {
 		return;
 	}
 
-	if ( current_user_can( 'edit_shop_orders' ) ) {
+	if ( prime_is_manual_order_completion() ) {
 		return;
 	}
 
@@ -223,3 +266,56 @@ function prime_keep_paid_orders_in_processing( $order_id, $from, $to, $order = n
 	$order->update_status( 'processing', __( 'Payment received. Held in Processing until the order is printed and ready.', 'prime-printing' ) );
 }
 add_action( 'woocommerce_order_status_changed', 'prime_keep_paid_orders_in_processing', 20, 4 );
+
+/**
+ * Stop the change before it is saved.
+ *
+ * The status_changed fallback above runs after WooCommerce has already treated
+ * the order as Completed: the customer's "your order is complete" email and
+ * the app's push notification have gone out by then. Catching the change on
+ * its way to the database means the order is never Completed at all, so no
+ * wrong message is sent; the fallback stays for anything that saves around
+ * this hook.
+ *
+ * @param WC_Order $order Order about to be saved.
+ */
+function prime_hold_completed_before_save( $order ) {
+	if ( ! $order instanceof WC_Order ) {
+		return;
+	}
+
+	$changes = $order->get_changes();
+
+	if ( ! isset( $changes['status'] ) || 'completed' !== $changes['status'] || ! $order->get_id() ) {
+		return;
+	}
+
+	if ( prime_is_manual_order_completion() || ! prime_order_needs_fulfilment( $order ) ) {
+		return;
+	}
+
+	$order->set_status( 'processing', __( 'Payment received. Held in Processing until the order is printed and ready.', 'prime-printing' ) );
+}
+add_action( 'woocommerce_before_order_object_save', 'prime_hold_completed_before_save', 5 );
+
+/**
+ * Never send "your order is complete" for an order that is not Completed.
+ *
+ * Belt and braces for the fallback path: if an order was moved back to
+ * Processing after the fact, its Completed email is not sent.
+ *
+ * @param bool          $enabled Whether the email is enabled.
+ * @param WC_Order|null $order   Order the email is about.
+ * @return bool
+ */
+function prime_completed_email_only_when_completed( $enabled, $order ) {
+	if ( $enabled && $order instanceof WC_Order ) {
+		$fresh = wc_get_order( $order->get_id() );
+		if ( $fresh && ! $fresh->has_status( 'completed' ) ) {
+			return false;
+		}
+	}
+
+	return $enabled;
+}
+add_filter( 'woocommerce_email_enabled_customer_completed_order', 'prime_completed_email_only_when_completed', 10, 2 );
