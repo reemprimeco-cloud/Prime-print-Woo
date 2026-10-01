@@ -204,7 +204,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     }
     try {
       // Never wait on this forever: WebKit has been seen leaving the promise pending.
-      await Promise.race([document.fonts.load(`${weight} 24px "${family}"`, text), new Promise((r) => setTimeout(r, 2500))]);
+      await Promise.race([document.fonts.load(`${weight} 24px "${family}"`, text), new Promise((r) => setTimeout(r, 1500))]);
     } catch {
       /* the fallback face is used */
     }
@@ -257,6 +257,24 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     // Test hook for the browser checks; only with ?debug=1.
     if (new URLSearchParams(location.search).get('debug') === '1') (window as unknown as { __studioCanvas?: Canvas }).__studioCanvas = c;
 
+    // A face that arrives after the text was first painted (a 400 KB font on a
+    // real connection) would otherwise never show: the browser keeps the
+    // fallback it drew, and the object's cached bitmap is reused. Whenever any
+    // font finishes loading, every text object is measured and painted again.
+    const onFontsLoaded = () => {
+      c.getObjects().forEach((o) => {
+        const tb = o as Textbox & BObject;
+        if (tb.binder?.kind !== 'text') return;
+        (tb as { _cacheCanvas?: unknown })._cacheCanvas = undefined;
+        (tb as { _cacheContext?: unknown })._cacheContext = undefined;
+        tb.initDimensions?.();
+        tb.setCoords();
+        tb.dirty = true;
+      });
+      c.requestRenderAll();
+    };
+    document.fonts.addEventListener('loadingdone', onFontsLoaded);
+
     const onSel = () => {
       const o = (c.getActiveObject() as BObject | undefined) ?? null;
       setSelected(o && o.binder && o.binder.kind !== 'background' && o.binder.kind !== 'spine' ? o : null);
@@ -293,6 +311,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
     });
 
     return () => {
+      document.fonts.removeEventListener('loadingdone', onFontsLoaded);
       void c.dispose();
       fabric.current = null;
     };
