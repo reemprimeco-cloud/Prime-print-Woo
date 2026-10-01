@@ -107,10 +107,9 @@ function prime_find_arabic_duplicates() {
 /**
  * Arabic products with no English counterpart.
  *
- * These cannot be merged into anything, so the tool reports them and leaves
- * them alone rather than guessing — an orphan is either a product that only
- * ever existed in Arabic (it should stay, and keep selling) or a mistake for
- * Reem to look at.
+ * These cannot be merged into anything. The screen lists them, and step 3
+ * drafts them with the duplicates (Reem, 2026-10-01: the English catalogue is
+ * the only one), so none stays on sale under an Arabic title in English.
  *
  * @return int[]
  */
@@ -185,6 +184,12 @@ function prime_stop_translating_products() {
 	// Read the pairs while Polylang still links them — after the switch below
 	// it no longer answers questions about a product's language.
 	$duplicates = wp_list_pluck( prime_find_arabic_duplicates(), 'arabic_id' );
+
+	// Arabic-only products go too. Once products stop being translated they
+	// would show on the English shop under their Arabic titles; Reem's call,
+	// 2026-10-01: the English catalogue is the original and the only one.
+	// Drafted with the rest, so "Undo the switch" brings them back as well.
+	$duplicates = array_merge( $duplicates, prime_find_orphan_arabic_products() );
 
 	$options = get_option( 'polylang', array() );
 	$single  = prime_single_post_types();
@@ -327,7 +332,7 @@ function prime_render_merge_page() {
 			<tbody>
 				<tr><th><?php esc_html_e( 'Duplicate pairs found', 'prime-printing' ); ?></th><td><?php echo (int) count( $pairs ); ?></td></tr>
 				<tr><th><?php esc_html_e( 'Still to merge', 'prime-printing' ); ?></th><td><?php echo (int) count( $pending ); ?></td></tr>
-				<tr><th><?php esc_html_e( 'Arabic-only products (left alone)', 'prime-printing' ); ?></th><td><?php echo (int) count( $orphans ); ?></td></tr>
+				<tr><th><?php esc_html_e( 'Arabic-only products (set to Draft in step 3)', 'prime-printing' ); ?></th><td><?php echo (int) count( $orphans ); ?></td></tr>
 				<tr><th><?php esc_html_e( 'Polylang translates products', 'prime-printing' ); ?></th><td><?php echo function_exists( 'pll_is_translated_post_type' ) && pll_is_translated_post_type( 'product' ) ? 'yes' : 'no'; ?></td></tr>
 				<?php if ( $log ) : ?>
 					<tr><th><?php esc_html_e( 'Last merge', 'prime-printing' ); ?></th><td><?php echo esc_html( $log['at'] . ' — ' . $log['count'] . ' products' ); ?></td></tr>
@@ -360,7 +365,7 @@ function prime_render_merge_page() {
 
 		<?php if ( $orphans ) : ?>
 			<h2><?php esc_html_e( 'Arabic-only products', 'prime-printing' ); ?></h2>
-			<p><?php esc_html_e( 'These have no English product to merge into, so nothing was done to them. Each one is either a product that only exists in Arabic — which is fine — or a duplicate that lost its link.', 'prime-printing' ); ?></p>
+			<p><?php esc_html_e( 'These have no English product to merge into. Step 3 sets them to Draft along with the duplicates, so only the English catalogue stays on sale; "Undo the switch" publishes them again. To keep one, give it an English product first.', 'prime-printing' ); ?></p>
 			<ul>
 				<?php foreach ( $orphans as $orphan_id ) : ?>
 					<li><a href="<?php echo esc_url( (string) get_edit_post_link( $orphan_id ) ); ?>">#<?php echo (int) $orphan_id; ?> <?php echo esc_html( get_the_title( $orphan_id ) ); ?></a></li>
