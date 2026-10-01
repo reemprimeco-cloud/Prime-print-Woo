@@ -1,6 +1,6 @@
 <?php
 /**
- * PP Sticker / waterproof vinyl (product id 235) — real price calculator.
+ * PP Sticker / waterproof vinyl (product id 6073) — real price calculator.
  *
  * Third of the same treatment (see inc/uv-dtf-calculator.php and
  * inc/paper-sticker-calculator.php): replaces an external iframe embed
@@ -22,9 +22,11 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * The one product this applies to.
+ * The one product this applies to. Was 235 until the Arabic clean-up of
+ * 2026-10-01 deleted that post (Polylang had it filed as the Arabic copy);
+ * the PP sticker on sale since is 6073.
  */
-const PRIME_PP_STICKER_PRODUCT_ID = 235;
+const PRIME_PP_STICKER_PRODUCT_ID = 6073;
 
 /**
  * Reem's real figures, ported verbatim from the reference calculator.

@@ -1,5 +1,5 @@
 /**
- * PP Sticker / waterproof vinyl (product id 235) — live price preview.
+ * PP Sticker / waterproof vinyl (product id 6073) — live price preview.
  *
  * A PREVIEW ONLY: nothing computed here is ever sent as a price.
  * prime_pp_sticker_price() in inc/pp-sticker-calculator.php recomputes the

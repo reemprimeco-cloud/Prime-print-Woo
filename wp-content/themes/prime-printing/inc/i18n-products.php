@@ -741,9 +741,17 @@ function prime_render_language_debug() {
 		'is_rtl'                     => var_export( is_rtl(), true ), // phpcs:ignore WordPress.PHP.DevelopmentFunctions
 		'Polylang post types'        => implode( ', ', (array) ( $options['post_types'] ?? array() ) ),
 		'force_lang / hide_default'  => ( $options['force_lang'] ?? '?' ) . ' / ' . ( $options['hide_default'] ?? '?' ),
-		'Matches PP calculator (235)' => function_exists( 'prime_product_id_matches' ) ? var_export( prime_product_id_matches( $id, 235 ), true ) : '?', // phpcs:ignore WordPress.PHP.DevelopmentFunctions
+		'get_the_title()'            => get_the_title( $id ),
+		'Product get_name()'         => function_exists( 'wc_get_product' ) && wc_get_product( $id ) ? wc_get_product( $id )->get_name() : '?',
 		'Theme version'              => wp_get_theme()->get( 'Version' ),
 	);
+
+	if ( function_exists( 'prime_calculator_choices' ) ) {
+		foreach ( prime_calculator_choices() as $calculator_id => $label ) {
+			$rows[ 'Calculator ' . $label . ' (#' . $calculator_id . ')' ] = ( get_post_status( $calculator_id ) ? get_post_status( $calculator_id ) : 'DELETED' )
+				. ( prime_product_id_matches( $id, $calculator_id ) ? '  ← this page' : '' );
+		}
+	}
 
 	echo '<div dir="ltr" style="position:fixed;left:8px;bottom:8px;z-index:99999;background:#111;color:#0f0;font:12px/1.5 monospace;padding:10px 12px;max-width:95vw;border-radius:6px;text-align:left">';
 	foreach ( $rows as $label => $value ) {
