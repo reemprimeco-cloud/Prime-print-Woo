@@ -254,9 +254,15 @@ class Binder_Files {
 			if ( isset( $_GET['sig'], $_GET['exp'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$exp     = absint( wp_unslash( $_GET['exp'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 				$allowed = $exp >= time() && hash_equals( self::sign( $id, $kind, $exp ), sanitize_text_field( wp_unslash( $_GET['sig'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
-			} elseif ( self::is_shop_staff() ) {
-				$allowed = isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), "binder_dl_{$id}_{$kind}" ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
-			} elseif ( 'proof' === ( self::KIND_INFO[ $kind ]['role'] ?? '' ) && isset( $_GET['t'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			} elseif ( self::is_shop_staff() && isset( $_GET['_wpnonce'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+				$allowed = wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), "binder_dl_{$id}_{$kind}" ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+			}
+
+			// The customer's own proof, by the session token the editor holds. Checked
+			// for a logged-in shop user too: the editor's REST calls carry no nonce, so
+			// WordPress hands it customer links even when the shop is trying its own
+			// designer (Reem, 2026-10-01: "View proof: Not found").
+			if ( ! $allowed && 'proof' === ( self::KIND_INFO[ $kind ]['role'] ?? '' ) && isset( $_GET['t'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 				$allowed = hash_equals( (string) $design['session_token'], sanitize_text_field( wp_unslash( $_GET['t'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
 			}
 		}
