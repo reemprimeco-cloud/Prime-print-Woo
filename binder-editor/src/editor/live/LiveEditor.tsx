@@ -1209,8 +1209,13 @@ function Selected({ o, t, design, indexOf, objects, onChange, ensureFont, pickin
       onChange();
     };
     const setFont = async (family: string, w = weight) => {
-      await ensureFont(family, w, tb.text);
-      set({ fontFamily: family, fontWeight: w });
+      // The choice is applied whatever happens while loading: a face that
+      // arrives later repaints through the document's 'loadingdone' event.
+      try {
+        await ensureFont(family, w, tb.text);
+      } finally {
+        set({ fontFamily: family, fontWeight: w });
+      }
     };
     return (
       <>

@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { createHash } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
@@ -53,6 +54,24 @@ function binderDevRoutes(): Plugin {
 }
 
 /**
+ * fonts.css and the font files keep fixed names, so a host's cache can hand
+ * out an old copy long after the list of fonts changed — WordPress.com did,
+ * and the designer knew only the two fonts of the first version (2026-10-02).
+ * The stylesheet URL carries a hash of its contents, so a changed list is a
+ * new URL; the font files themselves never change once published.
+ */
+function versionedFontsCss(): Plugin {
+  return {
+    name: 'binder-versioned-fonts-css',
+    transformIndexHtml(html) {
+      const css = readFileSync(join(here, 'public/fonts/fonts.css'));
+      const v = createHash('sha256').update(css).digest('hex').slice(0, 10);
+      return html.replace(/(fonts\/fonts\.css)(\?v=[^"']*)?/, `$1?v=${v}`);
+    },
+  };
+}
+
+/**
  * Two builds, because they are deployed to different places:
  *   --mode print   /print-render/<template>, served by the render service from
  *                  the site root, so asset URLs are absolute (base '/');
@@ -64,7 +83,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: print ? '/' : './',
-    plugins: [react(), binderDevRoutes()],
+    plugins: [react(), binderDevRoutes(), versionedFontsCss()],
     resolve: {
       alias: { '@binder/shared': resolve(shared, 'src/index.ts') },
       dedupe: ['react', 'react-dom'],
