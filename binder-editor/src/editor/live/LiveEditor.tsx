@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Canvas, Control, FabricImage, Path, Rect, Textbox, type FabricObject, type TPointerEventInfo } from 'fabric';
 import {
+  BAG_PANELS,
+  bagDieline,
   cmykToRgbCss,
   customCutPath,
   customOverlayDataUrl,
@@ -13,6 +15,7 @@ import {
   svgPathData,
   THRESHOLDS,
   validateDesign,
+  type BagPanel,
   type Cmyk,
   type DesignElement,
   type DesignJSON,
@@ -109,8 +112,8 @@ export default function LiveEditor({ cfg }: { cfg: EditorConfig }) {
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    api.template(cfg.template, { sticker: cfg.sticker, binding: cfg.binding }).then(setTpl).catch(() => setLoadError(true));
-  }, [api, cfg.template, cfg.sticker, cfg.binding]);
+    api.template(cfg.template, { sticker: cfg.sticker, bag: cfg.bag, binding: cfg.binding }).then(setTpl).catch(() => setLoadError(true));
+  }, [api, cfg.template, cfg.sticker, cfg.bag, cfg.binding]);
 
   if (loadError) return <div className="binder-app binder-center" role="alert">{t('load_failed')}</div>;
   if (!tpl) return <div className="binder-app binder-center">{t('loading')}</div>;
@@ -124,7 +127,9 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   const spec = tpl.spec;
   const W = spec.canvas_with_bleed_mm.w * PX_PER_MM; // working px (96 per inch)
   const H = spec.canvas_with_bleed_mm.h * PX_PER_MM;
-  const isBinder = !spec.sticker;
+  const isBinder = spec.template === 'binder_outer' || spec.template === 'binder_inner';
+  // A paper bag: a flat sheet with its panels labelled on the guide (front, back, sides, base).
+  const isBag = spec.template === 'bag';
   // A UV DTF transfer: a transparent artboard of the typed size, text and pictures only.
   const isTransfer = spec.template === 'uvdtf';
   // A custom-shape sticker: transparent sheet, and the cut line is traced around whatever is placed.
@@ -797,6 +802,18 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
         if (cutPath.length) ctx.stroke(new Path2D(svgPathData(cutPath)));
       } else if (spec.sticker) {
         ctx.stroke(new Path2D(svgPathData(stickerOutlines(spec).cut)));
+      } else if (spec.bag) {
+        const die = bagDieline(spec);
+        ctx.stroke(new Path2D(svgPathData(die.cut)));
+        for (const hole of die.holes) ctx.stroke(new Path2D(svgPathData(hole)));
+        ctx.strokeStyle = '#00AEEF';
+        ctx.setLineDash([2, 1.5]);
+        for (const cr of die.creases) {
+          ctx.beginPath();
+          ctx.moveTo(cr.x1, cr.y1);
+          ctx.lineTo(cr.x2, cr.y2);
+          ctx.stroke();
+        }
       } else {
         ctx.strokeRect(spec.bleed_mm, spec.bleed_mm, spec.trim_mm.w, spec.trim_mm.h);
       }
@@ -823,6 +840,8 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
   const spineCmyk = (objects.find((o) => o.binder?.kind === 'spine')?.binder?.cmyk ?? null) as Cmyk | null;
   const subtitle = isTransfer
     ? t('subtitle_uvdtf', { w: spec.trim_mm.w, h: spec.trim_mm.h })
+    : spec.bag
+    ? t('subtitle_bag', { w: spec.bag.w_mm, h: spec.bag.h_mm, d: spec.bag.d_mm, sw: spec.trim_mm.w, sh: spec.trim_mm.h })
     : spec.sticker
     ? t('subtitle_sticker', { shape: t(`shape_${spec.sticker.shape}`), w: spec.trim_mm.w, h: spec.trim_mm.h })
     : `${t(`binding_${spec.binding ?? 'ltr'}`)} · ${t('subtitle', { w: spec.trim_mm.w, h: spec.trim_mm.h })}`;
@@ -946,7 +965,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
             <div className="studio-fontwarm" ref={fontWarm} aria-hidden="true" />
             <div className={`binder-frame${transparentSheet ? ' binder-frame--transparent' : ''}`} style={{ width: Math.round(viewW), height: viewH }} dir="ltr">
               <canvas ref={canvasEl} />
-              <img className="binder-overlay" src={isCustom ? customOverlayDataUrl(spec, cutPath) : overlayUrlFor(tpl)} alt="" draggable={false} />
+              <img className="binder-overlay" src={isCustom ? customOverlayDataUrl(spec, cutPath) : overlayUrlFor(tpl, isBag ? bagLabels(t) : {})} alt="" draggable={false} />
             </div>
           </div>
           <Legend spec={spec} t={t} />
@@ -1057,7 +1076,7 @@ function Studio({ cfg, api, t, tpl }: { cfg: EditorConfig; api: Api; t: T; tpl: 
               <button type="button" className="studio-mini" onClick={() => setPreview(null)} aria-label={t('close')}>×</button>
             </div>
             <img src={preview} alt="" />
-            <p className="studio-muted">{isTransfer ? t('preview_note_uvdtf') : spec.sticker ? t('preview_note') : t('preview_note_binder')}</p>
+            <p className="studio-muted">{isTransfer ? t('preview_note_uvdtf') : isBag ? t('preview_note_bag') : spec.sticker ? t('preview_note') : t('preview_note_binder')}</p>
           </div>
         </div>
       )}
@@ -1071,8 +1090,13 @@ function emptyDesign(spec: Spec, cfg: EditorConfig): DesignJSON {
     mode: cfg.mode === 'upload' ? 'upload' : 'live',
     canvas_mm: { ...spec.canvas_with_bleed_mm },
     elements: [],
-    ...(spec.sticker ? { sticker: spec.sticker } : { binding: spec.binding ?? 'ltr' }),
+    ...(spec.sticker ? { sticker: spec.sticker } : spec.bag ? { bag: spec.bag } : { binding: spec.binding ?? 'ltr' }),
   };
+}
+
+/** The bag guide's panel names, in the customer's language. */
+function bagLabels(t: T): Partial<Record<BagPanel, string>> {
+  return Object.fromEntries(BAG_PANELS.map((p) => [p, t(`panel_${p}`)])) as Partial<Record<BagPanel, string>>;
 }
 
 /** A small drawing of a starter design: colour fills, shapes and the text lines. */

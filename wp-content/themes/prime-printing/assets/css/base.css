@@ -252,6 +252,12 @@ h1, h2, h3, h4, h5, h6 {
   gap: var(--sp-4);
 }
 
+.prime-field--trio {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--sp-4);
+}
+
 /* ---- Price -------------------------------------------------------------- */
 .prime-price {
   font-family: var(--display);

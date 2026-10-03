@@ -5,3 +5,5 @@ export * from './colors.ts';
 export * from './sticker.ts';
 export * from './binding.ts';
 export * from './contour.ts';
+export * from './bag.ts';
+export * from './parametric.ts';

@@ -77,6 +77,21 @@ The `uvdtf` template is not a PDF job. The print route is captured as a transpar
 No bleed, no cut line: the artboard is the size typed in the calculator, and nothing prints where
 nothing was placed. `scripts/export-uvdtf.ts` renders the sample to files for a look.
 
+## Paper bags
+
+The `bag` template is a flat sheet laid out from the width, height and depth the customer typed
+(`@binder/shared` `bag.ts`): glue flap | front | side | back | side across, top fold | body | base down,
+3 mm bleed, 5 mm safe zone per panel, handle holes 20 mm below the top edge. The design renders through
+the normal PDF pipeline, then `pipeline/dieline.ts` turns the page into two layers (PDF optional content
+groups, shown as layers in Illustrator and Acrobat):
+
+- **Artwork** — everything Chromium drew, CMYK, out to the bleed;
+- **Dieline** — the cut (sheet outline and holes) in the `CutContour` spot colour and every fold in a
+  `Crease` spot colour, overprinting hairlines, so the die-maker reads them and the press never prints them.
+
+The proof PDF carries the same layers. `scripts/verify-pdf.py` checks both layers and both spot colours
+when the spec carries `bag`.
+
 ## Tests
 
 ```bash

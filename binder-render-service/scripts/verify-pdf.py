@@ -66,6 +66,16 @@ if spec.get('sticker'):
     check(b'/CutContour' in raw and b'/Separation' in raw, 'cut line drawn in the CutContour spot colour')
     check(b'/OP true' in raw, 'cut line overprints (does not knock out the artwork)')
 
+if spec.get('bag'):
+    # Two layers: the artwork and the dieline (cut in CutContour, folds in Crease), both overprinting hairlines.
+    raw = open(pdf_path, 'rb').read()
+    ocgs = r.trailer['/Root'].get('/OCProperties')
+    names = sorted(str(g.get_object()['/Name']) for g in ocgs['/OCGs']) if ocgs else []
+    check(names == ['Artwork', 'Dieline'], 'two layers: Artwork and Dieline', str(names))
+    check(b'/OC /OCArtwork BDC' in raw and b'/OC /OCDieline BDC' in raw, 'page content is tagged by layer')
+    check(b'/CutContour' in raw and b'/Crease' in raw and b'/Separation' in raw, 'dieline in the CutContour and Crease spot colours')
+    check(b'/OP true' in raw, 'dieline overprints (does not knock out the artwork)')
+
 fonts = list({f[0]: f for f in page.get_fonts(full=True)}.values())   # de-duplicate by object number
 for f in fonts:
     data = doc.extract_font(f[0])

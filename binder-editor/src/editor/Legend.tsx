@@ -1,4 +1,4 @@
-import { STICKER_GUIDES, type Spec } from '@binder/shared';
+import { BAG_GUIDES, STICKER_GUIDES, type Spec } from '@binder/shared';
 import type { T } from './i18n';
 
 interface Item {
@@ -25,9 +25,29 @@ const STICKER_ITEMS: Item[] = [
   { key: 'legend_safe', color: STICKER_GUIDES.safe, mm: 'safe', dashed: true },
 ];
 
+/** The bag guide (bag.ts draws it): cut, creases, the safe zone of every panel. */
+const BAG_ITEMS: Item[] = [
+  { key: 'legend_trim', color: BAG_GUIDES.cut },
+  { key: 'legend_crease', color: BAG_GUIDES.crease, dashed: true },
+  { key: 'legend_safe', color: BAG_GUIDES.safe, mm: 'safe', dashed: true },
+];
+
 /** Persistent guide legend (§4.2), shown beside the stage, never drawn on the canvas. */
 export function Legend({ spec, t }: { spec: Spec; t: T }) {
   if (spec.template === 'uvdtf') return <p className="binder-legend binder-legend--note"><small>{t('legend_uvdtf')}</small></p>;
+  if (spec.bag) {
+    return (
+      <div className="binder-legend" aria-label={t('legend')}>
+        {BAG_ITEMS.map((l) => (
+          <span key={l.key}>
+            <i style={l.dashed ? { background: `repeating-linear-gradient(90deg, ${l.color} 0 0.3rem, transparent 0.3rem 0.5rem)` } : { background: l.color }} />
+            {t(l.key, l.mm ? { mm: spec.safe_margin_mm } : {})}
+          </span>
+        ))}
+        <small>{t('legend_bag', { bleed: spec.bleed_mm })}</small>
+      </div>
+    );
+  }
   if (spec.sticker?.shape === 'custom') {
     return (
       <div className="binder-legend" aria-label={t('legend')}>

@@ -23,6 +23,7 @@ import {
 } from './geometry.ts';
 import { isBinding } from './binding.ts';
 import { normalizeParametricParams, sameStickerParams } from './sticker.ts';
+import { BAG_HIDDEN_PANELS, normalizeBagParams, sameBagParams } from './bag.ts';
 import {
   FONTS,
   SHAPE_KINDS,
@@ -92,7 +93,7 @@ export function validateShape(input: unknown, spec: Spec): Issue[] {
   if (d.mode !== 'upload' && d.mode !== 'live') {
     issues.push(err('shape.mode', 'mode must be "upload" or "live".'));
   }
-  if (!spec.sticker) {
+  if (!spec.sticker && !spec.bag) {
     if (!isBinding(d.binding)) {
       issues.push(err('shape.binding', 'A binder design must say which way the binder opens: binding "ltr" (English) or "rtl" (Arabic).'));
     } else if (spec.binding && d.binding !== spec.binding) {
@@ -103,6 +104,12 @@ export function validateShape(input: unknown, spec: Spec): Issue[] {
     const p = normalizeParametricParams(spec.template === 'uvdtf' ? 'uvdtf' : 'sticker', d.sticker);
     if (!p || !sameStickerParams(p, spec.sticker)) {
       issues.push(err('shape.sticker', `Design must be for a ${spec.sticker.w_mm} x ${spec.sticker.h_mm} mm ${spec.template === 'uvdtf' ? 'transfer' : `${spec.sticker.shape} sticker`}.`));
+    }
+  }
+  if (spec.bag) {
+    const p = normalizeBagParams(d.bag);
+    if (!p || !sameBagParams(p, spec.bag)) {
+      issues.push(err('shape.bag', `Design must be for a ${spec.bag.w_mm} x ${spec.bag.h_mm} x ${spec.bag.d_mm} mm bag.`));
     }
   }
   if (spec.template === 'uvdtf') {
@@ -332,6 +339,12 @@ export function validateRules(design: DesignJSON, spec: Spec): Issue[] {
           { ...at, detail: { turn_in_mm: spec.turn_in_mm } },
         ),
       );
+    }
+
+    // Bag: the glue flap and the top hem are never seen on the finished bag.
+    if (spec.bag && panels.some((p) => (BAG_HIDDEN_PANELS as readonly string[]).includes(p.name) && boxInside(bb, p.trim))) {
+      issues.push(warn('bag.hidden', 'This element sits on a part of the sheet that is glued under or folded inside the bag and will not be seen.', at));
+      return;
     }
 
     // 2. Safe margin (warning) ------------------------------------------------------

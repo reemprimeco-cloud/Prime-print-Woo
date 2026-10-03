@@ -65,6 +65,7 @@ $prime_modules = array(
 	'paper-sticker-calculator',
 	'pp-sticker-calculator',
 	'diecut-cards-calculator',
+	'paper-bag-calculator',
 	'checkout-data',
 	'checkout-shipping',
 	'armada',

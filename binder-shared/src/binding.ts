@@ -21,7 +21,7 @@ const MIRROR: Record<string, string> = {
  * binding twice changes nothing.
  */
 export function withBinding(spec: Spec, binding: Binding): Spec {
-  if (spec.sticker) return spec;
+  if (spec.sticker || spec.bag) return spec;
   if ((spec.binding ?? 'ltr') === binding) return { ...spec, binding };
   return {
     ...spec,

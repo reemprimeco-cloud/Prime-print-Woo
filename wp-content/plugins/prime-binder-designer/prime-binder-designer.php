@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Prime Designer
  * Description:       Product-page design tool for stickers and binders: customers upload a finished design or design live in the browser, constrained to a locked print template. The order gets a print-ready CMYK PDF.
- * Version:           0.5.7
+ * Version:           0.5.8
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Prime Printing Co.
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PRIME_BINDER_VERSION', '0.5.7' );
+define( 'PRIME_BINDER_VERSION', '0.5.8' );
 define( 'PRIME_BINDER_FILE', __FILE__ );
 define( 'PRIME_BINDER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PRIME_BINDER_URL', plugin_dir_url( __FILE__ ) );
@@ -34,6 +34,7 @@ require_once PRIME_BINDER_DIR . 'includes/class-order-integration.php';
 require_once PRIME_BINDER_DIR . 'includes/class-notifier.php';
 require_once PRIME_BINDER_DIR . 'includes/class-render-client.php';
 require_once PRIME_BINDER_DIR . 'includes/class-sticker.php';
+require_once PRIME_BINDER_DIR . 'includes/class-bag.php';
 
 register_activation_hook( __FILE__, array( 'Binder_DB', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'Binder_DB', 'deactivate' ) );

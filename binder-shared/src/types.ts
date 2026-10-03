@@ -11,15 +11,21 @@
  * bleed_mm before use (see geometry.ts).
  */
 
-export type TemplateKey = 'binder_outer' | 'binder_inner' | 'sticker' | 'uvdtf';
+export type TemplateKey = 'binder_outer' | 'binder_inner' | 'sticker' | 'uvdtf' | 'bag';
 
 /**
  * Templates whose geometry is derived from a size the customer typed rather
- * than read from a spec.json: the cut sticker, and the UV DTF transfer (an
- * artboard of exactly the size in the calculator, no bleed, no cut line).
+ * than read from a spec.json: the cut sticker, the UV DTF transfer (an
+ * artboard of exactly the size in the calculator, no bleed, no cut line) and
+ * the paper bag (a flat sheet laid out from width, height and depth).
  */
-export const PARAMETRIC_TEMPLATES: readonly TemplateKey[] = ['sticker', 'uvdtf'];
-export function isParametricTemplate(t: unknown): t is 'sticker' | 'uvdtf' {
+export type ParametricTemplate = 'sticker' | 'uvdtf' | 'bag';
+export const PARAMETRIC_TEMPLATES: readonly ParametricTemplate[] = ['sticker', 'uvdtf', 'bag'];
+export function isParametricTemplate(t: unknown): t is ParametricTemplate {
+  return t === 'sticker' || t === 'uvdtf' || t === 'bag';
+}
+/** The size-carrying templates that use the sticker-shaped params (w, h, shape). */
+export function isStickerLikeTemplate(t: unknown): t is 'sticker' | 'uvdtf' {
   return t === 'sticker' || t === 'uvdtf';
 }
 export type DesignMode = 'upload' | 'live';
@@ -45,6 +51,17 @@ export interface StickerParams {
   w_mm: number;
   h_mm: number;
   shape: StickerShape;
+}
+
+/**
+ * The paper bag's three numbers (bag.ts): the front panel's width, the bag's
+ * height and its depth (the side gusset), all in mm. The flat sheet, the
+ * panels and the dieline are derived from them.
+ */
+export interface BagParams {
+  w_mm: number;
+  h_mm: number;
+  d_mm: number;
 }
 
 export interface Box {
@@ -74,8 +91,10 @@ export interface Spec {
   panels_relative_to_trim: PanelSpec[];
   fold_lines_x_mm_from_trim_left: number[];
   fold_lines_y_mm_from_trim_top: number[];
-  /** Present on the parametric templates (sticker, uvdtf): the size (and, for a sticker, the shape) it was made for. */
+  /** Present on the sticker and uvdtf templates: the size (and, for a sticker, the shape) it was made for. */
   sticker?: StickerParams;
+  /** Present on the bag template: the bag size the sheet was laid out for. */
+  bag?: BagParams;
   /** Binder covers: which way the binder opens (panel names are already mirrored for 'rtl'). */
   binding?: Binding;
 }
@@ -197,6 +216,8 @@ export interface DesignJSON {
   elements: DesignElement[];
   /** Required when template is "sticker" or "uvdtf": the size (and shape) the design was made for. */
   sticker?: StickerParams;
+  /** Required when template is "bag": the bag size the design was made for. */
+  bag?: BagParams;
   /** Required for the binder covers: which way the binder opens. */
   binding?: Binding;
 }

@@ -1,4 +1,4 @@
-import { isBinding, isParametricTemplate, normalizeParametricParams, type Binding, type DesignMode, type StickerParams, type TemplateKey } from '@binder/shared';
+import { isBinding, isParametricTemplate, isStickerLikeTemplate, normalizeBagParams, normalizeParametricParams, type BagParams, type Binding, type DesignMode, type StickerParams, type TemplateKey } from '@binder/shared';
 
 export type Lang = 'en' | 'ar';
 
@@ -15,6 +15,8 @@ export interface EditorConfig {
   designId?: number;
   /** Sticker and UV DTF templates: the size (and shape) chosen on the product page (w, h in mm and shape on the URL). */
   sticker?: StickerParams;
+  /** Paper bag: width, height and depth chosen on the product page (w, h, d in mm on the URL). */
+  bag?: BagParams;
   /** Binder covers: which way the binder opens, chosen on the product page (binding=ltr|rtl on the URL). */
   binding?: Binding;
   /** What the product page shows about the order (display only): product name, chips, total, per-sheet note. */
@@ -72,7 +74,8 @@ export function readConfig(search = window.location.search): EditorConfig {
   const mode = q.get('mode');
   const lang = q.get('lang');
 
-  const sticker = isParametricTemplate(template) ? normalizeParametricParams(template, { w_mm: q.get('w'), h_mm: q.get('h'), shape: q.get('shape') ?? 'rectangle' }) : null;
+  const sticker = isStickerLikeTemplate(template) ? normalizeParametricParams(template, { w_mm: q.get('w'), h_mm: q.get('h'), shape: q.get('shape') ?? 'rectangle' }) : null;
+  const bag = template === 'bag' ? normalizeBagParams({ w_mm: q.get('w'), h_mm: q.get('h'), d_mm: q.get('d') }) : null;
   const binding = q.get('binding');
 
   return {
@@ -84,6 +87,7 @@ export function readConfig(search = window.location.search): EditorConfig {
     sessionToken: sessionToken(),
     ...(q.get('design') ? { designId: Number(q.get('design')) } : {}),
     ...(sticker ? { sticker } : {}),
+    ...(bag ? { bag } : {}),
     ...(!isParametricTemplate(template) && isBinding(binding) ? { binding } : {}),
     ...(readOrder(q.get('order')) ? { order: readOrder(q.get('order'))! } : {}),
   };

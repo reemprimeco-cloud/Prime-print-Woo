@@ -268,6 +268,6 @@ function estimateHeightMm(el: TextElement): number {
 /** Where a new element lands: the middle of the front panel (or the only panel). */
 export function homePanel(spec: Spec): { x: number; y: number; w: number; h: number } {
   const b = spec.bleed_mm;
-  const p = spec.panels_relative_to_trim.find((q) => q.name === 'front_cover' || q.name === 'inside_front') ?? spec.panels_relative_to_trim[0]!;
+  const p = spec.panels_relative_to_trim.find((q) => q.name === 'front_cover' || q.name === 'inside_front' || q.name === 'front') ?? spec.panels_relative_to_trim[0]!;
   return { x: p.safe_mm.x + b, y: p.safe_mm.y + b, w: p.safe_mm.w, h: p.safe_mm.h };
 }

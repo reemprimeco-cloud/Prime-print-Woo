@@ -5,7 +5,7 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { closeBrowser } from '../src/pipeline/browser.ts';
-import { stickerSpec, validateDesign } from '@binder/shared';
+import { bagSpec, stickerSpec, validateDesign } from '@binder/shared';
 import { loadSpec } from '../src/validate-request.ts';
 import { ROOT, SECRET, listen, post, request, sample, startService, testConfig, verifyPdf } from './helpers.ts';
 
@@ -95,6 +95,26 @@ describe('valid designs render to verified print PDFs', () => {
     const { cmyk } = await ok('sticker-star');
     expect(verifyPdf(cmyk, 'sticker', ['--expect-cmyk', '0 1 1 0'], stickerSpec(d.sticker!))).toContain('SUMMARY  OK');
   }, 90_000);
+});
+
+describe('paper bag: one PDF, the artwork and the dieline on separate layers', () => {
+  it('bag-branded: page boxes from the derived spec, Artwork + Dieline layers, CutContour and Crease spot colours', async () => {
+    const d = sample('bag-branded');
+    const spec = bagSpec(d.bag!);
+    expect(spec.canvas_with_bleed_mm).toEqual({ w: 581, h: 341 });
+    const { cmyk, rgb } = await ok('bag-branded');
+    expect(verifyPdf(cmyk, 'bag', [], spec)).toContain('SUMMARY  OK');
+    expect(verifyPdf(rgb, 'bag', ['--rgb'], spec)).toContain('SUMMARY  OK');
+    writeFileSync(join(cfg.outputDir, 'bag-branded.cmyk.pdf'), cmyk);
+  }, 120_000);
+
+  it('a bag design without its size, or for another size, is refused before rendering', async () => {
+    const d = sample('bag-branded');
+    const { bag: _dropped, ...noParams } = d;
+    expect((await post(svc.url, request({ ...noParams, template: 'bag' } as never))).status).toBe(422);
+    expect((await post(svc.url, request({ ...d, bag: { ...d.bag!, d_mm: 90 } }))).status).toBe(422);
+    expect((await post(svc.url, request({ ...d, bag: { ...d.bag!, w_mm: 20 } }))).status).toBe(422);
+  });
 });
 
 describe('sticker template: the design itself must say which sticker it is for', () => {

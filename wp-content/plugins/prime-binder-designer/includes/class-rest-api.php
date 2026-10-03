@@ -78,9 +78,10 @@ class Binder_Rest_API {
 						'type' => 'string',
 						'enum' => Binder_Templates::keys(),
 					),
-					// Sticker only: size in mm and shape, as chosen on the product page.
+					// Sticker, transfer and bag: size in mm (and a sticker's shape), as chosen on the product page.
 					'w'        => array( 'type' => 'number' ),
 					'h'        => array( 'type' => 'number' ),
+					'd'        => array( 'type' => 'number' ),
 					'shape'    => array( 'type' => 'string' ),
 					// Binder covers only: which way the binder opens (decides which guide drawing is sent).
 					'binding'  => array( 'type' => 'string', 'enum' => array( 'ltr', 'rtl' ) ),
@@ -205,9 +206,15 @@ class Binder_Rest_API {
 		$params   = null;
 
 		if ( Binder_Templates::is_parametric( $template ) ) {
-			$params = Binder_Sticker::normalize( $request['w'], $request['h'], $request['shape'], $template );
+			$params = Binder_Templates::params_from_request( $template, $request );
 			if ( ! $params ) {
-				return new WP_Error( 'binder_bad_size', __( 'Enter a size between 1 and 100 cm (60 cm for a UV DTF transfer) and choose a shape.', 'prime-binder-designer' ), array( 'status' => 400 ) );
+				return new WP_Error(
+					'binder_bad_size',
+					'bag' === $template
+						? __( 'Enter a bag width of 6–50 cm, a height of 8–60 cm and a depth of 3–25 cm.', 'prime-binder-designer' )
+						: __( 'Enter a size between 1 and 100 cm (60 cm for a UV DTF transfer) and choose a shape.', 'prime-binder-designer' ),
+					array( 'status' => 400 )
+				);
 			}
 		}
 
@@ -463,9 +470,9 @@ class Binder_Rest_API {
 		if ( ( $design['template'] ?? '' ) !== $template || ( $design['mode'] ?? '' ) !== $mode || ! isset( $design['elements'] ) || ! is_array( $design['elements'] ) || count( $design['elements'] ) > 60 ) {
 			return new WP_Error( 'binder_bad_design', __( 'The design does not match its template.', 'prime-binder-designer' ), array( 'status' => 400 ) );
 		}
-		// A sticker design must say which size and shape it is for, and its canvas must be that size.
-		if ( Binder_Templates::is_parametric( $template ) && ! Binder_Sticker::design_params( $design, $template ) ) {
-			return new WP_Error( 'binder_bad_design', __( 'The design does not carry a valid sticker size and shape.', 'prime-binder-designer' ), array( 'status' => 400 ) );
+		// A sticker, transfer or bag design must say which size it is for, and its canvas must be that size.
+		if ( Binder_Templates::is_parametric( $template ) && ! Binder_Templates::design_params( $template, $design ) ) {
+			return new WP_Error( 'binder_bad_design', __( 'The design does not carry a valid size.', 'prime-binder-designer' ), array( 'status' => 400 ) );
 		}
 		// A binder design must say which way the binder opens (English: left, Arabic: right).
 		if ( ! Binder_Templates::is_parametric( $template ) && ! Binder_Templates::is_binding( $design['binding'] ?? null ) ) {

@@ -69,7 +69,7 @@
 
 	// Templates whose geometry comes from the calculator's size fields.
 	function isParametric( template ) {
-		return 'sticker' === template || 'uvdtf' === template;
+		return 'sticker' === template || 'uvdtf' === template || 'bag' === template;
 	}
 
 	function stickerFields() {
@@ -87,6 +87,7 @@
 				return {
 					w: w,
 					h: scope.querySelector( '[name="' + f.h + '"]' ),
+					d: f.d ? scope.querySelector( '[name="' + f.d + '"]' ) : null,
 					shape: f.shape ? scope.querySelector( '[name="' + f.shape + '"]' ) : null,
 					unit: f.unit
 				};
@@ -111,7 +112,16 @@
 			return null;
 		}
 
-		return { w: w, h: h, shape: f.shape && f.shape.value ? f.shape.value : 'rectangle' };
+		// A bag has a third dimension (depth); the server checks the exact ranges.
+		var d = 0;
+		if ( f.d ) {
+			d = Math.round( parseFloat( f.d.value ) * k * 10 ) / 10;
+			if ( ! ( d >= sticker.min_mm && d <= sticker.max_mm ) ) {
+				return null;
+			}
+		}
+
+		return { w: w, h: h, d: d, shape: f.shape && f.shape.value ? f.shape.value : 'rectangle' };
 	}
 
 	/**
@@ -137,7 +147,7 @@
 				chips.push( f.shape.selectedOptions[ 0 ].textContent.trim() );
 			}
 			if ( f && f.w.value && f.h && f.h.value ) {
-				chips.push( f.w.value + ' × ' + f.h.value + ' cm' );
+				chips.push( f.w.value + ' × ' + f.h.value + ( f.d && f.d.value ? ' × ' + f.d.value : '' ) + ' cm' );
 			}
 			if ( set ) {
 				var qty = scope.querySelector( '[name="' + set.qty + '"]' );
@@ -179,7 +189,7 @@
 	} );
 
 	function stickerKey( p ) {
-		return p ? p.w + 'x' + p.h + ':' + p.shape : '';
+		return p ? p.w + 'x' + p.h + ( p.d ? 'x' + p.d : '' ) + ':' + p.shape : '';
 	}
 
 	/* -------------------------------------------------------------- binding */
@@ -292,7 +302,12 @@
 		}
 
 		if ( isParametric( row.template ) && row.params ) {
-			q.push( [ 'w', row.params.w ], [ 'h', row.params.h ], [ 'shape', row.params.shape ] );
+			q.push( [ 'w', row.params.w ], [ 'h', row.params.h ] );
+			if ( 'bag' === row.template ) {
+				q.push( [ 'd', row.params.d ] );
+			} else {
+				q.push( [ 'shape', row.params.shape ] );
+			}
 		}
 
 		if ( ! isParametric( row.template ) && row.binding ) {
@@ -439,7 +454,7 @@
 			}
 
 			var named = sticker.fields.some( function ( f ) {
-				return name === f.w || name === f.h || name === f.shape;
+				return name === f.w || name === f.h || name === f.d || name === f.shape;
 			} );
 
 			if ( ! named ) {

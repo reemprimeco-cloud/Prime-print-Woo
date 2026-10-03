@@ -56,7 +56,9 @@ class Binder_Storefront {
 			'binder_inner' => array( 'Inner cover', 'الغلاف الداخلي' ),
 			'sticker'     => array( 'Sticker', 'الملصق' ),
 			'uvdtf'       => array( 'UV DTF transfer', 'ملصق UV DTF' ),
+			'bag'         => array( 'Paper bag', 'الكيس الورقي' ),
 			'size_first'  => array( 'Enter the sticker size and shape first, then add your design.', 'أدخل مقاس الملصق وشكله أولاً، ثم أضف تصميمك.' ),
+			'bag_size_first' => array( 'Enter the bag width, height and depth first, then add your design.', 'أدخل عرض الكيس وارتفاعه وعمقه أولاً، ثم أضف تصميمك.' ),
 			'size_changed' => array( 'The size or shape changed. Please add your design again for the new size.', 'تغيّر المقاس أو الشكل. الرجاء إضافة تصميمك من جديد للمقاس الجديد.' ),
 			'size_mismatch' => array( 'Your design was made for a different sticker size. Please add it again.', 'تصميمك مُعدّ لمقاس ملصق مختلف. الرجاء إضافته من جديد.' ),
 			'none'        => array( 'No design yet', 'لم يُضف تصميم بعد' ),
@@ -170,7 +172,16 @@ class Binder_Storefront {
 
 		$parametric = array_values( array_filter( $templates, array( 'Binder_Templates', 'is_parametric' ) ) );
 
-		if ( $parametric ) {
+		if ( in_array( 'bag', $parametric, true ) ) {
+			// The editor needs the bag size; the page's calculator fields carry it (in cm).
+			$config['sticker'] = array(
+				'fields'       => Binder_Bag::size_fields( $product_id ),
+				'min_mm'       => Binder_Bag::MIN_D_MM,
+				'max_mm'       => Binder_Bag::MAX_H_MM,
+				'size_first'   => self::copy( 'bag_size_first' ),
+				'size_changed' => self::copy( 'size_changed' ),
+			);
+		} elseif ( $parametric ) {
 			// The editor needs the size (and shape); the page's calculator fields carry them (in cm).
 			$config['sticker'] = array(
 				'fields'       => Binder_Sticker::size_fields( $product_id ),
@@ -358,8 +369,8 @@ class Binder_Storefront {
 				return false;
 			}
 
-			// A sticker or transfer design is only good for the size (and shape) it was made for.
-			if ( Binder_Templates::is_parametric( $template ) && ! Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) ) {
+			// A sticker, transfer or bag design is only good for the size (and shape) it was made for.
+			if ( Binder_Templates::is_parametric( $template ) && ! Binder_Templates::design_matches_request( Binder_DB::get( $id ), $product_id ) ) {
 				wc_add_notice( self::copy( 'size_mismatch' ), 'error' );
 				return false;
 			}
@@ -396,7 +407,7 @@ class Binder_Storefront {
 			if ( ! self::design_is_orderable( $id, $product_id, $template, $token ) ) {
 				continue;
 			}
-			if ( Binder_Templates::is_parametric( $template ) ? Binder_Sticker::design_matches_request( Binder_DB::get( $id ), $product_id ) : self::design_binding( Binder_DB::get( $id ) ) === $binding ) {
+			if ( Binder_Templates::is_parametric( $template ) ? Binder_Templates::design_matches_request( Binder_DB::get( $id ), $product_id ) : self::design_binding( Binder_DB::get( $id ) ) === $binding ) {
 				$keep[ $template ] = $id;
 			}
 		}

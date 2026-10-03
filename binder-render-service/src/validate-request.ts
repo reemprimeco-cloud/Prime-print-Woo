@@ -2,18 +2,18 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   isParametricTemplate,
-  normalizeParametricParams,
-  parametricSpec,
+  parametricSpecFromDesign,
   validateDesign,
   type DesignJSON,
   type Issue,
+  type ParametricTemplate,
   type Spec,
   type TemplateKey,
   type ValidationResult,
 } from '@binder/shared';
 import type { Config } from './config.ts';
 
-const TEMPLATE_FILES: Record<Exclude<TemplateKey, 'sticker' | 'uvdtf'>, string> = {
+const TEMPLATE_FILES: Record<Exclude<TemplateKey, ParametricTemplate>, string> = {
   binder_outer: 'binder-outer-spec.json',
   binder_inner: 'binder-inner-spec.json',
 };
@@ -21,20 +21,16 @@ const TEMPLATE_FILES: Record<Exclude<TemplateKey, 'sticker' | 'uvdtf'>, string> 
 const specCache = new Map<string, Spec>();
 
 export function isTemplate(v: unknown): v is TemplateKey {
-  return v === 'binder_outer' || v === 'binder_inner' || v === 'sticker' || v === 'uvdtf';
+  return v === 'binder_outer' || v === 'binder_inner' || isParametricTemplate(v);
 }
 
 /**
  * The spec for a template. The binder covers come from their spec.json files;
- * a sticker's is derived from the size and shape the design itself declares
- * (the plugin has already checked those against the order).
+ * a sticker's, a transfer's or a bag's is derived from the size the design
+ * itself declares (the plugin has already checked it against the order).
  */
 export function loadSpec(cfg: Config, template: TemplateKey, design?: unknown): Spec | null {
-  if (isParametricTemplate(template)) {
-    const d = typeof design === 'object' && design !== null ? (design as { sticker?: unknown }).sticker : undefined;
-    const params = normalizeParametricParams(template, d);
-    return params ? parametricSpec(template, params) : null;
-  }
+  if (isParametricTemplate(template)) return parametricSpecFromDesign(template, design);
   const key = `${cfg.templatesDir}|${template}`;
   let spec = specCache.get(key);
   if (!spec) {
@@ -80,7 +76,7 @@ export function validateRequest(
   const b = body as Record<string, unknown>;
 
   if (!Number.isInteger(b.design_id) || (b.design_id as number) < 1) return bad(400, 'invalid_design_id', [err('request.design_id', 'design_id must be a positive integer.')]);
-  if (!isTemplate(b.template)) return bad(400, 'invalid_template', [err('request.template', 'template must be binder_outer, binder_inner, sticker or uvdtf.')]);
+  if (!isTemplate(b.template)) return bad(400, 'invalid_template', [err('request.template', 'template must be binder_outer, binder_inner, sticker, uvdtf or bag.')]);
   if (typeof b.session_token !== 'string' || !/^[A-Za-z0-9-]{16,64}$/.test(b.session_token)) {
     return bad(400, 'invalid_session_token', [err('request.session_token', 'session_token must be 16-64 letters, digits or dashes.')]);
   }
@@ -101,7 +97,11 @@ export function validateRequest(
 
   const template = b.template;
   const spec = loadSpec(cfg, template, b.design_json);
-  if (!spec) return bad(422, 'validation_failed', [err('shape.sticker', 'A sticker or transfer design must carry a valid size and shape.')]);
+  if (!spec) {
+    return template === 'bag'
+      ? bad(422, 'validation_failed', [err('shape.bag', 'A bag design must carry a valid width, height and depth.')])
+      : bad(422, 'validation_failed', [err('shape.sticker', 'A sticker or transfer design must carry a valid size and shape.')]);
+  }
   const result = validateDesign(b.design_json, spec);
   if (!result.ok) return { ok: false, status: 422, error: 'validation_failed', errors: result.errors };
 

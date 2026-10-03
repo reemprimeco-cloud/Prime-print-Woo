@@ -23,6 +23,7 @@ class Binder_Templates {
 		'binder_inner' => 'binder-inner',
 		'sticker'      => '',
 		'uvdtf'        => '',
+		'bag'          => '',
 	);
 
 	/**
@@ -32,7 +33,53 @@ class Binder_Templates {
 	 * @return bool
 	 */
 	public static function is_parametric( $template ) {
-		return 'sticker' === $template || 'uvdtf' === $template;
+		return 'sticker' === $template || 'uvdtf' === $template || 'bag' === $template;
+	}
+
+	/**
+	 * The size a parametric template's request carries, tidied: a sticker's
+	 * or transfer's w/h/shape, a bag's w/h/d (all in mm).
+	 *
+	 * @param string          $template Template key.
+	 * @param WP_REST_Request $request  The /template request.
+	 * @return array|null
+	 */
+	public static function params_from_request( $template, WP_REST_Request $request ) {
+		if ( 'bag' === $template ) {
+			return Binder_Bag::normalize( $request['w'], $request['h'], $request['d'] );
+		}
+
+		return Binder_Sticker::normalize( $request['w'], $request['h'], $request['shape'], $template );
+	}
+
+	/**
+	 * The size a design says it is for, if valid for its template.
+	 *
+	 * @param string $template Template key.
+	 * @param array  $design   Decoded design_json.
+	 * @return array|null
+	 */
+	public static function design_params( $template, array $design ) {
+		if ( 'bag' === $template ) {
+			return Binder_Bag::design_params( $design );
+		}
+
+		return Binder_Sticker::design_params( $design, $template );
+	}
+
+	/**
+	 * Was this design made for the size now being ordered?
+	 *
+	 * @param array $row        wp_binder_designs row.
+	 * @param int   $product_id Product id.
+	 * @return bool
+	 */
+	public static function design_matches_request( array $row, $product_id ) {
+		if ( 'bag' === ( $row['template'] ?? '' ) ) {
+			return Binder_Bag::design_matches_request( $row, $product_id );
+		}
+
+		return Binder_Sticker::design_matches_request( $row, $product_id );
 	}
 
 	/**
@@ -87,10 +134,13 @@ class Binder_Templates {
 	 * The parsed spec.json.
 	 *
 	 * @param string     $template Template key.
-	 * @param array|null $params   Sticker only: normalised size and shape (Binder_Sticker::normalize()).
+	 * @param array|null $params   Sticker, transfer or bag only: the normalised size (Binder_Sticker::normalize() / Binder_Bag::normalize()).
 	 * @return array|null Null when the template is unknown, the file is unreadable, or a sticker has no params.
 	 */
 	public static function spec( $template, $params = null ) {
+		if ( 'bag' === $template ) {
+			return is_array( $params ) ? Binder_Bag::spec( $params ) : null;
+		}
 		if ( self::is_parametric( $template ) ) {
 			return is_array( $params ) ? Binder_Sticker::spec( $params, $template ) : null;
 		}

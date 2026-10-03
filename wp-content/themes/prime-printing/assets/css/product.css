@@ -269,6 +269,26 @@ body.woocommerce div.product .prime-product__summary {
   font-size: 24px;
 }
 
+/* ---- Paper bag: the flat sheet drawing (inc/paper-bag-calculator.php) --- */
+.prime-bag-sheet {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: var(--sp-4);
+  margin-block-end: var(--sp-4);
+}
+
+.prime-bag-sheet svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+  margin-block-end: var(--sp-3);
+}
+
+.prime-bag-sheet .prime-field__hint {
+  margin: 0;
+}
+
 .prime-calc-note {
   font-size: var(--fs-xs);
   color: var(--ink-soft);

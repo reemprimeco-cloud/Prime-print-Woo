@@ -1,4 +1,4 @@
-import { isParametricTemplate, stickerOverlayDataUrl, withBinding, type Binding, type DesignJSON, type Issue, type Spec, type StickerParams, type TemplateKey } from '@binder/shared';
+import { bagOverlayDataUrl, isParametricTemplate, stickerOverlayDataUrl, withBinding, type BagParams, type BagPanel, type Binding, type DesignJSON, type Issue, type Spec, type StickerParams, type TemplateKey } from '@binder/shared';
 import type { EditorConfig } from './config';
 
 export class ApiError extends Error {
@@ -19,9 +19,10 @@ export interface TemplateInfo {
   overlay_url: string;
 }
 
-/** The guide image an editor lays over the canvas. */
-export function overlayUrlFor(tpl: TemplateInfo): string {
+/** The guide image an editor lays over the canvas. A bag's guide names its panels; pass the labels in the customer's language. */
+export function overlayUrlFor(tpl: TemplateInfo, bagLabels: Partial<Record<BagPanel, string>> = {}): string {
   if (tpl.spec.template === 'uvdtf') return ''; // No bleed, no cut line: nothing to draw over the artboard.
+  if (tpl.spec.bag) return bagOverlayDataUrl(tpl.spec, bagLabels);
   return tpl.overlay_url || (tpl.spec.sticker ? stickerOverlayDataUrl(tpl.spec) : '');
 }
 
@@ -71,14 +72,17 @@ export function createApi(cfg: EditorConfig) {
 
   return {
     /**
-     * The template's spec and guide. A sticker sends its size and shape; a
-     * binder cover sends which way it opens and gets the spec with the cover
-     * panels named for that side (and the matching guide drawing).
+     * The template's spec and guide. A sticker sends its size and shape, a
+     * bag its width, height and depth; a binder cover sends which way it
+     * opens and gets the spec with the cover panels named for that side (and
+     * the matching guide drawing).
      */
-    template(t: TemplateKey, opts: { sticker?: StickerParams; binding?: Binding } = {}) {
+    template(t: TemplateKey, opts: { sticker?: StickerParams; bag?: BagParams; binding?: Binding } = {}) {
       const parametric = isParametricTemplate(t);
       const q =
-        parametric && opts.sticker
+        t === 'bag' && opts.bag
+          ? `?w=${opts.bag.w_mm}&h=${opts.bag.h_mm}&d=${opts.bag.d_mm}`
+          : parametric && opts.sticker
           ? `?w=${opts.sticker.w_mm}&h=${opts.sticker.h_mm}&shape=${encodeURIComponent(opts.sticker.shape)}`
           : !parametric
             ? `?binding=${opts.binding ?? 'ltr'}`

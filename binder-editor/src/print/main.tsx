@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { isParametricTemplate, normalizeParametricParams, parametricSpec, type DesignJSON, type Spec } from '@binder/shared';
+import { isParametricTemplate, parametricSpecFromDesign, type DesignJSON, type Spec } from '@binder/shared';
 import { PrintCanvas, type MeasuredText } from './PrintCanvas';
 
 /**
@@ -42,10 +42,10 @@ async function boot(): Promise<void> {
 
   let spec: Spec;
   if (isParametricTemplate(template)) {
-    // No spec file: the sticker's (or transfer's) geometry is derived from the size the design carries.
-    const params = normalizeParametricParams(template, design.sticker);
-    if (!params) throw new Error('Design carries no valid size and shape');
-    spec = parametricSpec(template, params);
+    // No spec file: the sticker's, transfer's or bag's geometry is derived from the size the design carries.
+    const derived = parametricSpecFromDesign(template, design);
+    if (!derived) throw new Error('Design carries no valid size');
+    spec = derived;
   } else {
     const res = await fetch(`/spec/${encodeURIComponent(template)}.json`);
     if (!res.ok) throw new Error(`Unknown template "${template}"`);

@@ -9,6 +9,7 @@ import { applyTextColors } from './colors.ts';
 import { convertToCmyk } from './ghostscript.ts';
 import { stampBoxes } from './boxes.ts';
 import { stampCutLine } from './cutline.ts';
+import { stampDieline } from './dieline.ts';
 import type { PreparedAssets } from './assets.ts';
 
 export interface RenderedPdfs {
@@ -23,7 +24,8 @@ export interface RenderedPdfs {
 /**
  * The whole production pipeline for one design (§5.2):
  *   Chromium print route -> PDF (RGB, sentinel text colours)
- *   -> exact CMYK text colours -> Ghostscript FOGRA39 -> TrimBox/BleedBox.
+ *   -> exact CMYK text colours -> Ghostscript FOGRA39 -> TrimBox/BleedBox
+ *   -> a sticker's cut line / a bag's Artwork + Dieline layers.
  */
 export async function renderDesign(
   cfg: Config,
@@ -84,8 +86,8 @@ export async function renderDesign(
 
     const cmykRaw = await readFile(outPath);
     const [cmyk, rgb] = await Promise.all([
-      stampBoxes(cmykRaw, spec, { title: `${title} (CMYK print file)` }).then((p) => stampCutLine(p, spec, cut)),
-      stampBoxes(rgbText.pdf, spec, { title: `${title} (RGB proof)` }).then((p) => stampCutLine(p, spec, cut)),
+      stampBoxes(cmykRaw, spec, { title: `${title} (CMYK print file)` }).then((p) => stampCutLine(p, spec, cut)).then((p) => stampDieline(p, spec)),
+      stampBoxes(rgbText.pdf, spec, { title: `${title} (RGB proof)` }).then((p) => stampCutLine(p, spec, cut)).then((p) => stampDieline(p, spec)),
     ]);
     lap('boxes');
 

@@ -1,0 +1,112 @@
+{
+  "template": "bag",
+  "mode": "live",
+  "canvas_mm": {
+    "w": 581,
+    "h": 341.0
+  },
+  "elements": [
+    {
+      "type": "rect",
+      "x_mm": 0,
+      "y_mm": 0,
+      "w_mm": 581,
+      "h_mm": 341.0,
+      "color_cmyk": [
+        5,
+        2,
+        10,
+        0
+      ]
+    },
+    {
+      "type": "image",
+      "src": "/samples/assets/logo.png",
+      "x_mm": 68.0,
+      "y_mm": 73,
+      "w_mm": 100,
+      "h_mm": 100,
+      "rotation_deg": 0,
+      "source_px": {
+        "w": 1200,
+        "h": 1200
+      }
+    },
+    {
+      "type": "text",
+      "text": "Prime Printing Co.",
+      "font": "Poppins",
+      "size_pt": 22,
+      "weight": "700",
+      "color_cmyk": [
+        100,
+        80,
+        0,
+        20
+      ],
+      "x_mm": 38,
+      "y_mm": 193,
+      "w_mm": 160,
+      "h_mm": 14,
+      "align": "center",
+      "rtl": false
+    },
+    {
+      "type": "text",
+      "text": "\u0634\u0631\u0643\u0629 \u0628\u0631\u0627\u064a\u0645 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
+      "font": "Tajawal",
+      "size_pt": 22,
+      "weight": "700",
+      "color_cmyk": [
+        100,
+        80,
+        0,
+        20
+      ],
+      "x_mm": 318,
+      "y_mm": 143,
+      "w_mm": 160,
+      "h_mm": 14,
+      "align": "center",
+      "rtl": true
+    },
+    {
+      "type": "shape",
+      "shape": "round",
+      "x_mm": 228,
+      "y_mm": 128,
+      "w_mm": 60,
+      "h_mm": 60,
+      "color_cmyk": [
+        0,
+        60,
+        100,
+        0
+      ]
+    },
+    {
+      "type": "text",
+      "text": "primeprint.com.kw",
+      "font": "Montserrat",
+      "size_pt": 12,
+      "weight": "500",
+      "color_cmyk": [
+        0,
+        0,
+        0,
+        80
+      ],
+      "x_mm": 218,
+      "y_mm": 303,
+      "w_mm": 280,
+      "h_mm": 8,
+      "align": "center",
+      "rtl": false
+    }
+  ],
+  "bag": {
+    "w_mm": 200,
+    "h_mm": 250,
+    "d_mm": 80
+  }
+}
