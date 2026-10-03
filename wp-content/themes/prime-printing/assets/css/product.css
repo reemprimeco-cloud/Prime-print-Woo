@@ -289,6 +289,50 @@ body.woocommerce div.product .prime-product__summary {
   margin: 0;
 }
 
+/* ---- Paper bag: the quote box (inc/paper-bag-quotes.php) ---------------- */
+.prime-quote {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: var(--sp-4);
+  margin-block-end: var(--sp-4);
+}
+
+.prime-quote__how ol {
+  margin: var(--sp-2) 0 var(--sp-4);
+  padding-inline-start: 1.2em;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+
+.prime-quote__how ol li { margin-block-end: 4px; }
+
+.prime-quote .prime-field { margin-block-end: 0; }
+
+.prime-quote__code {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.prime-quote__code input {
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.prime-quote__code button { white-space: nowrap; }
+
+.prime-quote .is-applied [data-bag-code-msg],
+.prime-quote .is-error [data-bag-code-msg] { font-weight: 600; }
+.prime-quote .is-applied [data-bag-code-msg] { color: var(--navy); }
+.prime-quote .is-error [data-bag-code-msg] { color: #b3261e; }
+
+.prime-quote-tag {
+  font-size: var(--fs-xs);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--navy);
+}
+
 .prime-calc-note {
   font-size: var(--fs-xs);
   color: var(--ink-soft);
