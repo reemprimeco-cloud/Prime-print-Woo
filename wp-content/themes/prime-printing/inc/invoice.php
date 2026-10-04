@@ -832,6 +832,10 @@ function prime_invoice_render_html( WC_Order $order, $mode = 'color' ) {
 					<span class="prime-inv-label"><?php esc_html_e( 'Shipping method:', 'prime-printing' ); ?></span> <?php echo esc_html( prime_pdf_text( $shipping_label ) ); ?><br>
 					<span class="prime-inv-label"><?php esc_html_e( 'Payment method:', 'prime-printing' ); ?></span> <?php echo esc_html( prime_pdf_text( $order->get_payment_method_title() ) ); ?><br>
 					<span class="prime-inv-label"><?php esc_html_e( 'Date:', 'prime-printing' ); ?></span> <?php echo esc_html( $order->get_date_created() ? $order->get_date_created()->date_i18n( 'd/m/Y' ) : '' ); ?>
+					<?php $pin = function_exists( 'prime_geo_order_pin' ) ? prime_geo_order_pin( $order ) : null; ?>
+					<?php if ( $pin ) : ?>
+						<br><span class="prime-inv-label"><?php esc_html_e( 'Delivery location:', 'prime-printing' ); ?></span> <a href="<?php echo esc_url( $pin['link'] ); ?>"><?php esc_html_e( 'Open in Google Maps', 'prime-printing' ); ?></a>
+					<?php endif; ?>
 					<?php
 					/*
 					 * A gift order goes to someone other than the buyer, so the

@@ -220,57 +220,7 @@
 	form.addEventListener( 'change', checkSectionDone );
 	checkSectionDone();
 
-	/* ---- Delivery pin (geolocation) ------------------------------------------ */
-
-	var locateButton = form.querySelector( '[data-prime-locate]' );
-
-	if ( locateButton ) {
-		locateButton.addEventListener( 'click', function () {
-			var status = form.querySelector( '[data-prime-loc-status]' );
-			var hidden = document.getElementById( 'prime_maps_link' );
-
-			if ( ! navigator.geolocation ) {
-				if ( status ) {
-					status.textContent = locateButton.getAttribute( 'data-unsupported-text' ) || 'Location not supported in this browser';
-				}
-				return;
-			}
-
-			if ( status ) {
-				status.textContent = locateButton.getAttribute( 'data-locating-text' ) || 'Locating…';
-			}
-
-			navigator.geolocation.getCurrentPosition(
-				function ( position ) {
-					var lat = position.coords.latitude.toFixed( 6 );
-					var lng = position.coords.longitude.toFixed( 6 );
-					var link = 'https://www.google.com/maps?q=' + lat + ',' + lng;
-
-					if ( hidden ) {
-						hidden.value = link;
-					}
-
-					if ( status ) {
-						status.innerHTML = '';
-						var prefix = document.createTextNode( ( locateButton.getAttribute( 'data-pinned-text' ) || 'Pinned' ) + ' · ' );
-						var anchor = document.createElement( 'a' );
-						anchor.href = link;
-						anchor.target = '_blank';
-						anchor.rel = 'noopener';
-						anchor.textContent = locateButton.getAttribute( 'data-open-maps-text' ) || 'Open in Google Maps';
-						status.appendChild( prefix );
-						status.appendChild( anchor );
-					}
-				},
-				function () {
-					if ( status ) {
-						status.textContent = locateButton.getAttribute( 'data-error-text' ) || 'Could not get location — enable location access and try again';
-					}
-				},
-				{ enableHighAccuracy: true, timeout: 10000 }
-			);
-		} );
-	}
+	/* The delivery pin map lives in assets/js/delivery-map.js. */
 
 	/* ---- Recalculate the delivery fee when the address changes ---------------- */
 

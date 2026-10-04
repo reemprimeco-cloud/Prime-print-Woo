@@ -72,6 +72,7 @@ $prime_modules = array(
 	'armada',
 	'checkout-pickup',
 	'checkout-fields',
+	'checkout-location',
 	'checkout-payment',
 	'checkout-admin',
 	'i18n',

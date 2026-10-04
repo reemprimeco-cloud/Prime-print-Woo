@@ -51,6 +51,8 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Used to pin your delivery location on the map at checkout, so the driver finds you.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>To photograph your design or item so we can print it, Prime Printing needs access to your camera.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

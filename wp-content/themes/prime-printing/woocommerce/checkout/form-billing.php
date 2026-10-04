@@ -100,41 +100,13 @@ $field = static function ( $key ) use ( $checkout, $fields ) {
 
 	<?php
 	/*
-	 * Delivery pin — hidden for now (Reem, 2026-09-04). As built, this only
-	 * captures the phone's GPS coordinates into a Google Maps link saved on the
-	 * order for the courier (see prime_maps_link below and _delivery_maps_link
-	 * in inc/checkout-fields.php); despite its "Auto-fill address" label it
-	 * never filled any address field, so customers saw it as broken. Reem
-	 * plans to rebuild it as a real address auto-fill on the Google Maps
-	 * Geocoding API — until then the block is off. checkout.js already
-	 * tolerates the block being absent. To bring it back as-is:
-	 * add_filter( 'prime_show_delivery_pin', '__return_true' );
+	 * Delivery pin: a map with a draggable marker (inc/checkout-location.php,
+	 * assets/js/delivery-map.js). Required for house and apartment deliveries,
+	 * hidden for gift and for local pickup; the three hidden billing_geo_*
+	 * fields it fills are rendered with the rest of the billing fields below.
 	 */
-	if ( apply_filters( 'prime_show_delivery_pin', false ) ) :
-		?>
-	<div data-prime-locate-wrap class="<?php echo 'gift' === $address_type ? 'is-hidden' : ''; ?>">
-		<div class="prime-locate" id="prime-locate">
-			<div class="prime-map" aria-hidden="true"><span class="prime-pin"></span></div>
-			<div class="prime-locate__txt">
-				<div class="prime-locate__t1"><?php esc_html_e( 'Delivery location', 'prime-printing' ); ?></div>
-				<div class="prime-locate__t2" data-prime-loc-status><?php esc_html_e( 'Not set yet', 'prime-printing' ); ?></div>
-			</div>
-			<button
-				type="button"
-				class="prime-locbtn"
-				data-prime-locate
-				data-locating-text="<?php esc_attr_e( 'Locating…', 'prime-printing' ); ?>"
-				data-unsupported-text="<?php esc_attr_e( 'Location not supported in this browser', 'prime-printing' ); ?>"
-				data-pinned-text="<?php esc_attr_e( 'Pinned', 'prime-printing' ); ?>"
-				data-open-maps-text="<?php esc_attr_e( 'Open in Google Maps', 'prime-printing' ); ?>"
-				data-error-text="<?php esc_attr_e( 'Could not get location — enable location access and try again', 'prime-printing' ); ?>"
-			>
-				<span aria-hidden="true">◎</span><span><?php esc_html_e( 'Auto-fill address', 'prime-printing' ); ?></span>
-			</button>
-		</div>
-		<input type="hidden" name="prime_maps_link" id="prime_maps_link" value="">
-	</div>
-	<?php endif; ?>
+	prime_geo_render_map( array(), 'gift' === $address_type );
+	?>
 
 	<?php
 	/*
@@ -187,6 +159,9 @@ $field = static function ( $key ) use ( $checkout, $fields ) {
 
 	<div data-prime-address-common>
 		<?php $field( 'prime_house_notes' ); ?>
+		<?php $field( 'billing_geo_lat' ); ?>
+		<?php $field( 'billing_geo_lng' ); ?>
+		<?php $field( 'billing_geo_acc' ); ?>
 	</div>
 
 	<div data-prime-address-panel="gift" class="prime-gift <?php echo 'gift' === $address_type ? 'is-active' : 'is-hidden'; ?>">

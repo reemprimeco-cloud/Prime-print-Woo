@@ -271,42 +271,24 @@
 
 .prime-tile.is-on .prime-tile__label { color: var(--navy); font-weight: var(--fw-medium); }
 
-/* ---- Delivery pin --------------------------------------------------------- */
-.prime-locate {
+/* ---- Delivery pin (map) --------------------------------------------------- */
+.prime-geo {
   border: 1px solid var(--line);
-  padding: 12px;
+  background: var(--paper);
+  margin-block-end: 10px;
+}
+
+.prime-geo__head {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-block-end: 10px;
-  background: var(--paper);
+  padding: 12px;
 }
 
-.prime-map {
-  inline-size: 66px;
-  block-size: 56px;
-  background: var(--sky-wash);
-  flex: none;
-  position: relative;
-  overflow: hidden;
-}
+.prime-geo__head > div:first-child { flex: 1; min-inline-size: 0; }
 
-.prime-pin {
-  position: absolute;
-  inset-block-start: 14px;
-  inset-inline-start: 50%;
-  transform: translateX(-50%);
-  inline-size: 15px;
-  block-size: 15px;
-  background: var(--navy);
-  border-radius: 50% 50% 50% 0;
-  rotate: -45deg;
-}
-
-.prime-locate__txt { flex: 1; min-inline-size: 0; }
 .prime-locate__t1 { font-size: var(--fs-body); font-weight: var(--fw-medium); color: var(--navy); }
 .prime-locate__t2 { font-size: var(--fs-sm); color: var(--ink-faint); }
-.prime-locate__t2 a { color: var(--navy); text-decoration: underline; }
 
 .prime-locbtn {
   background: var(--navy);
@@ -323,6 +305,33 @@
 }
 
 .prime-locbtn:hover { background: var(--sky); color: var(--navy-deep); }
+
+.prime-geo__map {
+  block-size: 300px;
+  inline-size: 100%;
+  background: var(--sky-wash);
+  /* Leaflet is left-to-right; the page may be RTL. */
+  direction: ltr;
+  z-index: 0;
+}
+
+.prime-geo__map .leaflet-control-attribution { font-size: 10px; }
+
+.prime-geo__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  font-size: var(--fs-sm);
+}
+
+.prime-geo__sat { display: flex; align-items: center; gap: 6px; color: var(--ink-soft); cursor: pointer; }
+.prime-geo__sat input { margin: 0; }
+.prime-geo__link { color: var(--navy); text-decoration: underline; }
+
+/* The account's address page uses the same block on a narrower column. */
+.woocommerce-address-fields .prime-geo { margin-block: 16px; }
 
 /* ---- Gift box ------------------------------------------------------------- */
 .prime-gift { border: 1px solid var(--line); padding: 16px; margin-block-end: 10px; background: var(--paper); }
