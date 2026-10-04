@@ -8,12 +8,10 @@
  * same three numbers (plugin class-bag.php, shared bag.ts): front, back, the
  * two sides and the base, each labelled.
  *
- * Three ways to order (Reem, 2026-10-03/04):
+ * Two ways to order (Reem, 2026-10-03/04):
  *   - at the calculated price: the formula below, paid online like any product;
  *   - request a quote: the order is placed free as "Quote requested", the shop
- *     prices it and sends a pay link (inc/paper-bag-quotes.php);
- *   - with a quote code the shop gave them, which prices the order for that
- *     exact size and quantity (same file).
+ *     prices it and sends a pay link (inc/paper-bag-quotes.php).
  * Above `max_online_qty` bags only a quote is offered.
  *
  * As with the sticker calculators, the browser only previews:
@@ -166,7 +164,7 @@ function prime_paper_bag_priced_online( $quantity ) {
  * @return bool
  */
 function prime_bag_specs_is_quote_request( array $specs ) {
-	return empty( $specs['quote_code'] ) && 'quote' === ( $specs['mode'] ?? 'price' );
+	return 'quote' === ( $specs['mode'] ?? 'price' );
 }
 
 /**
@@ -187,22 +185,13 @@ function prime_paper_bag_sheet( $w, $h, $d ) {
 }
 
 /**
- * What a run costs: the quote's price when a valid code was given; nothing
- * for a quote request (the shop prices it); else the calculated price.
+ * What a run costs: nothing for a quote request (the shop prices it on the
+ * order); else the calculated price.
  *
- * @param array $specs Cart specs (width, height, depth, quantity, mode, quote_code).
+ * @param array $specs Cart specs (width, height, depth, quantity, mode).
  * @return float
  */
 function prime_paper_bag_price( array $specs ) {
-	if ( ! empty( $specs['quote_code'] ) ) {
-		$q = prime_bag_quote_find( $specs['quote_code'] );
-
-		if ( ! $q || is_wp_error( prime_bag_quote_check( $q['code'], $specs['width'], $specs['height'], $specs['depth'], $specs['quantity'] ) ) ) {
-			return 0.0;
-		}
-
-		return $q['paid'] ? 0.0 : (float) $q['price']; // Paid outside the site: nothing to charge.
-	}
 	if ( prime_bag_specs_is_quote_request( $specs ) ) {
 		return 0.0;
 	}
@@ -283,8 +272,6 @@ function prime_render_paper_bag_calculator() {
 		data-construction="<?php echo esc_attr( wp_json_encode( $k ) ); ?>"
 		data-pricing="<?php echo esc_attr( wp_json_encode( $c ) ); ?>"
 		data-currency="<?php echo esc_attr( get_woocommerce_currency_symbol() ); ?>"
-		data-ajax="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
-		data-nonce="<?php echo esc_attr( wp_create_nonce( 'prime_bag_quote' ) ); ?>"
 		data-label-quote="<?php esc_attr_e( 'Request a quote', 'prime-printing' ); ?>"
 		data-label-order="<?php esc_attr_e( 'Add to cart', 'prime-printing' ); ?>"
 		data-quote-text="<?php esc_attr_e( 'Quote on request', 'prime-printing' ); ?>"
@@ -361,11 +348,11 @@ function prime_render_paper_bag_calculator() {
 				<legend><strong><?php esc_html_e( 'How would you like to order?', 'prime-printing' ); ?></strong></legend>
 				<label class="prime-check">
 					<input type="radio" name="bag_mode" value="price" checked data-bag-mode>
-					<span><?php esc_html_e( 'Order now at the price above — pay online and we start printing.', 'prime-printing' ); ?></span>
+					<span><?php esc_html_e( 'Order now at this price', 'prime-printing' ); ?></span>
 				</label>
 				<label class="prime-check">
 					<input type="radio" name="bag_mode" value="quote" data-bag-mode>
-					<span><?php esc_html_e( 'Request a quote — place the order free; we send your price by email and WhatsApp within one working day, and you pay from the link to start printing.', 'prime-printing' ); ?></span>
+					<span><?php esc_html_e( 'Request a quote first', 'prime-printing' ); ?> <small><?php esc_html_e( 'No charge now. We email your price within one working day; pay from the link to start printing.', 'prime-printing' ); ?></small></span>
 				</label>
 				<p class="prime-field__hint" data-bag-quote-only hidden>
 					<?php
@@ -377,14 +364,6 @@ function prime_render_paper_bag_calculator() {
 					?>
 				</p>
 			</fieldset>
-			<div class="prime-field">
-				<label for="bag-code"><?php esc_html_e( 'Already have a quote code?', 'prime-printing' ); ?></label>
-				<div class="prime-quote__code">
-					<input type="text" id="bag-code" name="bag_quote_code" autocomplete="off" placeholder="PB-XXXXXX" data-bag-code>
-					<button type="button" class="prime-btn prime-btn--ghost" data-bag-code-apply><?php esc_html_e( 'Apply', 'prime-printing' ); ?></button>
-				</div>
-				<span class="prime-field__hint" data-bag-code-msg><?php esc_html_e( 'Enter it to order straight away at your quoted price.', 'prime-printing' ); ?></span>
-			</div>
 		</div>
 
 		<p class="prime-calc-note">
@@ -451,17 +430,6 @@ function prime_validate_paper_bag( $passed, $product_id ) {
 		$passed = false;
 	}
 
-	// A quote code must be good for exactly this bag; a wrong one is refused
-	// rather than ignored, so nobody places a free quote request by mistake.
-	$code = isset( $_POST['bag_quote_code'] ) ? prime_bag_quote_clean_code( sanitize_text_field( wp_unslash( $_POST['bag_quote_code'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
-	if ( $passed && '' !== $code ) {
-		$q = prime_bag_quote_check( $code, $in['w'], $in['h'], $in['d'], $in['qty'] );
-		if ( is_wp_error( $q ) ) {
-			wc_add_notice( $q->get_error_message(), 'error' );
-			$passed = false;
-		}
-	}
-
 	return $passed;
 }
 add_filter( 'woocommerce_add_to_cart_validation', 'prime_validate_paper_bag', 10, 2 );
@@ -496,24 +464,12 @@ function prime_capture_paper_bag( $cart_item_data, $product_id ) {
 		'depth'      => $in['d'],
 		'quantity'   => max( 1, $in['qty'] ),
 		'mode'       => 'price',
-		'quote_code' => '',
 	);
 
 	// Quote request when asked for, and always above the online limit.
 	$mode = isset( $_POST['bag_mode'] ) ? sanitize_key( wp_unslash( $_POST['bag_mode'] ) ) : 'price';
 	if ( 'quote' === $mode || ! prime_paper_bag_priced_online( $specs['quantity'] ) ) {
 		$specs['mode'] = 'quote';
-	}
-
-	// A quote code prices the run; a wrong one is refused rather than ignored,
-	// so the customer never places a free "quote request" by mistake.
-	$code = isset( $_POST['bag_quote_code'] ) ? prime_bag_quote_clean_code( sanitize_text_field( wp_unslash( $_POST['bag_quote_code'] ) ) ) : '';
-	if ( '' !== $code ) {
-		$q = prime_bag_quote_check( $code, $specs['width'], $specs['height'], $specs['depth'], $specs['quantity'] );
-		if ( is_wp_error( $q ) ) {
-			return $cart_item_data; // Already refused in prime_validate_paper_bag().
-		}
-		$specs['quote_code'] = $q['code'];
 	}
 
 	$cart_item_data['prime_paper_bag_specs'] = $specs;
@@ -575,9 +531,7 @@ function prime_paper_bag_rows( array $s ) {
 		),
 		array(
 			'name'  => __( 'Price', 'prime-printing' ),
-			'value' => ! empty( $s['quote_code'] )
-				? sprintf( ( ( prime_bag_quote_find( $s['quote_code'] )['paid'] ?? false ) ? __( 'Paid · quote code %s', 'prime-printing' ) : __( 'Quote code %s', 'prime-printing' ) ), $s['quote_code'] )
-				: ( prime_bag_specs_is_quote_request( $s ) ? __( 'Quote on request', 'prime-printing' ) : wp_strip_all_tags( wc_price( prime_paper_bag_price( $s ) ) ) ),
+			'value' => prime_bag_specs_is_quote_request( $s ) ? __( 'Quote on request', 'prime-printing' ) : wp_strip_all_tags( wc_price( prime_paper_bag_price( $s ) ) ),
 		),
 	);
 }
@@ -620,9 +574,7 @@ function prime_persist_paper_bag_to_order( $item, $cart_item_key, $values ) {
 
 	$specs = $values['prime_paper_bag_specs'];
 	$item->update_meta_data( '_prime_paper_bag_specs_raw', $specs );
-	if ( ! empty( $specs['quote_code'] ) ) {
-		$item->update_meta_data( '_prime_bag_quote_code', $specs['quote_code'] );
-	} elseif ( prime_bag_specs_is_quote_request( $specs ) ) {
+	if ( prime_bag_specs_is_quote_request( $specs ) ) {
 		$item->update_meta_data( PRIME_BAG_QUOTE_ITEM_KEY, 'yes' );
 	}
 }

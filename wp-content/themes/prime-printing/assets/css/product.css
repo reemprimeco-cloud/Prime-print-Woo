@@ -316,25 +316,8 @@ body.woocommerce div.product .prime-product__summary {
 
 .prime-quote__modes legend { margin-block-end: var(--sp-2); }
 .prime-quote__modes .prime-check { margin-block-end: var(--sp-2); }
+.prime-quote__modes .prime-check small { display: block; color: var(--ink-soft); }
 .prime-quote__modes .prime-field__hint { margin: 0; }
-
-.prime-quote__code {
-  display: flex;
-  gap: var(--sp-2);
-}
-
-.prime-quote__code input {
-  flex: 1;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-}
-
-.prime-quote__code button { white-space: nowrap; }
-
-.prime-quote .is-applied [data-bag-code-msg],
-.prime-quote .is-error [data-bag-code-msg] { font-weight: 600; }
-.prime-quote .is-applied [data-bag-code-msg] { color: var(--navy); }
-.prime-quote .is-error [data-bag-code-msg] { color: #b3261e; }
 
 .prime-quote-tag {
   font-size: var(--fs-xs);
