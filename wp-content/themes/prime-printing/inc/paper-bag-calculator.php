@@ -197,7 +197,11 @@ function prime_paper_bag_price( array $specs ) {
 	if ( ! empty( $specs['quote_code'] ) ) {
 		$q = prime_bag_quote_find( $specs['quote_code'] );
 
-		return $q && ! is_wp_error( prime_bag_quote_check( $q['code'], $specs['width'], $specs['height'], $specs['depth'], $specs['quantity'] ) ) ? (float) $q['price'] : 0.0;
+		if ( ! $q || is_wp_error( prime_bag_quote_check( $q['code'], $specs['width'], $specs['height'], $specs['depth'], $specs['quantity'] ) ) ) {
+			return 0.0;
+		}
+
+		return $q['paid'] ? 0.0 : (float) $q['price']; // Paid outside the site: nothing to charge.
 	}
 	if ( prime_bag_specs_is_quote_request( $specs ) ) {
 		return 0.0;
@@ -572,7 +576,7 @@ function prime_paper_bag_rows( array $s ) {
 		array(
 			'name'  => __( 'Price', 'prime-printing' ),
 			'value' => ! empty( $s['quote_code'] )
-				? sprintf( __( 'Quote code %s', 'prime-printing' ), $s['quote_code'] )
+				? sprintf( ( ( prime_bag_quote_find( $s['quote_code'] )['paid'] ?? false ) ? __( 'Paid · quote code %s', 'prime-printing' ) : __( 'Quote code %s', 'prime-printing' ) ), $s['quote_code'] )
 				: ( prime_bag_specs_is_quote_request( $s ) ? __( 'Quote on request', 'prime-printing' ) : wp_strip_all_tags( wc_price( prime_paper_bag_price( $s ) ) ) ),
 		),
 	);

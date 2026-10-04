@@ -15,7 +15,9 @@
  *      made by hand under WooCommerce → Bag quotes after a WhatsApp quote) is
  *      typed on the product page. It carries a price for one exact bag size
  *      and quantity; with it the product is priced and ordered online like
- *      anything else. A code is used once.
+ *      anything else. A code is used once. A code can also be marked "already
+ *      paid" (the customer settled the quote outside the site): the order
+ *      then goes through at no charge, straight to Processing.
  *
  * Codes are stored as a private post type (prime_bag_quote), one post per
  * code, with the size, quantity, price, who it is for and where it came from.
@@ -81,6 +83,7 @@ function prime_bag_quote_make_code() {
  *   @type string $email    Customer email (optional).
  *   @type string $phone    Customer phone (optional).
  *   @type string $note     Internal note (optional).
+ *   @type bool   $paid     Already paid outside the site: the order goes through free (optional).
  *   @type int    $order_id The quote-request order it answers (optional).
  * }
  * @return array|WP_Error The quote record.
@@ -103,6 +106,7 @@ function prime_bag_quote_create( array $args ) {
 				'_email'         => sanitize_email( $args['email'] ?? '' ),
 				'_phone'         => sanitize_text_field( $args['phone'] ?? '' ),
 				'_note'          => sanitize_text_field( $args['note'] ?? '' ),
+				'_paid'          => ! empty( $args['paid'] ) ? 1 : 0,
 				'_order_id'      => (int) ( $args['order_id'] ?? 0 ),
 				'_used_order_id' => 0,
 				'_expires'       => time() + PRIME_BAG_QUOTE_DAYS * DAY_IN_SECONDS,
@@ -145,6 +149,7 @@ function prime_bag_quote_record( $id ) {
 		'email'         => (string) $m( '_email' ),
 		'phone'         => (string) $m( '_phone' ),
 		'note'          => (string) $m( '_note' ),
+		'paid'          => (bool) $m( '_paid' ),
 		'order_id'      => (int) $m( '_order_id' ),
 		'used_order_id' => (int) $m( '_used_order_id' ),
 		'expires'       => (int) $m( '_expires' ),
@@ -287,8 +292,9 @@ function prime_bag_quote_ajax_check() {
 	wp_send_json_success(
 		array(
 			'code'  => $q['code'],
-			'price' => $q['price'],
-			'text'  => wp_strip_all_tags( wc_price( $q['price'] ) ),
+			'price' => $q['paid'] ? 0 : $q['price'],
+			'paid'  => $q['paid'],
+			'text'  => $q['paid'] ? __( 'Paid — no charge', 'prime-printing' ) : wp_strip_all_tags( wc_price( $q['price'] ) ),
 		)
 	);
 }
@@ -342,8 +348,15 @@ function prime_order_has_bag_quote_request( $order ) {
  * @return string
  */
 function prime_bag_quote_cart_price( $html, $cart_item ) {
-	if ( ! empty( $cart_item['prime_paper_bag_specs'] ) && prime_bag_specs_is_quote_request( $cart_item['prime_paper_bag_specs'] ) ) {
+	$specs = $cart_item['prime_paper_bag_specs'] ?? null;
+	if ( $specs && prime_bag_specs_is_quote_request( $specs ) ) {
 		return '<span class="prime-quote-tag">' . esc_html__( 'Quote on request', 'prime-printing' ) . '</span>';
+	}
+	if ( $specs && ! empty( $specs['quote_code'] ) ) {
+		$q = prime_bag_quote_find( $specs['quote_code'] );
+		if ( $q && $q['paid'] ) {
+			return '<span class="prime-quote-tag">' . esc_html__( 'Paid with quote code', 'prime-printing' ) . '</span>';
+		}
 	}
 
 	return $html;
@@ -631,12 +644,14 @@ function prime_bag_quote_send_code_email( array $quote ) {
 		esc_html__( 'Here is the price for your paper bags:', 'prime-printing' ),
 		sprintf( esc_html__( 'Bag %1$s × %2$s × %3$s cm (flat sheet %4$s × %5$s cm)', 'prime-printing' ), esc_html( $quote['w'] ), esc_html( $quote['h'] ), esc_html( $quote['d'] ), esc_html( $sheet['w'] ), esc_html( $sheet['h'] ) ),
 		sprintf( esc_html__( '%s bags', 'prime-printing' ), esc_html( $quote['qty'] ) ),
-		wp_kses_post( wc_price( $quote['price'] ) ),
+		$quote['paid'] ? esc_html__( 'Paid — thank you', 'prime-printing' ) : wp_kses_post( wc_price( $quote['price'] ) ),
 		esc_html__( 'Your quote code:', 'prime-printing' ),
 		esc_html( $quote['code'] ),
 		sprintf(
 			/* translators: 1: product link, 2: date. */
-			esc_html__( 'Open the custom paper bag page, enter this size and quantity, design your bag, and type the code to order at this price. Valid until %2$s.', 'prime-printing' ),
+			$quote['paid']
+				? esc_html__( 'Open the custom paper bag page, enter this size and quantity, design your bag, and type the code to place your order — there is nothing more to pay. Valid until %2$s.', 'prime-printing' )
+				: esc_html__( 'Open the custom paper bag page, enter this size and quantity, design your bag, and type the code to order at this price. Valid until %2$s.', 'prime-printing' ),
 			'',
 			esc_html( date_i18n( get_option( 'date_format' ), $quote['expires'] ) )
 		),
@@ -860,6 +875,12 @@ function prime_bag_quote_render_page() {
 					<th scope="row"><label for="pbq-note"><?php esc_html_e( 'Note (internal)', 'prime-printing' ); ?></label></th>
 					<td><input type="text" id="pbq-note" name="note" style="width:100%"></td>
 				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Already paid', 'prime-printing' ); ?></th>
+					<td>
+						<label><input type="checkbox" name="paid" value="1"> <?php esc_html_e( 'The customer has paid this quote outside the site. With the code, their order goes through at no charge and straight to Processing.', 'prime-printing' ); ?></label>
+					</td>
+				</tr>
 			</table>
 			<?php submit_button( __( 'Create code', 'prime-printing' ) ); ?>
 		</form>
@@ -901,7 +922,7 @@ function prime_bag_quote_render_page() {
 						<td><code><?php echo esc_html( $q['code'] ); ?></code></td>
 						<td><?php echo esc_html( sprintf( '%s × %s × %s cm', $q['w'], $q['h'], $q['d'] ) ); ?></td>
 						<td><?php echo esc_html( $q['qty'] ); ?></td>
-						<td><?php echo wp_kses_post( wc_price( $q['price'] ) ); ?></td>
+						<td><?php echo wp_kses_post( wc_price( $q['price'] ) ); ?><?php echo $q['paid'] ? ' <span class="dashicons dashicons-yes" title="' . esc_attr__( 'Already paid', 'prime-printing' ) . '"></span> <small>' . esc_html__( 'paid', 'prime-printing' ) . '</small>' : ''; ?></td>
 						<td><?php echo esc_html( trim( $q['name'] . ' ' . $q['email'] . ' ' . $q['phone'] ) ); ?><?php echo $q['note'] ? '<br><small>' . esc_html( $q['note'] ) . '</small>' : ''; ?></td>
 						<td><?php echo wp_kses_post( $order_link( $q['order_id'] ) ); ?></td>
 						<td><?php echo wp_kses_post( $status ); ?></td>
@@ -947,6 +968,7 @@ function prime_bag_quote_handle_create() {
 			'email' => sanitize_email( wp_unslash( $_POST['email'] ?? '' ) ),
 			'phone' => sanitize_text_field( wp_unslash( $_POST['phone'] ?? '' ) ),
 			'note'  => sanitize_text_field( wp_unslash( $_POST['note'] ?? '' ) ),
+			'paid'  => ! empty( $_POST['paid'] ),
 		)
 	);
 	if ( is_wp_error( $quote ) ) {
