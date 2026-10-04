@@ -1,11 +1,13 @@
 /**
  * Custom Paper Bag — the flat-sheet drawing and the quote code.
  *
- * No price is computed here: the bag is quoted by the shop
- * (inc/paper-bag-quotes.php). The page draws the flat sheet from the size,
- * and checks a quote code against the server, which answers with the price
- * for that exact size and quantity. The server checks the code again when
- * the bag is added to the cart and once more at checkout.
+ * A PREVIEW ONLY: nothing computed here is ever sent as a price. The size,
+ * quantity, ordering mode and quote code are submitted, and
+ * prime_paper_bag_price() in inc/paper-bag-calculator.php recomputes the
+ * price server-side on every cart calculation. The constants are read from
+ * data attributes PHP emits rather than redeclared. A quote code is checked
+ * against the server, which answers with the price for that exact size and
+ * quantity, and is checked again at add-to-cart and at checkout.
  *
  * The drawing is the same layout the designer uses (glue flap | front |
  * side | back | side across; top fold | body | base down), so what the
@@ -30,6 +32,8 @@
 
 	var limits = json( 'data-limits', { w: [ 6, 50 ], h: [ 8, 60 ], d: [ 3, 25 ] } );
 	var build = json( 'data-construction', { glue_cm: 1.5, top_fold_cm: 3, base_extra_cm: 1.5, bleed_cm: 0.3 } );
+	var pricing = json( 'data-pricing', null ) || { sheet_per_m2: 0, making_each: 0, setup: 0, min_order: 0, tiers: [], tier_above: 1, max_online_qty: 0 };
+	var currency = calc.getAttribute( 'data-currency' ) || '';
 	var ajax = calc.getAttribute( 'data-ajax' ) || '';
 	var nonce = calc.getAttribute( 'data-nonce' ) || '';
 	var labelQuote = calc.getAttribute( 'data-label-quote' ) || 'Request a quote';
@@ -47,6 +51,9 @@
 	var codeHint = codeMsg ? codeMsg.textContent : '';
 
 	var countOut = calc.querySelector( '[data-bag-count]' );
+	var eachOut = calc.querySelector( '[data-bag-each]' );
+	var modeInputs = calc.querySelectorAll( '[data-bag-mode]' );
+	var quoteOnly = calc.querySelector( '[data-bag-quote-only]' );
 	var totalOut = calc.querySelector( '[data-bag-total]' );
 	var sheetOut = calc.querySelector( '[data-bag-sheet-size]' );
 	var svg = calc.querySelector( '[data-bag-svg]' );
@@ -59,6 +66,42 @@
 
 	var inRange = function ( v, range ) {
 		return v >= range[ 0 ] && v <= range[ 1 ];
+	};
+
+	var format = function ( value ) {
+		return value.toFixed( 3 ) + ' ' + currency;
+	};
+
+	var factorFor = function ( quantity ) {
+		var tiers = pricing.tiers || [];
+		for ( var i = 0; i < tiers.length; i++ ) {
+			if ( quantity >= tiers[ i ].min && quantity <= tiers[ i ].max ) {
+				return parseFloat( tiers[ i ].factor );
+			}
+		}
+		return parseFloat( pricing.tier_above ) || 1;
+	};
+
+	var calculate = function ( w, h, d, quantity ) {
+		var sheet = sheetFor( w, h, d );
+		var area = ( ( sheet.w + 2 * build.bleed_cm ) / 100 ) * ( ( sheet.h + 2 * build.bleed_cm ) / 100 );
+		var each = ( area * pricing.sheet_per_m2 + pricing.making_each ) * factorFor( quantity );
+		var total = Math.max( pricing.min_order, pricing.setup + each * quantity );
+		return { each: each, total: total };
+	};
+
+	var pricedOnline = function ( quantity ) {
+		return ! pricing.max_online_qty || quantity <= pricing.max_online_qty;
+	};
+
+	var mode = function () {
+		var chosen = 'price';
+		Array.prototype.forEach.call( modeInputs, function ( input ) {
+			if ( input.checked ) {
+				chosen = input.value;
+			}
+		} );
+		return chosen;
 	};
 
 	var sheetFor = function ( w, h, d ) {
@@ -171,17 +214,49 @@
 
 	var showPrice = function () {
 		var v = read();
-		var priced = applied && applied.key === keyOf( v );
-		var text = priced ? applied.text : quoteText;
+		var coded = applied && applied.key === keyOf( v );
+		var sized = inRange( v.w, limits.w ) && inRange( v.h, limits.h ) && inRange( v.d, limits.d ) && v.q > 0;
+		var online = pricedOnline( v.q );
+		var asQuote = ! coded && ( 'quote' === mode() || ! online );
+		var text = '—';
+		var each = '—';
+
+		// Too many bags for the online price: only a quote is offered.
+		if ( quoteOnly ) {
+			quoteOnly.hidden = online;
+		}
+		Array.prototype.forEach.call( modeInputs, function ( input ) {
+			if ( 'price' === input.value ) {
+				input.disabled = ! online;
+				if ( ! online && input.checked ) {
+					input.checked = false;
+				}
+			} else if ( ! online ) {
+				input.checked = true;
+			}
+		} );
+
+		if ( coded ) {
+			text = applied.text;
+		} else if ( asQuote ) {
+			text = quoteText;
+		} else if ( sized ) {
+			var result = calculate( v.w, v.h, v.d, v.q );
+			text = format( result.total );
+			each = format( result.each );
+		}
 
 		totalOut.textContent = text;
+		if ( eachOut ) {
+			eachOut.textContent = each;
+		}
 		if ( summaryPrice ) {
 			summaryPrice.textContent = text;
 		}
 		if ( button ) {
-			button.textContent = priced ? labelOrder : labelQuote;
+			button.textContent = asQuote ? labelQuote : labelOrder;
 		}
-		if ( applied && ! priced ) {
+		if ( applied && ! coded ) {
 			// The size or quantity moved away from what the code was for.
 			setCodeState( 'error', applied.mismatch );
 		}
@@ -266,6 +341,10 @@
 			input.addEventListener( 'change', render );
 		}
 	);
+
+	Array.prototype.forEach.call( modeInputs, function ( input ) {
+		input.addEventListener( 'change', showPrice );
+	} );
 
 	if ( codeApply ) {
 		codeApply.addEventListener( 'click', checkCode );

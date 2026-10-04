@@ -308,6 +308,16 @@ body.woocommerce div.product .prime-product__summary {
 
 .prime-quote .prime-field { margin-block-end: 0; }
 
+.prime-quote__modes {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--sp-4);
+}
+
+.prime-quote__modes legend { margin-block-end: var(--sp-2); }
+.prime-quote__modes .prime-check { margin-block-end: var(--sp-2); }
+.prime-quote__modes .prime-field__hint { margin: 0; }
+
 .prime-quote__code {
   display: flex;
   gap: var(--sp-2);

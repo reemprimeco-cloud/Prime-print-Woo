@@ -1,8 +1,8 @@
 <?php
 /**
- * Paper bag quotes (Reem, 2026-10-03): the bag is not priced on the site.
- *
- * Two ways in, both ending in a normal paid order:
+ * Paper bag quotes (Reem, 2026-10-03): besides the calculated price in
+ * inc/paper-bag-calculator.php, two ways to order by quote, both ending in a
+ * normal paid order:
  *
  *   1. Request a quote. The customer sizes the bag, designs it and places the
  *      order at no charge. The order arrives as "Quote requested" with the
@@ -307,7 +307,7 @@ function prime_cart_has_bag_quote_request() {
 		return false;
 	}
 	foreach ( WC()->cart->get_cart() as $item ) {
-		if ( ! empty( $item['prime_paper_bag_specs'] ) && empty( $item['prime_paper_bag_specs']['quote_code'] ) ) {
+		if ( ! empty( $item['prime_paper_bag_specs'] ) && prime_bag_specs_is_quote_request( $item['prime_paper_bag_specs'] ) ) {
 			return true;
 		}
 	}
@@ -342,7 +342,7 @@ function prime_order_has_bag_quote_request( $order ) {
  * @return string
  */
 function prime_bag_quote_cart_price( $html, $cart_item ) {
-	if ( ! empty( $cart_item['prime_paper_bag_specs'] ) && empty( $cart_item['prime_paper_bag_specs']['quote_code'] ) ) {
+	if ( ! empty( $cart_item['prime_paper_bag_specs'] ) && prime_bag_specs_is_quote_request( $cart_item['prime_paper_bag_specs'] ) ) {
 		return '<span class="prime-quote-tag">' . esc_html__( 'Quote on request', 'prime-printing' ) . '</span>';
 	}
 

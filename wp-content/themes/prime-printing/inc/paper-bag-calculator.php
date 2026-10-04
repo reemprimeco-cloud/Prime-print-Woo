@@ -8,12 +8,17 @@
  * same three numbers (plugin class-bag.php, shared bag.ts): front, back, the
  * two sides and the base, each labelled.
  *
- * There is no price on the site (Reem, 2026-10-03: the price is quoted
- * outside the website). The customer either requests a quote — the order is
- * placed free, the shop prices it and sends a pay link — or types a quote
- * code the shop gave them, which prices the order for that exact size and
- * quantity. Both live in inc/paper-bag-quotes.php; this file collects the
- * size and the code and keeps the cart honest about the price.
+ * Three ways to order (Reem, 2026-10-03/04):
+ *   - at the calculated price: the formula below, paid online like any product;
+ *   - request a quote: the order is placed free as "Quote requested", the shop
+ *     prices it and sends a pay link (inc/paper-bag-quotes.php);
+ *   - with a quote code the shop gave them, which prices the order for that
+ *     exact size and quantity (same file).
+ * Above `max_online_qty` bags only a quote is offered.
+ *
+ * As with the sticker calculators, the browser only previews:
+ * prime_paper_bag_price() below runs again in PHP on every cart calculation
+ * and is the only number ever charged.
  *
  * The product is found by its slug (custom-paper-bag), so it can be created
  * in wp-admin without touching code; a product can also be pinned by id.
@@ -68,6 +73,103 @@ function prime_paper_bag_construction() {
 }
 
 /**
+ * The cost basis. PLACEHOLDER FIGURES (2026-10-04): Reem has not given a bag
+ * formula yet; these price by the flat sheet's area plus a per-bag making
+ * cost, with quantity tiers, a setup charge and a minimum, so the product
+ * works end to end and the numbers can be corrected in one place. Every
+ * number here decides what a customer is charged.
+ *
+ * @return array
+ */
+function prime_paper_bag_constants() {
+	return array(
+		// Paper + print, per square metre of flat sheet (bleed included).
+		'sheet_per_m2'   => 1.200,
+		// Folding, gluing, handles: per bag.
+		'making_each'    => 0.150,
+		// One-off per order: plates / setup / die.
+		'setup'          => 5.000,
+		// Smallest charge for a run.
+		'min_order'      => 10.000,
+		// Discount on the per-bag part by quantity (the setup is never discounted).
+		'tiers'          => array(
+			array( 'min' => 1,   'max' => 49,  'factor' => 1.00 ),
+			array( 'min' => 50,  'max' => 99,  'factor' => 0.90 ),
+			array( 'min' => 100, 'max' => 249, 'factor' => 0.80 ),
+			array( 'min' => 250, 'max' => 499, 'factor' => 0.72 ),
+		),
+		'tier_above'     => 0.65,
+		// Runs bigger than this are quoted by hand, never priced online.
+		'max_online_qty' => 2000,
+	);
+}
+
+/**
+ * Quantity factor for a run.
+ *
+ * @param int $quantity Bags.
+ * @return float
+ */
+function prime_paper_bag_factor( $quantity ) {
+	$c = prime_paper_bag_constants();
+
+	foreach ( $c['tiers'] as $tier ) {
+		if ( $quantity >= $tier['min'] && $quantity <= $tier['max'] ) {
+			return (float) $tier['factor'];
+		}
+	}
+
+	return (float) $c['tier_above'];
+}
+
+/**
+ * The calculated price of a run.
+ *
+ * @param float $w_cm     Width.
+ * @param float $h_cm     Height.
+ * @param float $d_cm     Depth.
+ * @param int   $quantity Bags.
+ * @return array{sheet: array{w: float, h: float}, each: float, setup: float, total: float}
+ */
+function prime_paper_bag_calculate( $w_cm, $h_cm, $d_cm, $quantity ) {
+	$c        = prime_paper_bag_constants();
+	$k        = prime_paper_bag_construction();
+	$quantity = max( 1, (int) $quantity );
+
+	$sheet   = prime_paper_bag_sheet( (float) $w_cm, (float) $h_cm, (float) $d_cm );
+	$area_m2 = ( ( $sheet['w'] + 2 * $k['bleed_cm'] ) / 100 ) * ( ( $sheet['h'] + 2 * $k['bleed_cm'] ) / 100 );
+	$each    = ( $area_m2 * $c['sheet_per_m2'] + $c['making_each'] ) * prime_paper_bag_factor( $quantity );
+	$total   = max( $c['min_order'], $c['setup'] + $each * $quantity );
+
+	return array(
+		'sheet' => $sheet,
+		'each'  => round( $each, 3 ),
+		'setup' => (float) $c['setup'],
+		'total' => round( $total, 3 ),
+	);
+}
+
+/**
+ * Is a run of this many bags priced online at all?
+ *
+ * @param int $quantity Bags.
+ * @return bool
+ */
+function prime_paper_bag_priced_online( $quantity ) {
+	return (int) $quantity <= (int) prime_paper_bag_constants()['max_online_qty'];
+}
+
+/**
+ * Is this cart line a quote request (no price yet)?
+ *
+ * @param array $specs Cart specs.
+ * @return bool
+ */
+function prime_bag_specs_is_quote_request( array $specs ) {
+	return empty( $specs['quote_code'] ) && 'quote' === ( $specs['mode'] ?? 'price' );
+}
+
+/**
  * The flat sheet a bag of this size is made from, in cm.
  *
  * @param float $w Width (front panel).
@@ -85,19 +187,23 @@ function prime_paper_bag_sheet( $w, $h, $d ) {
 }
 
 /**
- * What a run costs: the quote's price when a valid code was given, else
- * nothing — the order goes in as a quote request and is priced by the shop.
+ * What a run costs: the quote's price when a valid code was given; nothing
+ * for a quote request (the shop prices it); else the calculated price.
  *
- * @param array $specs Cart specs (width, height, depth, quantity, quote_code).
+ * @param array $specs Cart specs (width, height, depth, quantity, mode, quote_code).
  * @return float
  */
 function prime_paper_bag_price( array $specs ) {
-	if ( empty( $specs['quote_code'] ) ) {
+	if ( ! empty( $specs['quote_code'] ) ) {
+		$q = prime_bag_quote_find( $specs['quote_code'] );
+
+		return $q && ! is_wp_error( prime_bag_quote_check( $q['code'], $specs['width'], $specs['height'], $specs['depth'], $specs['quantity'] ) ) ? (float) $q['price'] : 0.0;
+	}
+	if ( prime_bag_specs_is_quote_request( $specs ) ) {
 		return 0.0;
 	}
-	$q = prime_bag_quote_find( $specs['quote_code'] );
 
-	return $q && ! is_wp_error( prime_bag_quote_check( $q['code'], $specs['width'], $specs['height'], $specs['depth'], $specs['quantity'] ) ) ? (float) $q['price'] : 0.0;
+	return prime_paper_bag_calculate( $specs['width'], $specs['height'], $specs['depth'], $specs['quantity'] )['total'];
 }
 
 /**
@@ -162,6 +268,7 @@ function prime_render_paper_bag_calculator() {
 		return;
 	}
 
+	$c   = prime_paper_bag_constants();
 	$k   = prime_paper_bag_construction();
 	$lim = prime_paper_bag_limits();
 	?>
@@ -170,6 +277,8 @@ function prime_render_paper_bag_calculator() {
 		data-paper-bag-calculator
 		data-limits="<?php echo esc_attr( wp_json_encode( $lim ) ); ?>"
 		data-construction="<?php echo esc_attr( wp_json_encode( $k ) ); ?>"
+		data-pricing="<?php echo esc_attr( wp_json_encode( $c ) ); ?>"
+		data-currency="<?php echo esc_attr( get_woocommerce_currency_symbol() ); ?>"
 		data-ajax="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
 		data-nonce="<?php echo esc_attr( wp_create_nonce( 'prime_bag_quote' ) ); ?>"
 		data-label-quote="<?php esc_attr_e( 'Request a quote', 'prime-printing' ); ?>"
@@ -228,15 +337,42 @@ function prime_render_paper_bag_calculator() {
 			</p>
 		</div>
 
-		<div class="prime-quote">
-			<div class="prime-quote__how">
-				<strong><?php esc_html_e( 'How ordering works', 'prime-printing' ); ?></strong>
-				<ol>
-					<li><?php esc_html_e( 'Enter the size and quantity, design your bag, and add it to the cart — nothing is charged.', 'prime-printing' ); ?></li>
-					<li><?php esc_html_e( 'We send your price by email and WhatsApp, usually within one working day.', 'prime-printing' ); ?></li>
-					<li><?php esc_html_e( 'Approve and pay from the link we send, and we start printing.', 'prime-printing' ); ?></li>
-				</ol>
+		<div class="prime-calcrow">
+			<div class="prime-calcbox">
+				<div class="prime-calcbox__k"><?php esc_html_e( 'Bags', 'prime-printing' ); ?></div>
+				<div class="prime-calcbox__v" data-bag-count>—</div>
 			</div>
+			<div class="prime-calcbox">
+				<div class="prime-calcbox__k"><?php esc_html_e( 'Price / bag', 'prime-printing' ); ?></div>
+				<div class="prime-calcbox__v" data-bag-each>—</div>
+			</div>
+			<div class="prime-calcbox prime-calcbox--hi">
+				<div class="prime-calcbox__k"><?php esc_html_e( 'Total price', 'prime-printing' ); ?></div>
+				<div class="prime-calcbox__v" data-bag-total>—</div>
+			</div>
+		</div>
+
+		<div class="prime-quote">
+			<fieldset class="prime-quote__modes">
+				<legend><strong><?php esc_html_e( 'How would you like to order?', 'prime-printing' ); ?></strong></legend>
+				<label class="prime-check">
+					<input type="radio" name="bag_mode" value="price" checked data-bag-mode>
+					<span><?php esc_html_e( 'Order now at the price above — pay online and we start printing.', 'prime-printing' ); ?></span>
+				</label>
+				<label class="prime-check">
+					<input type="radio" name="bag_mode" value="quote" data-bag-mode>
+					<span><?php esc_html_e( 'Request a quote — place the order free; we send your price by email and WhatsApp within one working day, and you pay from the link to start printing.', 'prime-printing' ); ?></span>
+				</label>
+				<p class="prime-field__hint" data-bag-quote-only hidden>
+					<?php
+					printf(
+						/* translators: %s: quantity. */
+						esc_html__( 'Runs above %s bags are quoted by hand.', 'prime-printing' ),
+						esc_html( number_format( $c['max_online_qty'] ) )
+					);
+					?>
+				</p>
+			</fieldset>
 			<div class="prime-field">
 				<label for="bag-code"><?php esc_html_e( 'Already have a quote code?', 'prime-printing' ); ?></label>
 				<div class="prime-quote__code">
@@ -247,19 +383,8 @@ function prime_render_paper_bag_calculator() {
 			</div>
 		</div>
 
-		<div class="prime-calcrow">
-			<div class="prime-calcbox">
-				<div class="prime-calcbox__k"><?php esc_html_e( 'Bags', 'prime-printing' ); ?></div>
-				<div class="prime-calcbox__v" data-bag-count>—</div>
-			</div>
-			<div class="prime-calcbox prime-calcbox--hi">
-				<div class="prime-calcbox__k"><?php esc_html_e( 'Price', 'prime-printing' ); ?></div>
-				<div class="prime-calcbox__v" data-bag-total><?php esc_html_e( 'Quote on request', 'prime-printing' ); ?></div>
-			</div>
-		</div>
-
 		<p class="prime-calc-note">
-			<?php esc_html_e( 'Full-colour print on the whole sheet, bleed included. Delivery is included in your quote.', 'prime-printing' ); ?>
+			<?php esc_html_e( 'Full-colour print on the whole sheet, bleed included. Final price is recalculated on our server when added to cart.', 'prime-printing' ); ?>
 		</p>
 
 		<?php wp_nonce_field( 'prime_paper_bag', 'prime_paper_bag_nonce' ); ?>
@@ -366,8 +491,15 @@ function prime_capture_paper_bag( $cart_item_data, $product_id ) {
 		'height'     => $in['h'],
 		'depth'      => $in['d'],
 		'quantity'   => max( 1, $in['qty'] ),
+		'mode'       => 'price',
 		'quote_code' => '',
 	);
+
+	// Quote request when asked for, and always above the online limit.
+	$mode = isset( $_POST['bag_mode'] ) ? sanitize_key( wp_unslash( $_POST['bag_mode'] ) ) : 'price';
+	if ( 'quote' === $mode || ! prime_paper_bag_priced_online( $specs['quantity'] ) ) {
+		$specs['mode'] = 'quote';
+	}
 
 	// A quote code prices the run; a wrong one is refused rather than ignored,
 	// so the customer never places a free "quote request" by mistake.
@@ -409,7 +541,7 @@ function prime_apply_paper_bag_price( $cart ) {
 			continue;
 		}
 
-		// The whole run is one cart line (sold_individually): the quoted price, or 0 while a quote is requested.
+		// The whole run is one cart line (sold_individually): the calculated or quoted price, or 0 while a quote is requested.
 		$product->set_price( prime_paper_bag_price( $cart_item['prime_paper_bag_specs'] ) );
 	}
 }
@@ -439,7 +571,9 @@ function prime_paper_bag_rows( array $s ) {
 		),
 		array(
 			'name'  => __( 'Price', 'prime-printing' ),
-			'value' => empty( $s['quote_code'] ) ? __( 'Quote on request', 'prime-printing' ) : sprintf( __( 'Quote code %s', 'prime-printing' ), $s['quote_code'] ),
+			'value' => ! empty( $s['quote_code'] )
+				? sprintf( __( 'Quote code %s', 'prime-printing' ), $s['quote_code'] )
+				: ( prime_bag_specs_is_quote_request( $s ) ? __( 'Quote on request', 'prime-printing' ) : wp_strip_all_tags( wc_price( prime_paper_bag_price( $s ) ) ) ),
 		),
 	);
 }
@@ -482,25 +616,12 @@ function prime_persist_paper_bag_to_order( $item, $cart_item_key, $values ) {
 
 	$specs = $values['prime_paper_bag_specs'];
 	$item->update_meta_data( '_prime_paper_bag_specs_raw', $specs );
-	if ( empty( $specs['quote_code'] ) ) {
-		$item->update_meta_data( PRIME_BAG_QUOTE_ITEM_KEY, 'yes' );
-	} else {
+	if ( ! empty( $specs['quote_code'] ) ) {
 		$item->update_meta_data( '_prime_bag_quote_code', $specs['quote_code'] );
+	} elseif ( prime_bag_specs_is_quote_request( $specs ) ) {
+		$item->update_meta_data( PRIME_BAG_QUOTE_ITEM_KEY, 'yes' );
 	}
 }
-
-/**
- * The button says what will happen: a quote request unless a code is in.
- * The script flips it when a code is applied.
- *
- * @param string     $text    Button text.
- * @param WC_Product $product Product.
- * @return string
- */
-function prime_paper_bag_button_text( $text, $product ) {
-	return $product instanceof WC_Product && prime_is_paper_bag_product_id( $product->get_id() ) ? __( 'Request a quote', 'prime-printing' ) : $text;
-}
-add_filter( 'woocommerce_product_single_add_to_cart_text', 'prime_paper_bag_button_text', 10, 2 );
 add_action( 'woocommerce_checkout_create_order_line_item', 'prime_persist_paper_bag_to_order', 10, 3 );
 
 /**
