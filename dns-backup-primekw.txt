@@ -1,0 +1,44 @@
+# DNS snapshot of primekw.net — 2026-10-05T16:54:10.296236Z — resolver 8.8.8.8 (raw UDP queries; dig is not installed here)
+
+;; primekw.net NS -> NOERROR
+primekw.net	3600	NS	ns45.domaincontrol.com
+primekw.net	3600	NS	ns46.domaincontrol.com
+
+;; primekw.net SOA -> NOERROR
+primekw.net	600	SOA	ns45.domaincontrol.com dns.jomax.net serial=2025112200
+
+;; primekw.net MX -> NOERROR
+primekw.net	3600	MX	5 alt1.aspmx.l.google.com
+primekw.net	3600	MX	5 alt2.aspmx.l.google.com
+primekw.net	3600	MX	10 aspmx2.googlemail.com
+primekw.net	3600	MX	10 aspmx3.googlemail.com
+primekw.net	3600	MX	1 aspmx.l.google.com
+
+;; primekw.net TXT -> NOERROR
+primekw.net	3600	TXT	"v=spf1 include:_spf.google.com ?all"
+primekw.net	3600	TXT	"google-site-verification=08_Bw5P30aKSoUP2UImVidsiUgpUmSxU2QuQjVz3M6g"
+
+;; primekw.net A -> NOERROR
+primekw.net	3600	A	216.239.34.21
+primekw.net	3600	A	216.239.38.21
+primekw.net	3600	A	216.239.36.21
+primekw.net	3600	A	216.239.32.21
+
+;; primekw.net AAAA -> NOERROR
+
+;; www.primekw.net CNAME -> NOERROR
+www.primekw.net	3600	CNAME	ghs.googlehosted.com
+
+;; www.primekw.net A -> NOERROR
+www.primekw.net	3600	CNAME	ghs.googlehosted.com
+ghs.googlehosted.com	300	A	108.177.121.121
+
+;; google._domainkey.primekw.net TXT -> NXDOMAIN
+
+;; _dmarc.primekw.net TXT -> NXDOMAIN
+
+;; mail.primekw.net CNAME -> NOERROR
+mail.primekw.net	3600	CNAME	ghs.googlehosted.com
+
+;; calendar.primekw.net CNAME -> NOERROR
+calendar.primekw.net	3600	CNAME	ghs.googlehosted.com
