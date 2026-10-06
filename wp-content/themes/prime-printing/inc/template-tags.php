@@ -438,7 +438,7 @@ function prime_product_categories( $limit = 8 ) {
 function prime_contact( $key ) {
 	$defaults = array(
 		'phone'     => '+965 0000 0000',
-		'email'     => 'hello@primeprint.com.kw',
+		'email'     => 'hello@primekw.net',
 		'whatsapp'  => '',
 		'instagram' => '',
 		'facebook'  => '',

@@ -1,7 +1,7 @@
 {
   "name": "prime-printing-app",
   "version": "1.0.0",
-  "description": "Prime Printing Co. — native iOS wrapper (Capacitor) around primeprint.com.kw, with native push notifications and artwork upload.",
+  "description": "Prime Printing Co. — native iOS wrapper (Capacitor) around primekw.net, with native push notifications and artwork upload.",
   "private": true,
   "scripts": {
     "sync": "cap sync ios",

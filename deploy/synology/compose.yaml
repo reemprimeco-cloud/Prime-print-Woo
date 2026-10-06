@@ -15,8 +15,8 @@ services:
       # CHANGE: the public HTTPS address Tailscale Funnel gives this service,
       # e.g. https://nas-name.tail1234.ts.net (no slash at the end).
       PUBLIC_BASE_URL: "https://CHANGE-ME.ts.net"
-      ALLOWED_IMAGE_HOSTS: "primeprint.com.kw,www.primeprint.com.kw"
-      ALLOWED_CALLBACK_HOSTS: "primeprint.com.kw,www.primeprint.com.kw"
+      ALLOWED_IMAGE_HOSTS: "primekw.net,www.primekw.net,primeprint.com.kw,www.primeprint.com.kw"
+      ALLOWED_CALLBACK_HOSTS: "primekw.net,www.primekw.net,primeprint.com.kw,www.primeprint.com.kw"
       RENDER_CONCURRENCY: "1"
       RENDER_MAX_QUEUE: "20"
     # Each render can use several hundred MB with a 300 dpi image.

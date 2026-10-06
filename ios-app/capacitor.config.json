@@ -4,9 +4,11 @@
   "webDir": "www",
   "backgroundColor": "#FFFFFF",
   "server": {
-    "url": "https://primeprint.com.kw",
+    "url": "https://primekw.net",
     "androidScheme": "https",
     "allowNavigation": [
+      "primekw.net",
+      "*.primekw.net",
       "primeprint.com.kw",
       "*.primeprint.com.kw"
     ]
