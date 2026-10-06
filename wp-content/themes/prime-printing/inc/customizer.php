@@ -98,7 +98,7 @@ function prime_customize_register( $wp_customize ) {
 		),
 		'email'     => array(
 			'label'    => __( 'Email', 'prime-printing' ),
-			'default'  => 'hello@primekw.net',
+			'default'  => 'reem@primekw.net',
 			'sanitize' => 'sanitize_email',
 		),
 		'whatsapp'  => array(
