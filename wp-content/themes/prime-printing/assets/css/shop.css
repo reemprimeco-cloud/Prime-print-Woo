@@ -178,6 +178,11 @@
   transition: transform var(--dur-slow) var(--ease-image);
 }
 
+.prime-cat__icon img.prime-cat__photo {
+  object-fit: cover;
+  object-position: center;
+}
+
 .prime-cat:hover .prime-cat__icon img,
 .prime-cat:focus-visible .prime-cat__icon img,
 .prime-cat:hover .prime-cat__icon svg,

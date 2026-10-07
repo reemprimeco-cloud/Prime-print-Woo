@@ -17,12 +17,22 @@ if ( ! $prime_term instanceof WP_Term ) {
 
 $prime_thumb_id = (int) get_term_meta( $prime_term->term_id, 'thumbnail_id', true );
 $prime_icon_svg = prime_category_icon_svg( $prime_term->name, $prime_term->term_id );
+
+// A photo dropped in assets/img/categories/<slug>.jpg wins over the icon.
+$prime_photo_rel = 'assets/img/categories/' . $prime_term->slug . '.jpg';
+$prime_photo     = file_exists( get_theme_file_path( $prime_photo_rel ) ) ? get_theme_file_uri( $prime_photo_rel ) : '';
 ?>
 
 <a class="prime-cat" href="<?php echo esc_url( get_term_link( $prime_term ) ); ?>">
 	<span class="prime-cat__icon">
 		<?php
-		if ( $prime_icon_svg ) {
+		if ( $prime_photo ) {
+			printf(
+				'<img class="prime-cat__photo" src="%s" alt="%s" loading="lazy" decoding="async">',
+				esc_url( $prime_photo ),
+				esc_attr( $prime_term->name )
+			);
+		} elseif ( $prime_icon_svg ) {
 			echo $prime_icon_svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from a fixed set of hand-authored SVG templates, no user input.
 		} elseif ( $prime_thumb_id ) {
 			echo wp_get_attachment_image(
