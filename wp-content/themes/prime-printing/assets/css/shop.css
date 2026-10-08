@@ -465,3 +465,26 @@
   body.prime-wide .prime-card__foot { flex-direction: row; align-items: center; }
   body.prime-wide .prime-card__add { inline-size: auto; padding: 9px 14px; font-size: var(--fs-sm); }
 }
+
+/* ---- Hover + press feedback on category and product cards (2026-10) ------ */
+.prime-cat,
+.prime-card { transition: border-color var(--dur), transform var(--dur), box-shadow var(--dur); }
+
+.prime-cat:hover,
+.prime-cat:focus-visible,
+.prime-card:hover,
+.prime-card:focus-within {
+  border-color: var(--navy);
+  box-shadow: 0 14px 30px rgba(16, 37, 74, .18);
+}
+
+.prime-cat:hover .prime-cat__name,
+.prime-cat:focus-visible .prime-cat__name,
+.prime-card:hover .prime-card__title { color: var(--sky-deep, var(--navy)); }
+
+.prime-cat:active,
+.prime-card:active {
+  transform: translateY(-1px) scale(.985);
+  box-shadow: 0 4px 10px rgba(16, 37, 74, .2);
+  border-color: var(--sky);
+}

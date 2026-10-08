@@ -634,3 +634,51 @@ body.woocommerce-page span.onsale {
   background: var(--sky);
   color: var(--navy-deep);
 }
+
+/* ---- Bigger header + clear hover/press states (2026-10) ------------------ */
+.prime-has-hero .prime-nav { padding-block: var(--sp-6); }
+.prime-has-hero .prime-nav.is-solid { padding-block: var(--sp-4); }
+
+.prime-navlinks { gap: 12px; font-weight: 500; }
+
+.prime-navlinks a {
+  display: inline-block;
+  padding: 12px 16px;
+  border-block-end: 0;
+  position: relative;
+  transition: background var(--dur), color var(--dur), transform var(--dur);
+}
+
+.prime-navlinks a::after {
+  content: "";
+  position: absolute;
+  inset-inline: 16px;
+  inset-block-end: 6px;
+  block-size: 2px;
+  background: var(--sky);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--dur);
+}
+
+.prime-navlinks a:hover,
+.prime-navlinks a:focus-visible { background: rgba(124, 165, 196, .22); }
+
+.prime-navlinks a:hover::after,
+.prime-navlinks a:focus-visible::after,
+.prime-navlinks .current-menu-item > a::after,
+.prime-navlinks .current_page_item > a::after,
+.prime-navlinks .current-menu-ancestor > a::after { transform: scaleX(1); }
+
+.prime-navlinks a:active { background: var(--sky); color: var(--navy-deep); transform: scale(.97); }
+
+.prime-langbtn { font-size: var(--fs-nav); padding: 11px 18px; }
+.prime-langbtn:active { transform: scale(.96); }
+
+.prime-cart-link {
+  padding: 12px 16px;
+  transition: background var(--dur), color var(--dur), transform var(--dur);
+}
+.prime-cart-link:hover,
+.prime-cart-link:focus-visible { background: rgba(124, 165, 196, .22); }
+.prime-cart-link:active { background: var(--sky); color: var(--navy-deep); transform: scale(.97); }
