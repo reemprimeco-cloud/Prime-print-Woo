@@ -42,6 +42,158 @@
 			} );
 		}
 
+		/* ---- Live swapping ------------------------------------------------
+		   Every couple of seconds one tile (sometimes two) lets its photo slide
+		   out toward a random side and a different product slides in from
+		   another random side. The old product goes back into the reserve. */
+		var pool = [];
+
+		try {
+			pool = JSON.parse( wall.getAttribute( 'data-prime-pool' ) || '[]' );
+		} catch ( e ) {
+			pool = [];
+		}
+
+		var DIRS = [ [ 1, 0 ], [ -1, 0 ], [ 0, 1 ], [ 0, -1 ] ];
+		var SWAP_MS = 1100;
+		var swapTimer = null;
+
+		var rand = function ( n ) {
+			return Math.floor( Math.random() * n );
+		};
+
+		var current = function ( tile ) {
+			var a = tile.querySelector( 'a' );
+			var img = a.querySelector( 'img' );
+			return {
+				url: a.getAttribute( 'href' ),
+				name: tile.querySelector( '.prime-tile__name' ).textContent.trim(),
+				price: tile.querySelector( '.prime-tile__price' ).innerHTML,
+				img: img.currentSrc || img.src,
+				tall: img.currentSrc || img.src
+			};
+		};
+
+		var swapTile = function ( tile ) {
+			if ( ! pool.length || tile.dataset.swapping ) {
+				return;
+			}
+
+			var oldA = tile.querySelector( 'a' );
+			var oldData = current( tile );
+			var index = rand( pool.length );
+			var next = pool[ index ];
+			var tall = tile.classList.contains( 'prime-tile--tall' );
+			var src = tall && next.tall ? next.tall : next.img;
+
+			if ( ! src ) {
+				return;
+			}
+
+			var newA = oldA.cloneNode( true );
+			var img = newA.querySelector( 'img' );
+			var nameEl = newA.querySelector( '.prime-tile__name' );
+
+			newA.setAttribute( 'href', next.url );
+			img.removeAttribute( 'srcset' );
+			img.removeAttribute( 'sizes' );
+			img.removeAttribute( 'width' );
+			img.removeAttribute( 'height' );
+			img.setAttribute( 'alt', next.name );
+			img.setAttribute( 'loading', 'eager' );
+			nameEl.lastChild.nodeValue = ' ' + next.name + ' ';
+			newA.querySelector( '.prime-tile__price' ).innerHTML = next.price;
+
+			var go = function () {
+				tile.dataset.swapping = '1';
+
+				var inDir = DIRS[ rand( 4 ) ];
+				var outDir = Math.random() < 0.5 ? [ -inDir[ 0 ], -inDir[ 1 ] ] : DIRS[ rand( 4 ) ];
+				var fill = { position: 'absolute', inset: '0', blockSize: '100%', inlineSize: '100%' };
+
+				Object.keys( fill ).forEach( function ( k ) {
+					oldA.style[ k ] = fill[ k ];
+					newA.style[ k ] = fill[ k ];
+				} );
+
+				tile.appendChild( newA );
+
+				var opts = { duration: SWAP_MS, easing: 'cubic-bezier(.22,.8,.2,1)', fill: 'both' };
+
+				oldA.animate(
+					[
+						{ transform: 'translate(0,0)', opacity: 1 },
+						{ transform: 'translate(' + ( outDir[ 0 ] * 100 ) + '%,' + ( outDir[ 1 ] * 100 ) + '%)', opacity: 0.4 }
+					],
+					opts
+				);
+
+				newA.animate(
+					[
+						{ transform: 'translate(' + ( inDir[ 0 ] * 100 ) + '%,' + ( inDir[ 1 ] * 100 ) + '%)', opacity: 0.4 },
+						{ transform: 'translate(0,0)', opacity: 1 }
+					],
+					opts
+				).onfinish = function () {
+					oldA.remove();
+					[ 'position', 'inset', 'blockSize', 'inlineSize' ].forEach( function ( k ) {
+						newA.style[ k ] = '';
+					} );
+					newA.getAnimations().forEach( function ( a ) {
+						a.cancel();
+					} );
+					delete tile.dataset.swapping;
+					pool[ index ] = oldData;
+				};
+			};
+
+			// Decode first so the new photo never slides in blank.
+			img.src = src;
+			if ( typeof img.decode === 'function' ) {
+				img.decode().then( go, go );
+			} else {
+				go();
+			}
+		};
+
+		var swapOnce = function () {
+			var tiles = Array.prototype.filter.call( wall.children, function ( tile ) {
+				return ! tile.dataset.swapping && ! tile.matches( ':hover, :focus-within' ) && tile.classList.contains( 'is-in' ) || ( ! tile.dataset.swapping && ! tile.matches( ':hover, :focus-within' ) && ! wall.classList.contains( 'has-reveal' ) );
+			} );
+
+			if ( tiles.length ) {
+				swapTile( tiles[ rand( tiles.length ) ] );
+			}
+		};
+
+		var startSwaps = function () {
+			if ( swapTimer || ! pool.length || reduceMotion.matches || document.hidden || ! window.Element.prototype.animate ) {
+				return;
+			}
+
+			swapTimer = window.setInterval( function () {
+				swapOnce();
+				if ( Math.random() < 0.35 ) {
+					window.setTimeout( swapOnce, 500 );
+				}
+			}, 2200 );
+		};
+
+		var stopSwaps = function () {
+			window.clearInterval( swapTimer );
+			swapTimer = null;
+		};
+
+		document.addEventListener( 'visibilitychange', function () {
+			if ( document.hidden ) {
+				stopSwaps();
+			} else {
+				startSwaps();
+			}
+		} );
+
+		startSwaps();
+
 		var FADE_MS = 380;
 		var AUTO_MS = 9000;
 		var autoTimer = null;
@@ -106,7 +258,7 @@
 		};
 
 		var startAuto = function () {
-			if ( autoTimer || reduceMotion.matches || document.hidden ) {
+			if ( autoTimer || pool.length || reduceMotion.matches || document.hidden ) {
 				return;
 			}
 
