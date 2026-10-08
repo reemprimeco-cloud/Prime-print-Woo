@@ -32,23 +32,46 @@ foreach ( $prime_products as $prime_index => $prime_product ) {
 	);
 }
 
-shuffle( $prime_tiles );
-
 /*
- * A reserve of products that are not on the wall yet. home.js swaps them into
+ * The reserve: products that are not on the wall yet. home.js swaps them into
  * random tiles, sliding the old photo out and the new one in.
  */
 $prime_wall_count = (int) get_theme_mod( 'prime_wall_count', 12 );
-$prime_pool       = array();
+$prime_reserve    = array();
 
 foreach ( array_slice( prime_wall_products( $prime_wall_count * 2 ), $prime_wall_count ) as $prime_extra ) {
-	$prime_img_id = (int) $prime_extra->get_image_id();
-
-	if ( ! $prime_img_id ) {
-		continue;
+	if ( $prime_extra->get_image_id() ) {
+		$prime_reserve[] = $prime_extra;
 	}
+}
 
-	$prime_price = $prime_extra->get_price_html();
+/*
+ * Fill the last row. A tall or wide tile covers two cells, so the wall's area
+ * is rarely a multiple of the 4 columns and the final row ends with a hole.
+ * Square tiles from the reserve are added until the area divides evenly (4
+ * also divides the 2-column mobile layout).
+ */
+$prime_area = 0;
+
+foreach ( $prime_tiles as $prime_tile ) {
+	$prime_area += $prime_tile['size'] ? 2 : 1;
+}
+
+while ( $prime_reserve && 0 !== $prime_area % 4 ) {
+	$prime_tiles[] = array(
+		'product' => array_shift( $prime_reserve ),
+		'size'    => '',
+	);
+	++$prime_area;
+}
+
+shuffle( $prime_tiles );
+
+$prime_pool = array();
+
+foreach ( $prime_reserve as $prime_extra ) {
+	$prime_img_id = (int) $prime_extra->get_image_id();
+	$prime_price  = $prime_extra->get_price_html();
 
 	$prime_pool[] = array(
 		'url'   => $prime_extra->get_permalink(),
