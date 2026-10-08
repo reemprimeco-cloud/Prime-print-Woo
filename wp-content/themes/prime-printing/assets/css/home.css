@@ -280,6 +280,44 @@
   text-align: center;
 }
 
+/* ---- Wall motion (2026-10) -----------------------------------------------
+ * 1. Reveal: tiles rise and fade in, staggered, as the wall scrolls into view
+ *    (home.js adds .has-reveal, then .is-in per tile).
+ * 2. Drift: each photo slowly pans/zooms on its own rhythm, using the
+ *    standalone `scale`/`translate` properties so the hover zoom (transform)
+ *    still works on top.
+ * 3. Hover: caption lifts, name brightens, price slides in.
+ */
+.prime-wall.has-reveal .prime-tile:not(.is-in) {
+  opacity: 0;
+  transform: translateY(34px) scale(.97);
+}
+
+@keyframes prime-drift-a {
+  from { scale: 1.04; translate: -1.2% 0.8%; }
+  to   { scale: 1.14; translate: 1.2% -0.8%; }
+}
+
+@keyframes prime-drift-b {
+  from { scale: 1.12; translate: 1.2% 0.6%; }
+  to   { scale: 1.04; translate: -1.2% -0.6%; }
+}
+
+.prime-tile img {
+  animation: prime-drift-a 14s ease-in-out infinite alternate;
+  will-change: scale, translate;
+}
+
+.prime-tile:nth-child(even) img { animation-name: prime-drift-b; animation-duration: 17s; }
+.prime-tile:nth-child(3n) img { animation-duration: 20s; animation-delay: -6s; }
+.prime-tile:nth-child(4n) img { animation-duration: 12s; animation-delay: -3s; }
+
+.prime-tile figcaption { transition: padding-block-end var(--dur-slow) var(--ease-out); }
+.prime-tile:hover figcaption,
+.prime-tile:focus-within figcaption { padding-block-end: calc(var(--sp-5) + 8px); }
+.prime-tile:hover { box-shadow: 0 18px 40px rgba(16, 37, 74, .28); }
+.prime-tile:active { transform: scale(.985); }
+
 /* ---- Configurator ------------------------------------------------------- */
 .prime-configurator {
   background: var(--navy-deep);
@@ -503,4 +541,6 @@
 @media (prefers-reduced-motion: reduce) {
   .prime-hero__streams { opacity: .3; }
   .prime-wall.is-shuffling .prime-tile { opacity: 1; transform: none; }
+  .prime-tile img { animation: none; }
+  .prime-wall.has-reveal .prime-tile:not(.is-in) { opacity: 1; transform: none; }
 }

@@ -15,6 +15,33 @@
 	var wall = document.querySelector( '[data-prime-wall]' );
 
 	if ( wall ) {
+		/* Staggered scroll-in reveal. Without IntersectionObserver the tiles
+		   simply stay visible. */
+		if ( 'IntersectionObserver' in window && ! reduceMotion.matches ) {
+			wall.classList.add( 'has-reveal' );
+
+			var revealed = 0;
+			var observer = new IntersectionObserver( function ( entries ) {
+				entries.forEach( function ( entry ) {
+					if ( ! entry.isIntersecting ) {
+						return;
+					}
+
+					var tile = entry.target;
+					observer.unobserve( tile );
+					tile.style.transitionDelay = ( ( revealed++ % 4 ) * 90 ) + 'ms';
+					tile.classList.add( 'is-in' );
+					window.setTimeout( function () {
+						tile.style.transitionDelay = '';
+					}, 1200 );
+				} );
+			}, { threshold: 0.12 } );
+
+			Array.prototype.forEach.call( wall.children, function ( tile ) {
+				observer.observe( tile );
+			} );
+		}
+
 		var FADE_MS = 380;
 		var AUTO_MS = 9000;
 		var autoTimer = null;
