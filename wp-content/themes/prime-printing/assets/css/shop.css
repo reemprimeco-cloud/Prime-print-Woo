@@ -470,17 +470,19 @@
 .prime-cat,
 .prime-card { transition: border-color var(--dur), transform var(--dur), box-shadow var(--dur); }
 
-.prime-cat:hover,
-.prime-cat:focus-visible,
-.prime-card:hover,
-.prime-card:focus-within {
-  border-color: var(--navy);
-  box-shadow: 0 14px 30px rgba(16, 37, 74, .18);
-}
+@media (hover: hover) {
+  .prime-cat:hover,
+  .prime-cat:focus-visible,
+  .prime-card:hover,
+  .prime-card:focus-within {
+    border-color: var(--navy);
+    box-shadow: 0 14px 30px rgba(16, 37, 74, .18);
+  }
 
-.prime-cat:hover .prime-cat__name,
-.prime-cat:focus-visible .prime-cat__name,
-.prime-card:hover .prime-card__title { color: var(--sky-deep, var(--navy)); }
+  .prime-cat:hover .prime-cat__name,
+  .prime-cat:focus-visible .prime-cat__name,
+  .prime-card:hover .prime-card__title { color: var(--sky-deep, var(--navy)); }
+}
 
 .prime-cat:active,
 .prime-card:active {

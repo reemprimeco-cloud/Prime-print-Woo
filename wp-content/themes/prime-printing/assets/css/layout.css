@@ -661,8 +661,10 @@ body.woocommerce-page span.onsale {
   transition: transform var(--dur);
 }
 
-.prime-navlinks a:hover,
-.prime-navlinks a:focus-visible { background: rgba(124, 165, 196, .22); }
+@media (hover: hover) {
+  .prime-navlinks a:hover,
+  .prime-navlinks a:focus-visible { background: rgba(124, 165, 196, .22); }
+}
 
 .prime-navlinks a:hover::after,
 .prime-navlinks a:focus-visible::after,
@@ -679,6 +681,8 @@ body.woocommerce-page span.onsale {
   padding: 12px 16px;
   transition: background var(--dur), color var(--dur), transform var(--dur);
 }
-.prime-cart-link:hover,
-.prime-cart-link:focus-visible { background: rgba(124, 165, 196, .22); }
+@media (hover: hover) {
+  .prime-cart-link:hover,
+  .prime-cart-link:focus-visible { background: rgba(124, 165, 196, .22); }
+}
 .prime-cart-link:active { background: var(--sky); color: var(--navy-deep); transform: scale(.97); }

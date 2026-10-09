@@ -528,7 +528,8 @@ body.prime-app .prime-grid {
 }
 
 body.prime-app .prime-card { border-color: transparent; }
-body.prime-app .prime-card:hover { transform: none; }
+body.prime-app .prime-card:hover { transform: none; box-shadow: none; border-color: transparent; }
+body.prime-app .prime-card:active { transform: scale(.985); box-shadow: none; border-color: transparent; }
 body.prime-app .prime-grid .prime-card__body { padding: 10px 0 0; }
 body.prime-app .prime-grid .prime-card__kicker { display: none; }
 body.prime-app .prime-grid .prime-card__title {
