@@ -16,7 +16,7 @@
   "ios": {
     "contentInset": "always",
     "backgroundColor": "#FFFFFF",
-    "webContentsDebuggingEnabled": true,
+    "webContentsDebuggingEnabled": false,
     "allowsLinkPreview": false,
     "packageManager": "SPM",
     "appendUserAgent": "PrimePrintingApp/1.0"
