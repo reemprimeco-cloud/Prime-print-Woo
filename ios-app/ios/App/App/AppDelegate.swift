@@ -83,7 +83,7 @@ final class LaunchOverlay: UIView {
 
     private let word = UIImageView(image: UIImage(named: "LaunchWord"))
     private let dotView = UIImageView(image: UIImage(named: "LaunchDot"))
-    private let tag = UIImageView(image: UIImage(named: "LaunchTag"))
+    private let tagView = UIImageView(image: UIImage(named: "LaunchTag"))
     private let slogan = UILabel()
     private let wordMask = CALayer()
 
@@ -113,7 +113,7 @@ final class LaunchOverlay: UIView {
         let top = (bounds.height - total) / 2
         let logoFrame = CGRect(x: (bounds.width - logoWidth) / 2, y: top, width: logoWidth, height: logoHeight)
 
-        for view in [word, tag] {
+        for view in [word, tagView] {
             view.frame = logoFrame
             view.contentMode = .scaleAspectFit
             view.autoresizingMask = [.flexibleLeftMargin, .flexibleRightMargin, .flexibleTopMargin, .flexibleBottomMargin]
@@ -147,8 +147,8 @@ final class LaunchOverlay: UIView {
         word.layer.mask = wordMask
         dotView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
         dotView.alpha = 0
-        tag.alpha = 0
-        tag.transform = CGAffineTransform(translationX: 0, y: 8)
+        tagView.alpha = 0
+        tagView.transform = CGAffineTransform(translationX: 0, y: 8)
         slogan.alpha = 0
         slogan.transform = CGAffineTransform(translationX: 0, y: 10)
     }
@@ -162,8 +162,8 @@ final class LaunchOverlay: UIView {
             wordMask.frame.size.width = word.bounds.width
             dotView.transform = .identity
             dotView.alpha = 1
-            tag.alpha = 1
-            tag.transform = .identity
+            tagView.alpha = 1
+            tagView.transform = .identity
             slogan.alpha = 1
             slogan.transform = .identity
         } else {
@@ -200,8 +200,8 @@ final class LaunchOverlay: UIView {
 
         // 3. PRINTING CO. fades up.
         UIView.animate(withDuration: 0.5, delay: 1.05, options: [.curveEaseOut], animations: {
-            self.tag.alpha = 1
-            self.tag.transform = .identity
+            self.tagView.alpha = 1
+            self.tagView.transform = .identity
         })
 
         // 4. The slogan fades up.
