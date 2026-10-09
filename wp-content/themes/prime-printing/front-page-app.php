@@ -84,12 +84,15 @@ $prime_popular   = function_exists( 'prime_wall_products' ) ? prime_wall_product
 			<?php foreach ( $prime_cats as $prime_term ) : ?>
 				<?php
 				$prime_thumb_id = (int) get_term_meta( $prime_term->term_id, 'thumbnail_id', true );
+				$prime_photo    = function_exists( 'prime_category_photo_url' ) ? prime_category_photo_url( $prime_term ) : '';
 				$prime_icon_svg = function_exists( 'prime_category_icon_svg' ) ? prime_category_icon_svg( $prime_term->name, 'app-' . $prime_term->term_id ) : '';
 				?>
 				<a class="prime-app-cat" href="<?php echo esc_url( get_term_link( $prime_term ) ); ?>">
 					<span class="prime-app-cat__icon">
 						<?php
-						if ( $prime_icon_svg ) {
+						if ( $prime_photo ) {
+							printf( '<img class="prime-app-cat__photo" src="%s" alt="" loading="lazy" decoding="async">', esc_url( $prime_photo ) );
+						} elseif ( $prime_icon_svg ) {
 							echo $prime_icon_svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed hand-authored SVG set.
 						} elseif ( $prime_thumb_id ) {
 							echo wp_get_attachment_image( $prime_thumb_id, 'thumbnail', false, array( 'alt' => '', 'loading' => 'lazy' ) );

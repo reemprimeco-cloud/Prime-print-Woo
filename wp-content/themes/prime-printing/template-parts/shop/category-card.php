@@ -19,8 +19,7 @@ $prime_thumb_id = (int) get_term_meta( $prime_term->term_id, 'thumbnail_id', tru
 $prime_icon_svg = prime_category_icon_svg( $prime_term->name, $prime_term->term_id );
 
 // A photo dropped in assets/img/categories/<slug>.jpg wins over the icon.
-$prime_photo_rel = 'assets/img/categories/' . $prime_term->slug . '.jpg';
-$prime_photo     = file_exists( get_theme_file_path( $prime_photo_rel ) ) ? get_theme_file_uri( $prime_photo_rel ) : '';
+$prime_photo = prime_category_photo_url( $prime_term );
 ?>
 
 <a class="prime-cat" href="<?php echo esc_url( get_term_link( $prime_term ) ); ?>">

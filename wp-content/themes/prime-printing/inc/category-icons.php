@@ -226,3 +226,20 @@ function prime_category_icon_svg( $name, $unique_id ) {
 
 	return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">' . $body . '</svg>';
 }
+
+/**
+ * URL of a category's photo (assets/img/categories/<slug>.jpg), or '' when the
+ * theme has none for it. A photo wins over the SVG icon wherever one is shown.
+ *
+ * @param WP_Term $term Product category.
+ * @return string
+ */
+function prime_category_photo_url( $term ) {
+	if ( ! $term instanceof WP_Term ) {
+		return '';
+	}
+
+	$rel = 'assets/img/categories/' . $term->slug . '.jpg';
+
+	return file_exists( get_theme_file_path( $rel ) ) ? get_theme_file_uri( $rel ) : '';
+}
