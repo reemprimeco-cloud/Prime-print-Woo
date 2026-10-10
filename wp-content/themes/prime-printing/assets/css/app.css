@@ -656,3 +656,13 @@ body.prime-app .prime-cart-head { display: none; }
 
 /* ---- Notices: keep clear of the fixed bars --------------------------------- */
 body.prime-app .woocommerce-notices-wrapper:not(:empty) { padding-block-start: var(--sp-3); }
+
+/* ---- The animated wall on the app home ----------------------------------- */
+body.prime-app .prime-wall-section {
+  padding-block: 28px 20px;
+  margin-inline: calc(var(--sp-4, 16px) * -1);
+}
+
+body.prime-app .prime-wall-section .prime-wrap { padding-inline: var(--sp-4, 16px); }
+body.prime-app .prime-wall-section .prime-sechead h2 { font-size: 22px; }
+body.prime-app .prime-wall__more { margin-block-start: var(--sp-6, 20px); }

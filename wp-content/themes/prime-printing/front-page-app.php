@@ -123,6 +123,8 @@ $prime_popular   = function_exists( 'prime_wall_products' ) ? prime_wall_product
 		</div>
 	<?php endif; ?>
 
+	<?php get_template_part( 'template-parts/home/wall' ); ?>
+
 	<?php if ( $prime_has_shop ) : ?>
 		<a class="prime-app-more" href="<?php echo esc_url( $prime_all_url ); ?>"><?php esc_html_e( 'Shop all products', 'prime-printing' ); ?></a>
 	<?php endif; ?>

@@ -57,7 +57,9 @@ foreach ( $prime_tiles as $prime_tile ) {
 	$prime_area += $prime_tile['size'] ? 2 : 1;
 }
 
-while ( $prime_reserve && 0 !== $prime_area % 4 ) {
+// On phones every tile is square and the grid is 2 wide, so the tile count
+// must be even as well.
+while ( $prime_reserve && ( 0 !== $prime_area % 4 || 0 !== count( $prime_tiles ) % 2 ) ) {
 	$prime_tiles[] = array(
 		'product' => array_shift( $prime_reserve ),
 		'size'    => '',
