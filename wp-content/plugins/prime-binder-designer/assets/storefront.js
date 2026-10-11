@@ -240,7 +240,14 @@
 		row.proof.hidden = ! ( ready && row.proof.getAttribute( 'href' ) );
 	}
 
+	// Sticker / transfer / bag designs are optional; only binders must have one.
+	var designOptional = panel.hasAttribute( 'data-design-optional' );
+
 	function allReady() {
+		if ( designOptional ) {
+			return true;
+		}
+
 		return Object.keys( rows ).every( function ( t ) {
 			return !! rows[ t ].input.value;
 		} );
@@ -262,7 +269,7 @@
 		}
 
 		if ( hint ) {
-			hint.hidden = ready;
+			hint.hidden = ready || designOptional;
 		}
 	}
 

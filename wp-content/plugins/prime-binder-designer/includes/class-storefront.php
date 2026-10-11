@@ -21,6 +21,7 @@ class Binder_Storefront {
 	const FIELD_BINDING = 'binder_binding';
 	const ITEM_KEY      = 'binder_designs';
 	const ITEM_BINDING  = 'binder_binding';
+	const ITEM_NO_DESIGN = 'binder_no_design';
 
 	public static function init() {
 		// After the theme's price calculators (priority 5): size and quantity first, then the design.
@@ -52,6 +53,9 @@ class Binder_Storefront {
 		$strings = array(
 			'heading'     => array( 'Your design', 'تصميمك' ),
 			'lead'        => array( 'Add your design before ordering. We prepare the print file for you automatically.', 'أضف تصميمك قبل الطلب. نجهّز ملف الطباعة تلقائياً.' ),
+			'lead_optional' => array( 'Optional: add your design now, or order first and send it to us afterwards.', 'اختياري: أضف تصميمك الآن، أو اطلب أولاً وأرسله لنا لاحقاً.' ),
+			'no_design_note' => array( 'Not attached, to be sent after ordering', 'غير مرفق، يُرسل بعد الطلب' ),
+			'design_label' => array( 'Design', 'التصميم' ),
 			'binder_outer' => array( 'Outer cover', 'الغلاف الخارجي' ),
 			'binder_inner' => array( 'Inner cover', 'الغلاف الداخلي' ),
 			'sticker'     => array( 'Sticker', 'الملصق' ),
@@ -210,9 +214,9 @@ class Binder_Storefront {
 			);
 		}
 		?>
-		<div class="binder-panel" data-binder-panel data-binder="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
+		<div class="binder-panel" data-binder-panel<?php echo $is_binder ? '' : ' data-design-optional="1"'; ?> data-binder="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
 			<h3 class="binder-panel__title"><?php echo esc_html( self::copy( 'heading' ) ); ?></h3>
-			<p class="binder-panel__lead"><?php echo esc_html( self::copy( 'lead' ) ); ?></p>
+			<p class="binder-panel__lead"><?php echo esc_html( self::copy( $is_binder ? 'lead' : 'lead_optional' ) ); ?></p>
 
 			<?php if ( $is_binder ) : ?>
 				<fieldset class="binder-binding" data-binder-binding>
@@ -359,6 +363,12 @@ class Binder_Storefront {
 		foreach ( $required as $template ) {
 			$id = isset( $designs[ $template ] ) ? $designs[ $template ] : 0;
 
+			// A sticker, transfer or bag design is optional: the order can be placed
+			// first and the artwork sent afterwards. Binders still need theirs.
+			if ( ! $id && Binder_Templates::is_parametric( $template ) ) {
+				continue;
+			}
+
 			if ( ! $id ) {
 				wc_add_notice( sprintf( self::copy( 'missing' ), self::cover_name( $template ) ), 'error' );
 				return false;
@@ -412,6 +422,11 @@ class Binder_Storefront {
 			}
 		}
 
+		if ( ! $keep && array_filter( $required, array( 'Binder_Templates', 'is_parametric' ) ) ) {
+			// Ordered without artwork: flag the line so staff chase the file.
+			$data[ self::ITEM_NO_DESIGN ] = 1;
+		}
+
 		if ( $keep ) {
 			$data[ self::ITEM_KEY ] = $keep;
 			if ( ! array_filter( $required, array( 'Binder_Templates', 'is_parametric' ) ) ) {
@@ -423,6 +438,15 @@ class Binder_Storefront {
 	}
 
 	public static function show_item_data( $item_data, $cart_item ) {
+		if ( ! empty( $cart_item[ self::ITEM_NO_DESIGN ] ) ) {
+			$item_data[] = array(
+				'key'   => self::copy( 'design_label' ),
+				'value' => self::copy( 'no_design_note' ),
+			);
+
+			return $item_data;
+		}
+
 		if ( empty( $cart_item[ self::ITEM_KEY ] ) || ! is_array( $cart_item[ self::ITEM_KEY ] ) ) {
 			return $item_data;
 		}
