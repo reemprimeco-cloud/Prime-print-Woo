@@ -104,7 +104,7 @@
      x-height carries 15px body text well. Hierarchy between steps is kept. */
   --fs-xs: 11px;
   --fs-sm: 12px;
-  --fs-nav: 16px;
+  --fs-nav: 17px;
   --fs-body-sm: 14px;
   --fs-body: 15px;
   --fs-body-lg: 16px;
@@ -136,11 +136,11 @@
      الشعار يكون واضح للزائر") — the lockup was reading as small against the
      wide nav. Every header measurement flows from these, so the sticky-shop
      offset in shop.css follows automatically. */
-  --nav-h: 110px;
+  --nav-h: 124px;
   --topbar-h: 42px;
 
   /* Logo lockup height. The asset is 720x315 (ratio 2.29), so width follows. */
-  --logo-h: 44px;
+  --logo-h: 52px;
   --logo-h-lg: 56px;
 
   /* ---- The signature mark ----------------------------------------------- */
@@ -184,7 +184,7 @@
 :lang(ar) {
   --fs-xs: 12px;
   --fs-sm: 13px;
-  --fs-nav: 14px;
+  --fs-nav: 15px;
   --fs-body-sm: 15px;
   --fs-body: 16px;
   --fs-body-lg: 17px;
@@ -202,8 +202,8 @@
     /* A 92px bar plus the 42px top strip eats a third of a phone screen, so
        the header steps back down here — still larger than it was, without
        pushing the product itself below the fold. */
-    --nav-h: 76px;
+    --nav-h: 84px;
     --topbar-h: 38px;
-    --logo-h: 38px;
+    --logo-h: 42px;
   }
 }

@@ -144,7 +144,7 @@ A navy and sky-blue palette on white and mist, with three status colours reserve
 - **Headline** (300, clamp(28px, 3.6vw, 42px), 1.12): section titles; page titles use clamp(34px, 5vw, 56px).
 - **Title** (300, 17px, 1.25, uppercase, 0.1em tracking): product names on tiles and cards.
 - **Body** (300, 15px, 1.65): descriptions and forms, 16px in Arabic.
-- **Label** (400, 12px, 0.2em tracking, uppercase): eyebrows, field labels, buttons (buttons and nav at 16px, 0.14 to 0.16em).
+- **Label** (400, 12px, 0.2em tracking, uppercase): eyebrows, field labels, buttons (buttons and nav at 17px, 0.14 to 0.16em).
 
 ### Named Rules
 **The No Tracking In Arabic Rule.** Every letter-spacing token collapses to 0 under `:lang(ar)`, and text sizes step up about 15%.
@@ -152,7 +152,7 @@ A navy and sky-blue palette on white and mist, with three status colours reserve
 
 ## Layout
 
-Content sits in a 1440px wrapper with 28px side padding (16px on phones). Spacing follows a 4, 8, 12, 16, 20, 24, 28, 34, 42, 56, 74, 96px scale; sections breathe at 96px on desktop. Grids are four columns on desktop, two on tablet and phone; the homepage wall uses dense packing with one tall and two wide tiles, collapsing to all-square tiles on phones. The header is 110px on desktop and 76px on phones, sticky and white, or transparent over the hero until scrolled. In app mode the website header gives way to a topbar and bottom tab bar, and the home becomes a banner, a category strip and product grids.
+Content sits in a 1440px wrapper with 28px side padding (16px on phones). Spacing follows a 4, 8, 12, 16, 20, 24, 28, 34, 42, 56, 74, 96px scale; sections breathe at 96px on desktop. Grids are four columns on desktop, two on tablet and phone; the homepage wall uses dense packing with one tall and two wide tiles, collapsing to all-square tiles on phones. The header is 124px on desktop and 84px on phones, sticky and white, or transparent over the hero until scrolled. In app mode the website header gives way to a topbar and bottom tab bar, and the home becomes a banner, a category strip and product grids.
 
 ## Elevation & Depth
 
@@ -174,7 +174,7 @@ Square. Cards, buttons, inputs, tiles and badges all use zero radius and 1px hai
 ## Components
 
 ### Buttons
-- **Shape:** square (0 radius), 1px border, 15px 32px padding, uppercase Montserrat 300 at 16px with 0.16em tracking.
+- **Shape:** square (0 radius), 1px border, 15px 32px padding, uppercase Montserrat 300 at 17px with 0.16em tracking.
 - **Primary (navy):** navy fill, white text; hover turns sky with deep-navy text and lifts 2px.
 - **Default (white):** white fill used on navy surfaces; same hover.
 - **Ghost:** transparent with a 42% white border on navy.
@@ -191,7 +191,7 @@ Square. Cards, buttons, inputs, tiles and badges all use zero radius and 1px hai
 - **Focus:** 2px sky outline pulled in 1px; keyboard focus uses the same 2px sky outline with a 2px offset.
 
 ### Navigation
-- **Website:** uppercase 16px links at 0.14em tracking with 12px 16px hit areas; hover gives a sky wash and a growing sky underline, press fills sky. The language switch is an outlined button, the cart a text link.
+- **Website:** uppercase 17px links at 0.14em tracking with 12px 16px hit areas; hover gives a sky wash and a growing sky underline, press fills sky. The language switch is an outlined button, the cart a text link.
 - **App:** a bottom tab bar (Home, Shop, Cart, Account) and a topbar with logo and search; category circles are 64px medallions with the category photo.
 
 ### Homepage Wall (signature component)
