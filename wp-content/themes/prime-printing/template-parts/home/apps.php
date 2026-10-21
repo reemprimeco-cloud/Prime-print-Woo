@@ -40,6 +40,15 @@ $prime_copy = array(
 		<ul class="prime-apps__list">
 			<?php foreach ( prime_apps() as $prime_app ) : ?>
 				<li class="prime-apps__item">
+					<img
+						class="prime-apps__icon"
+						src="<?php echo esc_url( get_theme_file_uri( 'assets/img/app-icon-' . $prime_app['key'] . '.jpg' ) ); ?>"
+						alt=""
+						width="80"
+						height="80"
+						loading="lazy"
+						decoding="async"
+					>
 					<span class="prime-apps__name">
 						<?php prime_mark(); ?>
 						<?php echo esc_html( $prime_app['name'] ); ?>

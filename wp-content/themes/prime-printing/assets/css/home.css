@@ -644,12 +644,29 @@ html[data-motion="paused"] .prime-clients__row { animation-play-state: paused; }
 }
 
 .prime-apps__item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--sp-2);
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  grid-template-areas:
+    "icon name"
+    "icon line"
+    "icon badge";
+  align-content: start;
+  column-gap: var(--sp-4);
+  row-gap: var(--sp-1);
   padding: var(--sp-5);
 }
+
+.prime-apps__icon {
+  grid-area: icon;
+  inline-size: 80px;
+  block-size: 80px;
+  object-fit: cover;
+  border: 1px solid var(--on-navy-line);
+}
+
+.prime-apps__name { grid-area: name; }
+.prime-apps__line { grid-area: line; }
+.prime-apps__badge { grid-area: badge; justify-self: start; }
 
 .prime-apps__item + .prime-apps__item { border-inline-start: 1px solid var(--on-navy-line); }
 
