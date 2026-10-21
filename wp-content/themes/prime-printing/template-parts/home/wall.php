@@ -98,14 +98,28 @@ $prime_shop_id = prime_has_woocommerce() ? wc_get_page_id( 'shop' ) : 0;
 				<h2><?php esc_html_e( 'Everything we make, all at once', 'prime-printing' ); ?></h2>
 			</div>
 
-			<button
-				class="prime-btn prime-btn--outline prime-shuffle"
-				type="button"
-				data-prime-shuffle
-			>
-				<?php prime_mark(); ?>
-				<span><?php esc_html_e( 'Shuffle', 'prime-printing' ); ?></span>
-			</button>
+			<div class="prime-sechead__tools">
+				<button
+					class="prime-btn prime-btn--outline prime-motion"
+					type="button"
+					aria-pressed="false"
+					data-prime-motion
+					data-label-pause="<?php echo esc_attr( is_rtl() ? 'إيقاف الحركة' : 'Pause motion' ); ?>"
+					data-label-play="<?php echo esc_attr( is_rtl() ? 'تشغيل الحركة' : 'Play motion' ); ?>"
+				>
+					<?php prime_mark(); ?>
+					<span data-prime-motion-label><?php echo esc_html( is_rtl() ? 'إيقاف الحركة' : 'Pause motion' ); ?></span>
+				</button>
+
+				<button
+					class="prime-btn prime-btn--outline prime-shuffle"
+					type="button"
+					data-prime-shuffle
+				>
+					<?php prime_mark(); ?>
+					<span><?php esc_html_e( 'Shuffle', 'prime-printing' ); ?></span>
+				</button>
+			</div>
 		</div>
 
 		<?php

@@ -30,10 +30,15 @@
      both read as --ink-mid; a 0.02–0.07 alpha gap is not visible). */
   --line-strong: rgba(16, 37, 74, .22);
   --ink: var(--navy-deep);
-  --ink-faint: rgba(8, 19, 42, .45);
-  --ink-softer: rgba(8, 19, 42, .5);
-  --ink-soft: rgba(8, 19, 42, .55);
+  /* Secondary ink. All four steps sit at .6 (4.8:1 on white, 4.7:1 on mist):
+     the .45/.5/.55 steps were 3.0 to 4.1:1 and failed WCAG AA for body text
+     (critique 2026-10-21). The names stay so call sites do not change. */
+  --ink-faint: rgba(8, 19, 42, .6);
+  --ink-softer: rgba(8, 19, 42, .6);
+  --ink-soft: rgba(8, 19, 42, .6);
   --ink-mid: rgba(8, 19, 42, .6);
+  /* Sky as TEXT on light surfaces: --sky is 2.6:1 on white, this is 5.3:1. */
+  --sky-ink: #3F6F96;
   --sky-wash: rgba(124, 165, 196, .12);
 
   /* On navy surfaces (hero, menu, footer, page head) */

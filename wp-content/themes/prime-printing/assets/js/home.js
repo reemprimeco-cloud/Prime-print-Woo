@@ -56,6 +56,8 @@
 
 		var DIRS = [ [ 1, 0 ], [ -1, 0 ], [ 0, 1 ], [ 0, -1 ] ];
 		var SWAP_MS = 1100;
+		var SWAP_EVERY_MS = 4500;
+		var TOUCH_GRACE_MS = 8000;
 		var swapTimer = null;
 
 		var rand = function ( n ) {
@@ -158,7 +160,10 @@
 
 		var swapOnce = function () {
 			var tiles = Array.prototype.filter.call( wall.children, function ( tile ) {
-				return ! tile.dataset.swapping && ! tile.matches( ':hover, :focus-within' ) && tile.classList.contains( 'is-in' ) || ( ! tile.dataset.swapping && ! tile.matches( ':hover, :focus-within' ) && ! wall.classList.contains( 'has-reveal' ) );
+				var revealed = tile.classList.contains( 'is-in' ) || ! wall.classList.contains( 'has-reveal' );
+				var touched = Date.now() - ( parseInt( tile.dataset.touched, 10 ) || 0 ) < TOUCH_GRACE_MS;
+
+				return revealed && ! touched && ! tile.dataset.swapping && ! tile.matches( ':hover, :focus-within' );
 			} );
 
 			if ( tiles.length ) {
@@ -166,17 +171,23 @@
 			}
 		};
 
+		// A visitor can stop all motion on the page (WCAG 2.2.2). The choice is
+		// remembered when storage is available.
+		var MOTION_KEY = 'primeMotion';
+		var motionPaused = false;
+
+		try {
+			motionPaused = 'paused' === window.localStorage.getItem( MOTION_KEY );
+		} catch ( e ) {
+			motionPaused = false;
+		}
+
 		var startSwaps = function () {
-			if ( swapTimer || ! pool.length || reduceMotion.matches || document.hidden || ! window.Element.prototype.animate ) {
+			if ( swapTimer || motionPaused || ! pool.length || reduceMotion.matches || document.hidden || ! window.Element.prototype.animate ) {
 				return;
 			}
 
-			swapTimer = window.setInterval( function () {
-				swapOnce();
-				if ( Math.random() < 0.35 ) {
-					window.setTimeout( swapOnce, 500 );
-				}
-			}, 2200 );
+			swapTimer = window.setInterval( swapOnce, SWAP_EVERY_MS );
 		};
 
 		var stopSwaps = function () {
@@ -192,7 +203,53 @@
 			}
 		} );
 
-		startSwaps();
+		// A tile someone just touched keeps its link for a while, so a swap can
+		// never change the destination under a tapping thumb.
+		wall.addEventListener( 'pointerdown', function ( event ) {
+			var tile = event.target.closest ? event.target.closest( '.prime-tile' ) : null;
+
+			if ( tile ) {
+				tile.dataset.touched = String( Date.now() );
+			}
+		} );
+
+		var motionBtn = document.querySelector( '[data-prime-motion]' );
+
+		var applyMotion = function () {
+			document.documentElement.setAttribute( 'data-motion', motionPaused ? 'paused' : 'on' );
+
+			if ( motionBtn ) {
+				var label = motionBtn.querySelector( '[data-prime-motion-label]' );
+
+				motionBtn.setAttribute( 'aria-pressed', motionPaused ? 'true' : 'false' );
+
+				if ( label ) {
+					label.textContent = motionBtn.getAttribute( motionPaused ? 'data-label-play' : 'data-label-pause' );
+				}
+			}
+
+			if ( motionPaused ) {
+				stopSwaps();
+			} else {
+				startSwaps();
+			}
+		};
+
+		if ( motionBtn ) {
+			motionBtn.addEventListener( 'click', function () {
+				motionPaused = ! motionPaused;
+
+				try {
+					window.localStorage.setItem( MOTION_KEY, motionPaused ? 'paused' : 'on' );
+				} catch ( e ) {
+					// Storage blocked: the choice just lasts for this page view.
+				}
+
+				applyMotion();
+			} );
+		}
+
+		applyMotion();
 
 		var FADE_MS = 380;
 		var AUTO_MS = 9000;

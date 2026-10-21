@@ -204,24 +204,33 @@
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-  opacity: .8;
+  opacity: .92;
   transition: transform .8s var(--ease-image), opacity var(--dur-slow);
 }
 
-.prime-tile:hover img,
 .prime-tile:focus-within img {
   transform: scale(1.07);
   opacity: 1;
 }
 
+@media (hover: hover) {
+  .prime-tile:hover img {
+    transform: scale(1.07);
+    opacity: 1;
+  }
+}
+
 .prime-tile figcaption {
   position: absolute;
   inset: auto 0 0 0;
-  padding: var(--sp-5);
+  padding: var(--sp-8) var(--sp-5) var(--sp-5);
+  /* The scrim stays at least 60% navy through the whole text zone (name and
+     price), which keeps white text above 4.5:1 even on a white photo. */
   background: linear-gradient(
     to top,
     rgba(8, 19, 42, .94),
-    rgba(8, 19, 42, .2) 70%,
+    rgba(8, 19, 42, .8) 55%,
+    rgba(8, 19, 42, .6) 80%,
     transparent
   );
   color: var(--on-navy);
@@ -253,15 +262,6 @@
   color: var(--sky);
   letter-spacing: .08em;
   margin-block-start: 5px;
-  opacity: 0;
-  transform: translateY(6px);
-  transition: .35s;
-}
-
-.prime-tile:hover .prime-tile__price,
-.prime-tile:focus-within .prime-tile__price {
-  opacity: 1;
-  transform: none;
 }
 
 /* WooCommerce wraps price ranges in its own markup; keep it on-brand. */
@@ -293,30 +293,33 @@
   transform: translateY(34px) scale(.97);
 }
 
-@keyframes prime-drift-a {
-  from { scale: 1.04; translate: -1.2% 0.8%; }
-  to   { scale: 1.14; translate: 1.2% -0.8%; }
-}
-
-@keyframes prime-drift-b {
-  from { scale: 1.12; translate: 1.2% 0.6%; }
-  to   { scale: 1.04; translate: -1.2% -0.6%; }
-}
-
-.prime-tile img {
-  animation: prime-drift-a 14s ease-in-out infinite alternate;
-  will-change: scale, translate;
-}
-
-.prime-tile:nth-child(even) img { animation-name: prime-drift-b; animation-duration: 17s; }
-.prime-tile:nth-child(3n) img { animation-duration: 20s; animation-delay: -6s; }
-.prime-tile:nth-child(4n) img { animation-duration: 12s; animation-delay: -3s; }
-
 .prime-tile figcaption { transition: padding-block-end var(--dur-slow) var(--ease-out); }
-.prime-tile:hover figcaption,
 .prime-tile:focus-within figcaption { padding-block-end: calc(var(--sp-5) + 8px); }
-.prime-tile:hover { box-shadow: 0 18px 40px rgba(16, 37, 74, .28); }
 .prime-tile:active { transform: scale(.985); }
+
+@media (hover: hover) {
+  .prime-tile:hover figcaption { padding-block-end: calc(var(--sp-5) + 8px); }
+  .prime-tile:hover { box-shadow: 0 18px 40px rgba(16, 37, 74, .28); }
+}
+
+/* Sky text on a light surface needs the darker ink. */
+.prime-wall-section .prime-label { color: var(--sky-ink); }
+
+.prime-sechead__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+/* Pause motion (WCAG 2.2.2): one switch stops every moving layer on the page. */
+html[data-motion="paused"] .prime-hero__col--a,
+html[data-motion="paused"] .prime-hero__col--b,
+html[data-motion="paused"] .prime-hero__col--c,
+html[data-motion="paused"] .prime-hero__col--d,
+html[data-motion="paused"] .prime-ticker__row,
+html[data-motion="paused"] .prime-clients__row { animation-play-state: paused; }
+
+.prime-motion[aria-pressed="true"] { background: var(--navy); color: var(--paper); border-color: var(--navy); }
 
 /* ---- Configurator ------------------------------------------------------- */
 .prime-configurator {
@@ -502,12 +505,6 @@
     aspect-ratio: 1 / 1;
   }
 
-  /* Hover cannot reveal the price on touch, so it is always visible. */
-  .prime-tile__price {
-    opacity: 1;
-    transform: none;
-  }
-
   .prime-tile figcaption { padding: var(--sp-3); }
 
   .prime-tile__name {
@@ -541,6 +538,5 @@
 @media (prefers-reduced-motion: reduce) {
   .prime-hero__streams { opacity: .3; }
   .prime-wall.is-shuffling .prime-tile { opacity: 1; transform: none; }
-  .prime-tile img { animation: none; }
   .prime-wall.has-reveal .prime-tile:not(.is-in) { opacity: 1; transform: none; }
 }
