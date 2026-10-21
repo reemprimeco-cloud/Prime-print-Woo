@@ -253,6 +253,11 @@ function prime_current_page_styles() {
 
 	if ( is_front_page() ) {
 		$handles[] = 'prime-home';
+
+		// The category row under the hero reuses the shop's category cards.
+		if ( prime_has_woocommerce() ) {
+			$handles[] = 'prime-shop';
+		}
 	}
 
 	if ( ! prime_has_woocommerce() ) {

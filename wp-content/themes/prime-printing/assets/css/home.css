@@ -562,3 +562,65 @@ html[data-motion="paused"] .prime-clients__row { animation-play-state: paused; }
 /* Arabic: no tracking on display lines either (tokens collapse to 0, this one
    was a literal). */
 :lang(ar) .prime-hero h1 { letter-spacing: 0; }
+
+/* ---- Proof strip and category row (2026-10) ------------------------------- */
+.prime-proof {
+  background: var(--mist);
+  border-block-end: 1px solid var(--line);
+}
+
+.prime-proof__list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+  padding: 0;
+}
+
+.prime-proof__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--sp-3);
+  align-items: start;
+  padding: var(--sp-6) var(--sp-6);
+}
+
+.prime-proof__item + .prime-proof__item { border-inline-start: 1px solid var(--line); }
+
+.prime-proof__item .prime-mark { margin-block-start: .5em; }
+
+.prime-proof__title {
+  font-size: var(--fs-body-lg);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--navy);
+}
+
+.prime-proof__line {
+  grid-column: 2;
+  margin-block-start: var(--sp-1);
+  font-size: var(--fs-body-sm);
+  color: var(--ink-mid);
+}
+
+.prime-home-cats { padding-block: var(--sp-10) var(--sp-4); }
+
+.prime-cats--home {
+  grid-template-columns: repeat(3, 1fr);
+  padding-block-end: 0;
+}
+
+@media (min-width: 1200px) {
+  .prime-cats--home { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .prime-proof__list { grid-template-columns: 1fr; }
+  .prime-proof__item { padding: var(--sp-4) 0; }
+  .prime-proof__item + .prime-proof__item { border-inline-start: 0; border-block-start: 1px solid var(--line); }
+}
+
+@media (max-width: 560px) {
+  .prime-home-cats { padding-block: var(--sp-8) var(--sp-2); }
+  .prime-cats--home { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+}

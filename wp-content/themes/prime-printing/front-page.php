@@ -2,8 +2,8 @@
 /**
  * The homepage.
  *
- * Section order follows prime-printing-theme-motion.html: hero, service ticker,
- * shuffling product wall, client marquee. Each part renders nothing when it has
+ * Section order follows prime-printing-theme-motion.html: hero, proof strip and
+ * category row, service ticker, shuffling product wall, client marquee. Each part renders nothing when it has
  * no content, so a half-populated install degrades section by section instead
  * of showing empty frames.
  *
@@ -27,6 +27,7 @@ get_template_part( 'template-parts/home/hero' );
 
 <main id="prime-content" class="prime-main prime-main--home">
 	<?php
+	get_template_part( 'template-parts/home/proof' );
 	get_template_part( 'template-parts/home/ticker' );
 	get_template_part( 'template-parts/home/wall' );
 	get_template_part( 'template-parts/home/clients' );

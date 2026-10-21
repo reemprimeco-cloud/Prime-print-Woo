@@ -97,7 +97,7 @@ $prime_per_col = 5;
 			<?php endif; ?>
 
 			<?php if ( $prime_config ) : ?>
-				<a class="prime-btn prime-btn--ghost" href="#prime-configurator">
+				<a class="prime-btn prime-btn--ghost" href="<?php echo esc_url( $prime_config->get_permalink() ); ?>">
 					<?php esc_html_e( 'Price my sticker', 'prime-printing' ); ?>
 				</a>
 			<?php endif; ?>
