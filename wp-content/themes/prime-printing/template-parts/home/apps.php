@@ -26,7 +26,6 @@ $prime_copy = array(
 	),
 );
 
-$prime_cta = $prime_rtl ? 'حمّل من App Store' : 'Download on the App Store';
 ?>
 
 <section class="prime-apps" aria-labelledby="prime-apps-title">
@@ -46,9 +45,15 @@ $prime_cta = $prime_rtl ? 'حمّل من App Store' : 'Download on the App Store
 						<?php echo esc_html( $prime_app['name'] ); ?>
 					</span>
 					<span class="prime-apps__line"><?php echo esc_html( $prime_copy[ $prime_app['key'] ][0] ); ?></span>
-					<a class="prime-btn prime-btn--ghost prime-apps__btn" href="<?php echo esc_url( $prime_app['url'] ); ?>" rel="noopener">
-						<?php echo esc_html( $prime_cta ); ?>
-						<span class="screen-reader-text"> — <?php echo esc_html( $prime_app['name'] ); ?></span>
+					<a class="prime-apps__badge" href="<?php echo esc_url( $prime_app['url'] ); ?>" rel="noopener">
+						<img
+							src="<?php echo esc_url( get_theme_file_uri( 'assets/img/app-store-badge.png' ) ); ?>"
+							alt="<?php echo esc_attr( ( $prime_rtl ? 'حمّل ' : 'Download ' ) . $prime_app['name'] . ( $prime_rtl ? ' من App Store' : ' on the App Store' ) ); ?>"
+							width="480"
+							height="142"
+							loading="lazy"
+							decoding="async"
+						>
 					</a>
 				</li>
 			<?php endforeach; ?>

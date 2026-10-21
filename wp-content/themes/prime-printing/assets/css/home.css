@@ -667,11 +667,22 @@ html[data-motion="paused"] .prime-clients__row { animation-play-state: paused; }
   font-size: var(--fs-body-sm);
 }
 
-.prime-apps__btn {
+.prime-apps__badge {
+  display: block;
   margin-block-start: var(--sp-2);
-  padding: 12px 18px;
-  min-block-size: 44px;
-  font-size: var(--fs-body-sm);
+  transition: transform var(--dur), opacity var(--dur);
+}
+
+.prime-apps__badge img {
+  display: block;
+  inline-size: 168px;
+  block-size: auto;
+}
+
+.prime-apps__badge:active { transform: scale(.97); }
+
+@media (hover: hover) {
+  .prime-apps__badge:hover { transform: translateY(-2px); }
 }
 
 .prime-apps__note {
@@ -688,5 +699,4 @@ html[data-motion="paused"] .prime-clients__row { animation-play-state: paused; }
 @media (max-width: 560px) {
   .prime-apps__list { grid-template-columns: 1fr; }
   .prime-apps__item + .prime-apps__item { border-inline-start: 0; border-block-start: 1px solid var(--on-navy-line); }
-  .prime-apps__btn { inline-size: 100%; justify-content: center; }
 }
