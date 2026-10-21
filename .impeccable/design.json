@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-21T07:21:32.993958Z",
+  "title": "Design System: Prime Printing Co.",
+  "extensions": {
+    "colorMeta": {
+      "navy": {
+        "role": "primary",
+        "displayName": "Press Navy",
+        "canonical": "#10254A",
+        "tonalRamp": [
+          "#030a16",
+          "#08132A",
+          "#10254A",
+          "#2a4170",
+          "#4b6495",
+          "#7a8fb5",
+          "#aebad2",
+          "#dde3ee"
+        ]
+      },
+      "navy-deep": {
+        "role": "primary",
+        "displayName": "Deep Press Navy",
+        "canonical": "#08132A",
+        "tonalRamp": [
+          "#010306",
+          "#040a15",
+          "#08132A",
+          "#10254A",
+          "#33507c",
+          "#6c80a3",
+          "#a9b5c9",
+          "#dbe0ea"
+        ]
+      },
+      "sky": {
+        "role": "secondary",
+        "displayName": "Proof Sky",
+        "canonical": "#7CA5C4",
+        "tonalRamp": [
+          "#1f2f3b",
+          "#34505f",
+          "#4c7088",
+          "#628caa",
+          "#7CA5C4",
+          "#9dbbd2",
+          "#bdd1e0",
+          "#e0eaf1"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#FFFFFF"
+        ]
+      },
+      "mist": {
+        "role": "neutral",
+        "displayName": "Cool Mist",
+        "canonical": "#F4F7F9",
+        "tonalRamp": [
+          "#F4F7F9"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero statements only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Product names on tiles and cards."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Descriptions and forms."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Eyebrows, field labels, buttons."
+      },
+      "arabic": {
+        "displayName": "Arabic",
+        "purpose": "Applied under :lang(ar) with zero tracking."
+      }
+    },
+    "shadows": [
+      {
+        "name": "lift",
+        "value": "0 14px 30px rgba(16, 37, 74, .18)",
+        "purpose": "Card hover on pointer devices."
+      },
+      {
+        "name": "press",
+        "value": "0 4px 10px rgba(16, 37, 74, .2)",
+        "purpose": "Active state on cards and nav."
+      },
+      {
+        "name": "tile-hover",
+        "value": "0 18px 40px rgba(16, 37, 74, .28)",
+        "purpose": "Homepage wall tile hover."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.2, .7, .2, 1)",
+        "purpose": "Default state transitions and tile reveals."
+      },
+      {
+        "name": "ease-image",
+        "value": "cubic-bezier(.2, .6, .2, 1)",
+        "purpose": "Image zoom on hover."
+      },
+      {
+        "name": "dur",
+        "value": ".3s",
+        "purpose": "Standard transition; .25s fast, .4s slow, .7s image."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "tablet",
+        "value": "900px"
+      },
+      {
+        "name": "phone",
+        "value": "560px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default call to action on light surfaces.",
+      "html": "<button class=\"ds-btn\">Add to cart</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;gap:11px;padding:15px 32px;font-family:Montserrat,sans-serif;font-size:16px;font-weight:300;letter-spacing:.16em;text-transform:uppercase;background:#10254A;color:#fff;border:1px solid #10254A;border-radius:0;cursor:pointer;transition:.3s}.ds-btn:hover{background:#7CA5C4;border-color:#7CA5C4;color:#08132A;transform:translateY(-2px)}.ds-btn:focus-visible{outline:2px solid #7CA5C4;outline-offset:2px}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action on light surfaces.",
+      "html": "<button class=\"ds-btn-outline\">Shuffle</button>",
+      "css": ".ds-btn-outline{padding:12px 20px;font-family:Montserrat,sans-serif;font-size:16px;font-weight:300;letter-spacing:.16em;text-transform:uppercase;background:none;color:#10254A;border:1px solid rgba(16,37,74,.12);border-radius:0;cursor:pointer;transition:.3s}.ds-btn-outline:hover{background:#10254A;color:#fff;border-color:#10254A}.ds-btn-outline:focus-visible{outline:2px solid #7CA5C4;outline-offset:2px}"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Form field with tracked uppercase label.",
+      "html": "<label class=\"ds-label\">Width (cm)<input class=\"ds-input\" value=\"10\"></label>",
+      "css": ".ds-label{display:block;font-family:Montserrat,sans-serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:rgba(8,19,42,.55)}.ds-input{display:block;width:100%;margin-top:8px;box-sizing:border-box;border:1px solid rgba(16,37,74,.12);padding:13px 14px;font-size:16px;font-family:Montserrat,sans-serif;background:#F4F7F9;color:#08132A;border-radius:0}.ds-input:focus{outline:2px solid #7CA5C4;outline-offset:-1px}"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "status-ok",
+      "description": "Stock and order status.",
+      "html": "<span class=\"ds-pill\">In stock</span>",
+      "css": ".ds-pill{display:inline-block;padding:6px 12px;font-family:Montserrat,sans-serif;font-size:12px;background:#E8F4EE;color:#1D7A4F;border-radius:999px}"
+    },
+    {
+      "name": "Product Card",
+      "kind": "card",
+      "description": "Square image, title, price, outline add button.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-img\"></div><div class=\"ds-card-body\"><div class=\"ds-card-title\">COTTON CANVAS</div><div>12.000 KD</div></div></div>",
+      "css": ".ds-card{width:220px;border:1px solid rgba(16,37,74,.12);background:#fff;font-family:Montserrat,sans-serif;color:#10254A;transition:border-color .3s,transform .3s,box-shadow .3s}.ds-card:hover{border-color:#10254A;transform:translateY(-3px);box-shadow:0 14px 30px rgba(16,37,74,.18)}.ds-card-img{aspect-ratio:1/1;background:#F4F7F9}.ds-card-body{padding:16px;font-weight:300}.ds-card-title{font-size:17px;letter-spacing:.1em;margin-bottom:6px}"
+    },
+    {
+      "name": "Nav Link",
+      "kind": "nav",
+      "description": "Header link with sky wash and growing underline.",
+      "html": "<a class=\"ds-nav\" href=\"#\">SHOP</a>",
+      "css": ".ds-nav{position:relative;display:inline-block;padding:12px 16px;font-family:Montserrat,sans-serif;font-size:16px;letter-spacing:.14em;color:#10254A;text-decoration:none;transition:background .3s}.ds-nav::after{content:'';position:absolute;inset-inline:16px;bottom:6px;height:2px;background:#7CA5C4;transform:scaleX(0);transition:transform .3s}.ds-nav:hover{background:rgba(124,165,196,.22)}.ds-nav:hover::after{transform:scaleX(1)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Print Proof Sheet",
+    "overview": "Prime's interface behaves like a proof pulled from the press: square edges, hairline rules, uppercase tracked labels and one small sky-blue square standing in for the dot of the 'i' in the logo. Precise, confident, warm and local.",
+    "keyCharacteristics": [
+      "Zero border radius except circular avatars and category medallions in the app.",
+      "One signature motif: the 9px sky square.",
+      "Light weights (200 to 400) set large.",
+      "Hairline borders instead of fills.",
+      "Real product photography fills cards.",
+      "Same system on website and iOS app shell."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Sky is the only accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Quiet Status Rule",
+        "body": "Status colours appear only as small pills on their wash.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Tracking In Arabic Rule",
+        "body": "Every letter-spacing token collapses to 0 under :lang(ar).",
+        "section": "typography"
+      },
+      {
+        "name": "The Light Weight Rule",
+        "body": "Weights above 500 do not appear.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "No resting shadows; a shadow means hover or touch.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Pointer-Only Hover Rule",
+        "body": "Hover effects live inside @media (hover: hover).",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep every corner square and every divider a 1px hairline.",
+      "Do use Proof Sky only as the single accent.",
+      "Do show prices in KWD with exactly three decimals.",
+      "Do check every change in RTL and in the iOS app.",
+      "Do wrap hover-only effects in @media (hover: hover)."
+    ],
+    "donts": [
+      "Don't introduce rounded corners, gradient buttons or glassy SaaS styling.",
+      "Don't use bold weights as hierarchy.",
+      "Don't add letter-spacing to Arabic text.",
+      "Don't add a second accent colour.",
+      "Don't add resting drop shadows."
+    ]
+  }
+}
