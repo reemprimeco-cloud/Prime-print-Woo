@@ -83,6 +83,7 @@ $prime_modules = array(
 	'account',
 	'push-notifications',
 	'native-app-tracking',
+	'app-promo',
 	'native-app-ui',
 );
 
