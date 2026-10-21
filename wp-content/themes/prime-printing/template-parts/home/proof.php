@@ -1,10 +1,10 @@
 <?php
 /**
- * Proof strip and category row, directly under the hero.
+ * Proof strip, directly under the hero.
  *
- * Three real capabilities (each already live on the site) and the six biggest
- * categories, so a first-time visitor sees what Prime does and has a route in
- * before the wall. Nothing here is a claim the shop cannot back up.
+ * Three real capabilities, each already live on the site, so a first-time
+ * visitor sees what Prime does before the wall. Nothing here is a claim the
+ * shop cannot back up.
  *
  * @package PrimePrinting
  */
@@ -28,7 +28,6 @@ $prime_proof = array(
 	),
 );
 
-$prime_cats = prime_product_categories( 6 );
 ?>
 
 <section class="prime-proof" aria-label="<?php echo esc_attr( $prime_rtl ? 'لماذا برايم' : 'Why Prime' ); ?>">
@@ -44,17 +43,3 @@ $prime_cats = prime_product_categories( 6 );
 		</ul>
 	</div>
 </section>
-
-<?php if ( $prime_cats ) : ?>
-	<section class="prime-home-cats" aria-label="<?php echo esc_attr( $prime_rtl ? 'التصنيفات' : 'Categories' ); ?>">
-		<div class="prime-wrap">
-			<div class="prime-cats prime-cats--home">
-				<?php
-				foreach ( $prime_cats as $prime_cat ) {
-					get_template_part( 'template-parts/shop/category-card', null, array( 'term' => $prime_cat ) );
-				}
-				?>
-			</div>
-		</div>
-	</section>
-<?php endif; ?>

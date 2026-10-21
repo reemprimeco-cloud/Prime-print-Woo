@@ -563,7 +563,7 @@ html[data-motion="paused"] .prime-clients__row { animation-play-state: paused; }
    was a literal). */
 :lang(ar) .prime-hero h1 { letter-spacing: 0; }
 
-/* ---- Proof strip and category row (2026-10) ------------------------------- */
+/* ---- Proof strip (2026-10) ------------------------------- */
 .prime-proof {
   background: var(--mist);
   border-block-end: 1px solid var(--line);
@@ -603,20 +603,8 @@ html[data-motion="paused"] .prime-clients__row { animation-play-state: paused; }
   color: var(--ink-mid);
 }
 
-.prime-home-cats { padding-block: var(--sp-10) var(--sp-4); }
-
-.prime-cats--home {
-  grid-template-columns: repeat(3, 1fr);
-  padding-block-end: 0;
-}
-
 @media (max-width: 900px) {
   .prime-proof__list { grid-template-columns: 1fr; }
   .prime-proof__item { padding: var(--sp-4) 0; }
   .prime-proof__item + .prime-proof__item { border-inline-start: 0; border-block-start: 1px solid var(--line); }
-}
-
-@media (max-width: 560px) {
-  .prime-home-cats { padding-block: var(--sp-8) var(--sp-2); }
-  .prime-cats--home { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
 }
