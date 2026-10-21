@@ -81,6 +81,8 @@ foreach ( $prime_reserve as $prime_extra ) {
 		'price' => $prime_price ? $prime_price : esc_html__( 'On request', 'prime-printing' ),
 		'img'   => (string) wp_get_attachment_image_url( $prime_img_id, 'prime-tile' ),
 		'tall'  => (string) wp_get_attachment_image_url( $prime_img_id, 'prime-tile-tall' ),
+		'set'   => (string) wp_get_attachment_image_srcset( $prime_img_id, 'prime-tile' ),
+		'tset'  => (string) wp_get_attachment_image_srcset( $prime_img_id, 'prime-tile-tall' ),
 	);
 }
 

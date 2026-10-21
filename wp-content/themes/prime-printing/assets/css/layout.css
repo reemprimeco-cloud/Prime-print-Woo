@@ -161,7 +161,8 @@
   background: none;
   font-size: var(--fs-sm);
   letter-spacing: var(--track-nav);
-  padding: 7px 13px;
+  min-block-size: 44px;
+  padding: 11px 16px;
   cursor: pointer;
   color: var(--navy);
   transition: var(--dur);
@@ -201,6 +202,10 @@
   cursor: pointer;
   padding: var(--sp-2);
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-inline-size: 44px;
+  min-block-size: 44px;
   gap: 5px;
 }
 

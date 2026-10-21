@@ -72,7 +72,9 @@
 				name: tile.querySelector( '.prime-tile__name' ).textContent.trim(),
 				price: tile.querySelector( '.prime-tile__price' ).innerHTML,
 				img: img.currentSrc || img.src,
-				tall: img.currentSrc || img.src
+				tall: img.currentSrc || img.src,
+				set: img.getAttribute( 'srcset' ) || '',
+				tset: img.getAttribute( 'srcset' ) || ''
 			};
 		};
 
@@ -97,10 +99,17 @@
 			var nameEl = newA.querySelector( '.prime-tile__name' );
 
 			newA.setAttribute( 'href', next.url );
-			img.removeAttribute( 'srcset' );
-			img.removeAttribute( 'sizes' );
-			img.removeAttribute( 'width' );
-			img.removeAttribute( 'height' );
+			// Keep a responsive set, so a ~190px phone tile never pulls the
+			// full 800px file. The wall is 2-up on phones and 4-up beyond.
+			var set = tall && next.tset ? next.tset : next.set;
+
+			if ( set ) {
+				img.setAttribute( 'srcset', set );
+				img.setAttribute( 'sizes', '(max-width: 560px) 50vw, 25vw' );
+			} else {
+				img.removeAttribute( 'srcset' );
+				img.removeAttribute( 'sizes' );
+			}
 			img.setAttribute( 'alt', next.name );
 			img.setAttribute( 'loading', 'eager' );
 			nameEl.lastChild.nodeValue = ' ' + next.name + ' ';

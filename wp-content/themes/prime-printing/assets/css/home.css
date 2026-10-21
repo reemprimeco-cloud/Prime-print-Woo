@@ -15,6 +15,16 @@
   to   { transform: translateX(-50%); }
 }
 
+/* RTL: the row starts at the right edge and its copy extends to the left, so
+   the loop runs the other way. */
+@keyframes prime-slide-rtl {
+  from { transform: translateX(0); }
+  to   { transform: translateX(50%); }
+}
+
+html[dir="rtl"] .prime-ticker__row,
+html[dir="rtl"] .prime-clients__row { animation-name: prime-slide-rtl; }
+
 @keyframes prime-drift-up {
   from { transform: translateY(0); }
   to   { transform: translateY(-50%); }
@@ -29,6 +39,7 @@
 .prime-hero {
   position: relative;
   block-size: 100vh;
+  block-size: 100svh;
   min-block-size: 660px;
   background: var(--navy-deep);
   overflow: hidden;
@@ -51,7 +62,6 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  will-change: transform;
 }
 
 .prime-hero__col img {
@@ -118,8 +128,9 @@
 .prime-hero__cue {
   position: absolute;
   inset-block-end: var(--sp-8);
-  inset-inline-start: 50%;
-  transform: translateX(-50%);
+  inset-inline: 0;
+  margin-inline: auto;
+  inline-size: max-content;
   font-size: var(--fs-xs);
   letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
@@ -260,7 +271,7 @@
   display: block;
   font-size: var(--fs-nav);
   color: var(--sky);
-  letter-spacing: .08em;
+  letter-spacing: var(--track-tight);
   margin-block-start: 5px;
 }
 
@@ -488,6 +499,13 @@ html[data-motion="paused"] .prime-clients__row { animation-play-state: paused; }
 @media (max-width: 560px) {
   .prime-hero { min-block-size: 560px; }
 
+  /* The hero photos sit under an 86 to 94% veil, so two columns read the same
+     as four and halve the images and animations a phone has to run. Lazy
+     images inside display:none are never fetched. */
+  .prime-hero__streams { grid-template-columns: repeat(2, 1fr); }
+  .prime-hero__col--c,
+  .prime-hero__col--d { display: none; }
+
   .prime-wall-section { padding-block: var(--sp-10) var(--sp-11); }
 
   /* Two up on phones, matching the shop grid's mobile density. The tall and
@@ -540,3 +558,7 @@ html[data-motion="paused"] .prime-clients__row { animation-play-state: paused; }
   .prime-wall.is-shuffling .prime-tile { opacity: 1; transform: none; }
   .prime-wall.has-reveal .prime-tile:not(.is-in) { opacity: 1; transform: none; }
 }
+
+/* Arabic: no tracking on display lines either (tokens collapse to 0, this one
+   was a literal). */
+:lang(ar) .prime-hero h1 { letter-spacing: 0; }
