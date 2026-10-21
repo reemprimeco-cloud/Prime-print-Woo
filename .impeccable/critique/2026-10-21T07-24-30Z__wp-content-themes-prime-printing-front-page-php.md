@@ -10,6 +10,7 @@ target_fingerprint: "sha256:e38526c975c33d5fe105a7b5c414e74c6eff17de09554a85dc58
 target_path: /home/user/Prime-print-Woo/wp-content/themes/prime-printing/front-page.php
 timestamp: 2026-10-21T07-24-30Z
 slug: wp-content-themes-prime-printing-front-page-php
+closed: true
 ---
 Method: dual-agent (source-based; live site unreachable; PHP not parsed by detector)
 

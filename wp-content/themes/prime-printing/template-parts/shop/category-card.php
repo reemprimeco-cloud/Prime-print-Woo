@@ -27,9 +27,8 @@ $prime_photo = prime_category_photo_url( $prime_term );
 		<?php
 		if ( $prime_photo ) {
 			printf(
-				'<img class="prime-cat__photo" src="%s" alt="%s" loading="lazy" decoding="async">',
-				esc_url( $prime_photo ),
-				esc_attr( $prime_term->name )
+				'<img class="prime-cat__photo" src="%s" alt="" loading="lazy" decoding="async">',
+				esc_url( $prime_photo )
 			);
 		} elseif ( $prime_icon_svg ) {
 			echo $prime_icon_svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from a fixed set of hand-authored SVG templates, no user input.

@@ -610,10 +610,6 @@ html[data-motion="paused"] .prime-clients__row { animation-play-state: paused; }
   padding-block-end: 0;
 }
 
-@media (min-width: 1200px) {
-  .prime-cats--home { grid-template-columns: repeat(3, 1fr); }
-}
-
 @media (max-width: 900px) {
   .prime-proof__list { grid-template-columns: 1fr; }
   .prime-proof__item { padding: var(--sp-4) 0; }
