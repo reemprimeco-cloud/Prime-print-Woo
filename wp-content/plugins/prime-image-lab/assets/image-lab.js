@@ -124,6 +124,9 @@
 			download: 'Download',
 			startOver: 'Start over',
 			whatsapp: 'Send to PRIME on WhatsApp',
+			saveTapAgain: 'Tap again to save',
+			saveReady: 'Ready. Tap the button again to save it to Photos or Files.',
+			saveFail: 'Could not open the save sheet. Try the WhatsApp button.',
 			waShare: 'Send on WhatsApp (full quality)',
 			waPreparing: 'Preparing the full-quality file…',
 			waShareNote: 'Choose WhatsApp from the list. The file goes as a document, so WhatsApp does not compress it.',
@@ -215,6 +218,9 @@
 			download: 'تنزيل',
 			startOver: 'البدء من جديد',
 			whatsapp: 'أرسل إلى برايم على واتساب',
+			saveTapAgain: 'اضغط مرة ثانية للحفظ',
+			saveReady: 'جاهز. اضغط الزر مرة ثانية للحفظ في الصور أو الملفات.',
+			saveFail: 'تعذّر فتح قائمة الحفظ. جرّب زر واتساب.',
 			waShare: 'أرسل على واتساب (بجودة كاملة)',
 			waPreparing: 'جارٍ تجهيز الملف بجودة كاملة…',
 			waShareNote: 'اختر واتساب من القائمة. يُرسل الملف كمستند، لذلك لا يضغطه واتساب.',
@@ -263,6 +269,7 @@
 		printBase: null, // the image the print job started from, so it can be redone
 		printBaseOwned: false,
 		aiOk: false, // the visitor agreed to download the model
+		saveFiles: {}, // files prepared for the iOS share-sheet save, by button
 		aiFor: 'bg', // which job the consent screen is for: 'bg' or 'up'
 		shareFile: null, // the full-quality PDF handed to WhatsApp through the share sheet
 		sharePrep: false,
@@ -753,6 +760,7 @@
 		S.fit = false;
 		S.designed = false;
 		S.shareFile = null;
+		S.saveFiles = {};
 		S.sharePrep = false;
 		S.downloaded = false;
 		S.mode = 'choose';
@@ -852,6 +860,7 @@
 		S.dpi = dpi || 0;
 		S.hasAlpha = hasAlpha( canvas );
 		S.shareFile = null;
+		S.saveFiles = {};
 		S.sharePrep = false;
 		S.downloaded = false;
 		S.mode = 'choose';
@@ -1941,67 +1950,135 @@
 
 	/* ---- Download -------------------------------------------------------- */
 
+	var fileStamp = function () {
+		var d = new Date();
+		var pad = function ( n ) {
+			return ( n < 10 ? '0' : '' ) + n;
+		};
+
+		return d.getFullYear() + pad( d.getMonth() + 1 ) + pad( d.getDate() ) + '-' + pad( d.getHours() ) + pad( d.getMinutes() );
+	};
+
+	/** Encode the current result as JPEG/PNG with the print DPI written in; resolves to { bytes, type, name } or null. */
+	var buildImageFile = function () {
+		return new Promise( function ( resolve ) {
+			var png = S.hasAlpha;
+			var src = S.work;
+			var flat = null;
+
+			if ( ! png ) {
+				// JPEG has no transparency; nothing here is transparent, but keep white behind just in case.
+				flat = makeCanvas( src.width, src.height );
+
+				var fctx = flat.getContext( '2d' );
+
+				fctx.fillStyle = '#fff';
+				fctx.fillRect( 0, 0, flat.width, flat.height );
+				fctx.drawImage( src, 0, 0 );
+				src = flat;
+			}
+
+			var type = png ? 'image/png' : 'image/jpeg';
+
+			src.toBlob( function ( blob ) {
+				freeCanvas( flat );
+
+				if ( ! blob ) {
+					resolve( null );
+					return;
+				}
+
+				blob.arrayBuffer().then( function ( buf ) {
+					var bytes = new Uint8Array( buf );
+
+					if ( S.dpi ) {
+						bytes = Core.stampDpi( bytes, type, S.dpi );
+					}
+
+					var label = 'print' === S.kind ? 'print-' + S.sizeKey : 'bg' === S.kind ? 'no-background' : 'bigger';
+
+					resolve( { bytes: bytes, type: type, name: 'prime-' + label + '-' + fileStamp() + ( png ? '.png' : '.jpg' ) } );
+				}, function () {
+					resolve( null );
+				} );
+			}, type, 0.93 );
+		} );
+	};
+
+	var triggerDownload = function ( blob, name ) {
+		var url = URL.createObjectURL( blob );
+		var a = document.createElement( 'a' );
+
+		a.href = url;
+		a.download = name;
+		a.rel = 'noopener';
+		document.body.appendChild( a );
+		a.click();
+		a.remove();
+		window.setTimeout( function () {
+			URL.revokeObjectURL( url );
+		}, 15000 );
+	};
+
 	var download = function () {
 		if ( ! S.work ) {
 			return;
 		}
 
-		var L = t();
-		var png = S.hasAlpha;
-		var src = S.work;
-		var flat = null;
-
-		if ( ! png ) {
-			// JPEG has no transparency; nothing here is transparent, but keep white behind just in case.
-			flat = makeCanvas( src.width, src.height );
-
-			var fctx = flat.getContext( '2d' );
-
-			fctx.fillStyle = '#fff';
-			fctx.fillRect( 0, 0, flat.width, flat.height );
-			fctx.drawImage( src, 0, 0 );
-			src = flat;
-		}
-
-		var type = png ? 'image/png' : 'image/jpeg';
-
-		src.toBlob( function ( blob ) {
-			freeCanvas( flat );
-
-			if ( ! blob ) {
-				setMsg( L.errMemory, 'is-error' );
+		buildImageFile().then( function ( f ) {
+			if ( ! f ) {
+				setMsg( t().errMemory, 'is-error' );
 				return;
 			}
 
-			blob.arrayBuffer().then( function ( buf ) {
-				var bytes = new Uint8Array( buf );
+			triggerDownload( new Blob( [ f.bytes ], { type: f.type } ), f.name );
+			S.downloaded = true;
+		} );
+	};
 
-				if ( S.dpi ) {
-					bytes = Core.stampDpi( bytes, type, S.dpi );
-				}
+	/*
+	 * Inside the iOS app (a WKWebView) a blob link with a download name does nothing, so the file goes through
+	 * the share sheet instead (Save Image, Save to Files...). The sheet needs a fresh tap, and encoding a big
+	 * result takes longer than iOS keeps a tap alive, so the first tap prepares the file and the second saves it.
+	 */
+	var saveWithSheet = function () {
+		return /PrimePrintingApp/.test( navigator.userAgent ) && canShareFiles();
+	};
 
-				var d = new Date();
-				var pad = function ( n ) {
-					return ( n < 10 ? '0' : '' ) + n;
-				};
-				var label = 'print' === S.kind ? 'print-' + S.sizeKey : 'bg' === S.kind ? 'no-background' : 'bigger';
-				var name = 'prime-' + label + '-' + d.getFullYear() + pad( d.getMonth() + 1 ) + pad( d.getDate() ) + '-' + pad( d.getHours() ) + pad( d.getMinutes() ) + ( png ? '.png' : '.jpg' );
-				var url = URL.createObjectURL( new Blob( [ bytes ], { type: type } ) );
-				var a = document.createElement( 'a' );
+	var saveViaSheet = function ( btn, key, make ) {
+		var L = t();
+		var ready = S.saveFiles[ key ];
 
-				a.href = url;
-				a.download = name;
-				a.rel = 'noopener';
-				document.body.appendChild( a );
-				a.click();
-				a.remove();
-				window.setTimeout( function () {
-					URL.revokeObjectURL( url );
-				}, 15000 );
-
+		if ( ready ) {
+			navigator.share( { files: [ ready ] } ).then( function () {
 				S.downloaded = true;
+			}, function ( e ) {
+				if ( e && 'AbortError' !== e.name ) {
+					setMsg( t().saveFail, 'is-error' );
+				}
 			} );
-		}, type, 0.93 );
+
+			return;
+		}
+
+		btn.disabled = true;
+		setMsg( L.working, 'is-busy' );
+
+		make().then( function ( file ) {
+			btn.disabled = false;
+
+			if ( ! file ) {
+				setMsg( t().errGeneric, 'is-error' );
+				return;
+			}
+
+			S.saveFiles[ key ] = file;
+			btn.textContent = t().saveTapAgain;
+			setMsg( t().saveReady, '' );
+		}, function () {
+			btn.disabled = false;
+			setMsg( t().errMemory, 'is-error' );
+		} );
 	};
 
 	/* ---- Events ---------------------------------------------------------- */
@@ -2178,13 +2255,35 @@
 		var dl = root.querySelector( '#pil-download' );
 
 		if ( dl ) {
-			dl.addEventListener( 'click', download );
+			dl.addEventListener( 'click', function () {
+				if ( saveWithSheet() ) {
+					saveViaSheet( dl, 'img', function () {
+						return buildImageFile().then( function ( f ) {
+							return f ? new File( [ f.bytes ], f.name, { type: f.type } ) : null;
+						} );
+					} );
+					return;
+				}
+
+				download();
+			} );
 		}
 
 		var pdfBtn = root.querySelector( '#pil-download-pdf' );
 
 		if ( pdfBtn ) {
 			pdfBtn.addEventListener( 'click', function () {
+				var pdfName = 'prime-print-' + ( 'RU' === S.sizeKey ? 'rollup-85x200cm' : S.sizeKey ) + '-' + fileStamp() + '.pdf';
+
+				if ( saveWithSheet() ) {
+					saveViaSheet( pdfBtn, 'pdf', function () {
+						return buildPdf().then( function ( blob ) {
+							return blob ? new File( [ blob ], pdfName, { type: 'application/pdf' } ) : null;
+						} );
+					} );
+					return;
+				}
+
 				pdfBtn.disabled = true;
 				setMsg( t().working, 'is-busy' );
 
@@ -2196,25 +2295,9 @@
 						return;
 					}
 
-					var d = new Date();
-					var pad = function ( n ) {
-						return ( n < 10 ? '0' : '' ) + n;
-					};
-					var tag = 'RU' === S.sizeKey ? 'rollup-85x200cm' : S.sizeKey;
-					var name = 'prime-print-' + tag + '-' + d.getFullYear() + pad( d.getMonth() + 1 ) + pad( d.getDate() ) + '-' + pad( d.getHours() ) + pad( d.getMinutes() ) + '.pdf';
-					var url = URL.createObjectURL( blob );
-					var a = document.createElement( 'a' );
+					var name = pdfName;
 
-					a.href = url;
-					a.download = name;
-					a.rel = 'noopener';
-					document.body.appendChild( a );
-					a.click();
-					a.remove();
-					window.setTimeout( function () {
-						URL.revokeObjectURL( url );
-					}, 15000 );
-
+					triggerDownload( blob, name );
 					S.downloaded = true;
 					setMsg( t().statusDonePdf || name, '' );
 				}, function () {
