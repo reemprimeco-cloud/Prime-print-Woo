@@ -1,6 +1,6 @@
 <?php
 /**
- * App mode — the fixed bottom tab bar: Home, Shop, Cart (live count), Account.
+ * App mode — the fixed bottom tab bar: Home, Shop, Image Lab, Cart (live count), Account.
  *
  * @package PrimePrinting
  */
@@ -24,6 +24,17 @@ if ( prime_has_woocommerce() ) {
 		'label' => __( 'Shop', 'prime-printing' ),
 		'url'   => $prime_shop_id > 0 ? add_query_arg( 'view', 'all', get_permalink( $prime_shop_id ) ) : home_url( '/' ),
 	);
+	// The free PRIME Image Lab tool, only while its page exists and is published.
+	$prime_lab_url = prime_app_lab_url();
+
+	if ( $prime_lab_url ) {
+		$prime_tabs[] = array(
+			'key'   => 'lab',
+			'label' => is_rtl() ? 'مختبر الصور' : 'Image Lab',
+			'url'   => $prime_lab_url,
+		);
+	}
+
 	$prime_tabs[] = array(
 		'key'   => 'cart',
 		'label' => __( 'Cart', 'prime-printing' ),

@@ -151,7 +151,7 @@ body.prime-app {
   block-size: var(--app-tab-h);
   font-size: 10px;
   font-weight: var(--fw-medium);
-  letter-spacing: .06em;
+  letter-spacing: .04em;
   text-transform: uppercase;
   color: var(--ink-faint);
   -webkit-tap-highlight-color: transparent;
@@ -171,6 +171,14 @@ body.prime-app {
   stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.prime-app-tab span:not(.prime-app-tab__badge) {
+  max-inline-size: 100%;
+  padding-inline: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .prime-app-tab.is-on { color: var(--navy); }

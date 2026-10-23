@@ -221,6 +221,12 @@ function prime_app_active_tab() {
 		return 'home';
 	}
 
+	$lab_id = prime_app_lab_page_id();
+
+	if ( $lab_id && is_page( $lab_id ) ) {
+		return 'lab';
+	}
+
 	if ( ! prime_has_woocommerce() ) {
 		return '';
 	}
@@ -238,6 +244,42 @@ function prime_app_active_tab() {
 	}
 
 	return '';
+}
+
+/**
+ * The published PRIME Image Lab page (in the current language when a translation exists).
+ *
+ * @return int Page ID, or 0 when there is no published page.
+ */
+function prime_app_lab_page_id() {
+	$page = get_page_by_path( 'image-lab' );
+
+	if ( ! $page || 'publish' !== $page->post_status ) {
+		return 0;
+	}
+
+	$id = (int) $page->ID;
+
+	if ( function_exists( 'pll_get_post' ) ) {
+		$translated = (int) pll_get_post( $id );
+
+		if ( $translated && 'publish' === get_post_status( $translated ) ) {
+			$id = $translated;
+		}
+	}
+
+	return $id;
+}
+
+/**
+ * Link for the Image Lab tab.
+ *
+ * @return string URL, or an empty string when the page is not available.
+ */
+function prime_app_lab_url() {
+	$id = prime_app_lab_page_id();
+
+	return $id ? get_permalink( $id ) : '';
 }
 
 /**
@@ -492,6 +534,7 @@ function prime_app_icon( $name ) {
 		'shop'    => '<rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/>',
 		'cart'    => '<path d="M6 7h13l-1.5 8H7.5z"/><path d="M6 7 5 4H3"/><circle cx="9" cy="19" r="1.3"/><circle cx="16" cy="19" r="1.3"/>',
 		'account' => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+		'lab'     => '<rect x="3" y="4" width="18" height="16" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 4 4"/>',
 		'search'  => '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
 		'back'    => '<path d="M15 5l-7 7 7 7"/>',
 		'share'   => '<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12M8 7l4-4 4 4"/>',
