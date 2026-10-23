@@ -37,11 +37,14 @@
 		minSide: 16
 	};
 
+	// Sizes in mm. "large" formats are viewed from a distance, so they are judged and
+	// exported at a lower resolution and fill the whole artboard.
 	var SIZES = [
 		{ key: 'A5', w: 148, h: 210 },
 		{ key: 'A4', w: 210, h: 297 },
 		{ key: 'A3', w: 297, h: 420 },
-		{ key: 'A2', w: 420, h: 594 }
+		{ key: 'A2', w: 420, h: 594 },
+		{ key: 'RU', w: 850, h: 2000, large: true }
 	];
 
 	/* ---- Text ------------------------------------------------------------ */
@@ -60,7 +63,7 @@
 			actions: {
 				up: [ 'Make it bigger and clearer', 'A larger, sharper photo for printing.' ],
 				bg: [ 'Remove the background', 'Cuts out the main subject. You get a see-through image.' ],
-				print: [ 'Make a print-ready file', 'Sized for your paper at 300 DPI.' ]
+				print: [ 'Make a print-ready file', 'A5 to A2, or an 85 × 200 cm roll-up. Exact size, with a PDF for the printer.' ]
 			},
 			sizeAsk: 'Choose the paper size',
 			sizeBack: 'Back',
@@ -81,6 +84,20 @@
 			aiPreparing: 'Starting the AI model…',
 			aiRunning: 'Removing the background…',
 			printDone: 'Ready to print on %s at %s DPI.',
+			ruName: 'Roll-up banner',
+			ruDims: '85 × 200 cm',
+			ruDone: 'Your %s file is ready, exactly 85 × 200 cm, at %s DPI.',
+			ruGood: 'It should look sharp on a banner, seen from a short distance.',
+			ruFair: 'Fine from a distance, a little soft up close.',
+			ruLow: 'This photo is too small for a banner this size. Choose a bigger photo.',
+			ruCrop: 'The banner is tall and narrow, so the photo was filled in and trimmed at the sides.',
+			ruFit: 'The whole photo is kept, with blank space above and below.',
+			ruShowWhole: 'Show the whole photo instead',
+			ruFill: 'Fill the banner instead',
+			ruBig: 'This is a very large file. It can take a minute.',
+			ruCap: 'Your device cannot make a 100 DPI file this big, so this one is %s DPI.',
+			downloadPdf: 'Download PDF for the printer',
+			pdfNote: 'The PDF is exactly the paper size. Photos stay as pixels; send your original logo or text files if they must stay vector.',
 			printCap: 'Your device cannot make a full 300 DPI file this big, so this one is %s DPI.',
 			shape: 'Your photo is a different shape from %s, so there will be blank space on the paper. We kept the whole photo.',
 			good: 'It should look sharp when printed.',
@@ -119,7 +136,7 @@
 			actions: {
 				up: [ 'تكبير وتوضيح الصورة', 'صورة أكبر وأوضح للطباعة.' ],
 				bg: [ 'إزالة الخلفية', 'تقص العنصر الرئيسي. تحصل على صورة شفافة.' ],
-				print: [ 'ملف جاهز للطباعة', 'بمقاس ورقتك ودقة 300 DPI.' ]
+				print: [ 'ملف جاهز للطباعة', 'من A5 إلى A2، أو رول أب 85 × 200 سم. بمقاس دقيق مع PDF للمطبعة.' ]
 			},
 			sizeAsk: 'اختر مقاس الورق',
 			sizeBack: 'رجوع',
@@ -140,6 +157,20 @@
 			aiPreparing: 'جارٍ تشغيل النموذج…',
 			aiRunning: 'جارٍ إزالة الخلفية…',
 			printDone: 'جاهزة للطباعة على %s بدقة %s DPI.',
+			ruName: 'رول أب',
+			ruDims: '85 × 200 سم',
+			ruDone: 'ملف %s جاهز، بمقاس 85 × 200 سم بالضبط، بدقة %s DPI.',
+			ruGood: 'يُتوقع أن يظهر حاداً على البانر عند المشاهدة من مسافة قريبة.',
+			ruFair: 'مناسب من مسافة، ويظهر ناعماً قليلاً عن قرب.',
+			ruLow: 'الصورة صغيرة لبانر بهذا المقاس. اختر صورة أكبر.',
+			ruCrop: 'البانر طويل وضيق، لذلك ملأنا مساحته وقصصنا جوانب الصورة.',
+			ruFit: 'حافظنا على الصورة كاملة مع مساحة فارغة أعلاها وأسفلها.',
+			ruShowWhole: 'أظهر الصورة كاملة بدلاً من ذلك',
+			ruFill: 'املأ البانر بدلاً من ذلك',
+			ruBig: 'هذا ملف كبير جداً. قد يستغرق دقيقة.',
+			ruCap: 'جهازك لا يستطيع إنشاء ملف بدقة 100 DPI بهذا الحجم، لذلك هذا الملف بدقة %s DPI.',
+			downloadPdf: 'تنزيل PDF للمطبعة',
+			pdfNote: 'ملف PDF بمقاس الورق بالضبط. تبقى الصور بكسلات، وأرسل ملفات الشعار أو النص الأصلية إذا كان يجب أن تبقى متجهية.',
 			printCap: 'جهازك لا يستطيع إنشاء ملف بدقة 300 DPI بهذا الحجم، لذلك هذا الملف بدقة %s DPI.',
 			shape: 'شكل صورتك يختلف عن %s، لذلك ستظهر مساحة فارغة على الورقة. حافظنا على الصورة كاملة.',
 			good: 'يُتوقع أن تظهر حادة عند الطباعة.',
@@ -189,6 +220,10 @@
 		sizeKey: '',
 		hasAlpha: false,
 		busy: false,
+		paper: null, // { w, h } in mm of the artboard the last print job was made for
+		fit: false, // roll-up: keep the whole photo instead of filling the banner
+		printBase: null, // the image the print job started from, so it can be redone
+		printBaseOwned: false,
 		aiOk: false, // the visitor agreed to download the model
 		shareFile: null, // the full-quality PDF handed to WhatsApp through the share sheet
 		sharePrep: false,
@@ -480,7 +515,10 @@
 					'<button type="button" class="pil__btn pil__btn--ghost" id="pil-ai-cancel">' + esc( L.aiCancel ) + '</button></div>';
 			} else if ( 'sizes' === S.mode ) {
 				choices = '<h3>' + esc( L.sizeAsk ) + '</h3><div class="pil__sizes">' + SIZES.map( function ( z ) {
-					return '<button type="button" class="pil__size" data-size="' + z.key + '"' + ( S.busy ? ' disabled' : '' ) + '><strong>' + z.key + '</strong><span>' + ltr( z.w + ' × ' + z.h + ' mm' ) + '</span></button>';
+					var name = z.large ? L.ruName : z.key;
+					var dim = z.large ? ltr( L.ruDims ) : ltr( z.w + ' × ' + z.h + ' mm' );
+
+					return '<button type="button" class="pil__size' + ( z.large ? ' pil__size--wide' : '' ) + '" data-size="' + z.key + '"' + ( S.busy ? ' disabled' : '' ) + '><strong>' + esc( name ) + '</strong><span>' + dim + '</span></button>';
 				} ).join( '' ) + '</div><button type="button" class="pil__btn pil__btn--ghost" id="pil-back">' + esc( L.sizeBack ) + '</button>';
 			} else {
 				choices = '<h3>' + esc( L.ask ) + '</h3><div class="pil__actions-grid">' + actionButton( 'up' ) + actionButton( 'bg' ) + actionButton( 'print' ) + '</div>';
@@ -494,8 +532,10 @@
 				'<div class="pil__card pil__panel">' + choices + '<div id="pil-verdict"></div></div></div>' +
 				( S.work ?
 					'<div class="pil__card pil__export"><div class="pil__handoff"><button type="button" class="pil__btn" id="pil-download">' + esc( L.download ) + '</button>' +
+					( 'print' === S.kind ? '<button type="button" class="pil__btn" id="pil-download-pdf">' + esc( L.downloadPdf ) + '</button>' : '' ) +
 					waElement() +
 					'<a class="pil__btn pil__btn--ghost" id="pil-shop" href="' + esc( cfg.shop || '/' ) + '">' + esc( L.shop ) + '</a></div>' +
+					( 'print' === S.kind ? '<p class="pil__note">' + esc( L.pdfNote ) + '</p>' : '' ) +
 					( cfg.whatsapp ? '<p class="pil__note">' + esc( canShareFiles() ? L.waShareNote : L.waDeskNote ) + '</p>' : '' ) + '</div>' : '' ) +
 				'<div class="pil__after-actions"><button type="button" class="pil__btn pil__btn--ghost" id="pil-start">' + esc( L.startOver ) + '</button>' +
 				'<button type="button" class="pil__btn pil__btn--ghost" id="pil-change">' + esc( L.another ) + '</button></div>';
@@ -599,6 +639,14 @@
 		S.kind = '';
 		S.dpi = 0;
 		S.hasAlpha = false;
+		if ( S.printBaseOwned ) {
+			freeCanvas( S.printBase );
+		}
+
+		S.printBase = null;
+		S.printBaseOwned = false;
+		S.paper = null;
+		S.fit = false;
 		S.shareFile = null;
 		S.sharePrep = false;
 		S.downloaded = false;
@@ -713,6 +761,19 @@
 
 		if ( box ) {
 			box.innerHTML = text ? '<p class="pil__verdict pil__verdict--' + level + '">' + esc( text ) + '</p>' : '';
+		}
+
+		if ( box && text && S.verdict && S.verdict.toggle ) {
+			box.innerHTML += '<button type="button" class="pil__btn pil__btn--ghost" id="pil-fit">' + esc( S.fit ? t().ruFill : t().ruShowWhole ) + '</button>';
+
+			var fitBtn = box.querySelector( '#pil-fit' );
+
+			fitBtn.addEventListener( 'click', function () {
+				S.fit = ! S.fit;
+				run( function () {
+					return jobPrint( 'RU' );
+				} );
+			} );
 		}
 	};
 
@@ -1037,51 +1098,156 @@
 		} );
 	};
 
+	/** Crop a canvas to a target aspect ratio, centred. Returns a new canvas. */
+	var cropToAspect = function ( src, aspect ) {
+		var cw = src.width;
+		var ch = src.height;
+
+		if ( cw / ch > aspect ) {
+			cw = Math.round( ch * aspect );
+		} else {
+			ch = Math.round( cw / aspect );
+		}
+
+		var out = makeCanvas( cw, ch );
+
+		out.getContext( '2d' ).drawImage( src, Math.round( ( src.width - cw ) / 2 ), Math.round( ( src.height - ch ) / 2 ), cw, ch, 0, 0, cw, ch );
+
+		return out;
+	};
+
 	var jobPrint = function ( key ) {
 		var L = t();
 		var size = SIZES.filter( function ( z ) {
 			return z.key === key;
 		} )[ 0 ];
-		var src = current();
+
+		// Redo from the image the first print job used, never from a print result.
+		var src = 'print' === S.kind && S.printBase ? S.printBase : current();
 		var landscape = src.width >= src.height;
-		var pw = landscape ? size.h : size.w;
-		var ph = landscape ? size.w : size.h;
-		var k = Math.min( ( pw / 25.4 * 300 ) / src.width, ( ph / 25.4 * 300 ) / src.height );
-		var nw = Math.round( src.width * k );
-		var nh = Math.round( src.height * k );
+		var pw = size.large ? size.w : ( landscape ? size.h : size.w );
+		var ph = size.large ? size.h : ( landscape ? size.w : size.h );
+		var work;
+		var dpi;
+		var origPpi;
+
+		if ( size.large ) {
+			setMsg( L.ruBig, 'is-busy' );
+		}
+
+		var level;
+		var shape;
 		var capped = false;
+		var prepared;
 
-		if ( nw * nh > LIMITS.pixels ) {
-			var c = Math.sqrt( LIMITS.pixels / ( nw * nh ) );
+		if ( size.large ) {
+			// A banner is made to its exact size. Seen from a distance, 100 DPI is the usual target.
+			var area = ( pw / 25.4 ) * ( ph / 25.4 );
 
-			nw = Math.floor( nw * c );
-			nh = Math.floor( nh * c );
-			capped = true;
+			dpi = Math.max( 50, Math.min( 100, Math.floor( Math.sqrt( LIMITS.pixels / area ) ) ) );
+			capped = dpi < 100;
+
+			var tw = Math.round( pw / 25.4 * dpi );
+			var th = Math.round( ph / 25.4 * dpi );
+			var aspect = pw / ph;
+			var source;
+
+			try {
+				if ( S.fit ) {
+					source = null;
+				} else {
+					source = cropToAspect( src, aspect );
+				}
+
+				if ( S.fit ) {
+					var k = Math.min( tw / src.width, th / src.height );
+					var fw = Math.round( src.width * k );
+					var fh = Math.round( src.height * k );
+					var placed = ( fw === src.width && fh === src.height ) ? copyCanvas( src ) : resample( src, fw, fh );
+
+					work = makeCanvas( tw, th );
+
+					var wctx = work.getContext( '2d' );
+
+					wctx.fillStyle = '#fff';
+					wctx.fillRect( 0, 0, tw, th );
+					wctx.drawImage( placed, Math.round( ( tw - fw ) / 2 ), Math.round( ( th - fh ) / 2 ) );
+					freeCanvas( placed );
+					origPpi = Core.ppi( src.width, fw / dpi * 25.4 );
+				} else {
+					work = ( source.width === tw && source.height === th ) ? copyCanvas( source ) : resample( source, tw, th );
+					origPpi = Core.ppi( source.width, pw );
+					freeCanvas( source );
+				}
+			} catch ( e ) {
+				freeCanvas( source );
+				return Promise.reject( e );
+			}
+
+			level = origPpi >= 100 ? 'ruGood' : origPpi >= 60 ? 'ruFair' : 'ruLow';
+			shape = Math.abs( ( src.width / src.height ) - aspect ) / aspect > 0.03;
+			prepared = work;
+		} else {
+			var k2 = Math.min( ( pw / 25.4 * 300 ) / src.width, ( ph / 25.4 * 300 ) / src.height );
+			var nw = Math.round( src.width * k2 );
+			var nh = Math.round( src.height * k2 );
+
+			if ( nw * nh > LIMITS.pixels ) {
+				var c = Math.sqrt( LIMITS.pixels / ( nw * nh ) );
+
+				nw = Math.floor( nw * c );
+				nh = Math.floor( nh * c );
+				capped = true;
+			}
+
+			var fitWmm = ( src.width * k2 ) / 300 * 25.4;
+
+			origPpi = Core.ppi( src.width, fitWmm );
+			level = origPpi >= 250 ? 'good' : origPpi >= 150 ? 'fair' : 'low';
+			dpi = Math.round( nw / ( fitWmm / 25.4 ) );
+			shape = Math.abs( ( src.width / src.height ) - ( pw / ph ) ) / ( pw / ph ) > 0.03;
+
+			try {
+				prepared = ( nw === src.width && nh === src.height ) ? copyCanvas( src ) : resample( src, nw, nh );
+			} catch ( e2 ) {
+				return Promise.reject( e2 );
+			}
 		}
 
-		// How big the photo is on the paper, and how sharp the original is at that size.
-		var fitWmm = ( src.width * k ) / 300 * 25.4;
-		var origPpi = Core.ppi( src.width, fitWmm );
-		var level = origPpi >= 250 ? 'good' : origPpi >= 150 ? 'fair' : 'low';
-		var dpi = Math.round( nw / ( fitWmm / 25.4 ) );
-		var shape = Math.abs( ( src.width / src.height ) - ( pw / ph ) ) / ( pw / ph ) > 0.03;
-		var scaled;
+		return runOp( 'improve', prepared, { sharpen: size.large ? 40 : ( dpi > 0 && prepared.width > src.width ? 50 : 30 ), denoise: 0, sharpenRadius: 1 } ).then( function ( r ) {
+			freeCanvas( prepared );
 
-		try {
-			scaled = ( nw === src.width && nh === src.height ) ? copyCanvas( src ) : resample( src, nw, nh );
-		} catch ( e ) {
-			return Promise.reject( e );
-		}
+			// Keep the starting image, so the same job can be redone (roll-up fill or fit).
+			if ( 'print' !== S.kind ) {
+				if ( S.printBaseOwned ) {
+					freeCanvas( S.printBase );
+				}
 
-		return runOp( 'improve', scaled, { sharpen: k > 1 ? 50 : 30, denoise: 0, sharpenRadius: 1 } ).then( function ( r ) {
-			freeCanvas( scaled );
+				S.printBase = src;
+				S.printBaseOwned = src === S.work;
+
+				if ( S.printBaseOwned ) {
+					S.work = null;
+				}
+			}
+
 			finish( r.canvas, 'print', dpi );
 			S.sizeKey = key;
+			S.paper = { w: pw, h: ph };
 
-			setMsg( fmt( L.printDone, key, String( dpi ) ), '' );
-			S.verdict = { level: level, text: L[ level ] + ( shape ? ' ' + fmt( L.shape, key ) : '' ) + ( capped ? ' ' + fmt( L.printCap, String( dpi ) ) : '' ) };
+			if ( size.large ) {
+				setMsg( fmt( L.ruDone, L.ruName, String( dpi ) ), '' );
+				S.verdict = {
+					level: level === 'ruGood' ? 'good' : level === 'ruFair' ? 'fair' : 'low',
+					text: L[ level ] + ' ' + ( S.fit ? L.ruFit : ( shape ? L.ruCrop : '' ) ) + ( capped ? ' ' + fmt( L.ruCap, String( dpi ) ) : '' ),
+					toggle: true
+				};
+			} else {
+				setMsg( fmt( L.printDone, key, String( dpi ) ), '' );
+				S.verdict = { level: level, text: L[ level ] + ( shape ? ' ' + fmt( L.shape, key ) : '' ) + ( capped ? ' ' + fmt( L.printCap, String( dpi ) ) : '' ) };
+			}
 		}, function ( e ) {
-			freeCanvas( scaled );
+			freeCanvas( prepared );
 			throw e;
 		} );
 	};
@@ -1172,8 +1338,30 @@
 		var c = S.work;
 		var enc = new TextEncoder();
 		var dpi = S.dpi || 300;
-		var wPt = ( c.width / dpi * 72 ).toFixed( 2 );
-		var hPt = ( c.height / dpi * 72 ).toFixed( 2 );
+		var dw = c.width / dpi * 72;
+		var dh = c.height / dpi * 72;
+		var pageW = dw;
+		var pageH = dh;
+		var offX = 0;
+		var offY = 0;
+
+		// A print job gets a page of exactly the paper size. A roll-up fills it;
+		// a photo on a smaller sheet sits centred at its true print size.
+		if ( S.paper && 'print' === S.kind ) {
+			pageW = S.paper.w / 25.4 * 72;
+			pageH = S.paper.h / 25.4 * 72;
+
+			if ( 'RU' === S.sizeKey ) {
+				dw = pageW;
+				dh = pageH;
+			} else {
+				offX = ( pageW - dw ) / 2;
+				offY = ( pageH - dh ) / 2;
+			}
+		}
+
+		var wPt = pageW.toFixed( 2 );
+		var hPt = pageH.toFixed( 2 );
 
 		var imageParts;
 
@@ -1249,7 +1437,7 @@
 			obj( 2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>' );
 			obj( 3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + wPt + ' ' + hPt + '] /Contents 4 0 R /Resources << /XObject << /Im0 5 0 R >> >> >>' );
 
-			var content = enc.encode( 'q ' + wPt + ' 0 0 ' + hPt + ' 0 0 cm /Im0 Do Q' );
+			var content = enc.encode( 'q ' + dw.toFixed( 2 ) + ' 0 0 ' + dh.toFixed( 2 ) + ' ' + offX.toFixed( 2 ) + ' ' + offY.toFixed( 2 ) + ' cm /Im0 Do Q' );
 
 			obj( 4, '<< /Length LEN >>', content );
 
@@ -1526,6 +1714,49 @@
 			dl.addEventListener( 'click', download );
 		}
 
+		var pdfBtn = root.querySelector( '#pil-download-pdf' );
+
+		if ( pdfBtn ) {
+			pdfBtn.addEventListener( 'click', function () {
+				pdfBtn.disabled = true;
+				setMsg( t().working, 'is-busy' );
+
+				buildPdf().then( function ( blob ) {
+					pdfBtn.disabled = false;
+
+					if ( ! blob ) {
+						setMsg( t().errGeneric, 'is-error' );
+						return;
+					}
+
+					var d = new Date();
+					var pad = function ( n ) {
+						return ( n < 10 ? '0' : '' ) + n;
+					};
+					var tag = 'RU' === S.sizeKey ? 'rollup-85x200cm' : S.sizeKey;
+					var name = 'prime-print-' + tag + '-' + d.getFullYear() + pad( d.getMonth() + 1 ) + pad( d.getDate() ) + '-' + pad( d.getHours() ) + pad( d.getMinutes() ) + '.pdf';
+					var url = URL.createObjectURL( blob );
+					var a = document.createElement( 'a' );
+
+					a.href = url;
+					a.download = name;
+					a.rel = 'noopener';
+					document.body.appendChild( a );
+					a.click();
+					a.remove();
+					window.setTimeout( function () {
+						URL.revokeObjectURL( url );
+					}, 15000 );
+
+					S.downloaded = true;
+					setMsg( t().statusDonePdf || name, '' );
+				}, function () {
+					pdfBtn.disabled = false;
+					setMsg( t().errMemory, 'is-error' );
+				} );
+			} );
+		}
+
 		var share = root.querySelector( '#pil-wa-share' );
 
 		if ( share ) {
@@ -1537,6 +1768,15 @@
 			// Back to the photo as chosen, with nothing applied.
 			freeCanvas( S.work );
 			S.work = null;
+
+			if ( S.printBaseOwned ) {
+				freeCanvas( S.printBase );
+			}
+
+			S.printBase = null;
+			S.printBaseOwned = false;
+			S.paper = null;
+			S.fit = false;
 			S.kind = '';
 			S.dpi = 0;
 			S.mode = 'choose';

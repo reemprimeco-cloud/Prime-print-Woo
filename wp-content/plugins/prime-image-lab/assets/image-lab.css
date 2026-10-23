@@ -444,3 +444,6 @@
   .pil__step span { display: inline; }
   .pil__step:not(.is-current) span { display: none; }
 }
+
+.pil__size--wide { grid-column: 1 / -1; min-block-size: 76px; }
+.pil__verdict + .pil__btn { margin-block-start: 12px; }

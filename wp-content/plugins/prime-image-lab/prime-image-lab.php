@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       PRIME Image Lab
  * Description:       Free, private image tools that run entirely in the visitor's browser: improve a photo, remove a plain background and check print readiness. Add it to a page with the [prime_image_lab] shortcode.
- * Version:           0.3.0
+ * Version:           0.4.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Prime Printing Co.
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PRIME_IMAGE_LAB_VERSION', '0.3.0' );
+define( 'PRIME_IMAGE_LAB_VERSION', '0.4.0' );
 define( 'PRIME_IMAGE_LAB_URL', plugin_dir_url( __FILE__ ) );
 
 /**
