@@ -59,7 +59,7 @@
 			ask: 'What would you like to do?',
 			actions: {
 				up: [ 'Make it bigger and clearer', 'A larger, sharper photo for printing.' ],
-				bg: [ 'Remove the background', 'Works on plain backgrounds. You get a see-through image.' ],
+				bg: [ 'Remove the background', 'Cuts out the main subject. You get a see-through image.' ],
 				print: [ 'Make a print-ready file', 'Sized for your paper at 300 DPI.' ]
 			},
 			sizeAsk: 'Choose the paper size',
@@ -71,7 +71,15 @@
 			upDone: 'Done. Your photo is now %s. Making a photo bigger cannot add real detail, but it makes it larger and a little clearer.',
 			upAlready: 'Your photo is already large, so we only made it a little clearer.',
 			bgDone: 'Done. The background is now transparent.',
-			bgFail: 'We could not find a plain background. Try a photo with a plain wall or sheet behind it.',
+			bgFail: 'We could not find a clear subject to cut out. Try a photo where one object or person stands out from the background.',
+			bgPlain: 'Done. The AI model could not run on this device, so we removed a plain background instead.',
+			aiTitle: 'Remove the background with AI',
+			aiText: 'To cut out the subject, your browser downloads a small AI model (about 19 MB, one time only). It runs on your device and your photo is never uploaded. It works best when one object or person clearly stands out.',
+			aiGo: 'Continue',
+			aiCancel: 'Cancel',
+			aiDownloading: 'Downloading the AI model… %s%',
+			aiPreparing: 'Starting the AI model…',
+			aiRunning: 'Removing the background…',
 			printDone: 'Ready to print on %s at %s DPI.',
 			printCap: 'Your device cannot make a full 300 DPI file this big, so this one is %s DPI.',
 			shape: 'Your photo is a different shape from %s, so there will be blank space on the paper. We kept the whole photo.',
@@ -81,6 +89,11 @@
 			download: 'Download',
 			startOver: 'Start over',
 			whatsapp: 'Send to PRIME on WhatsApp',
+			waShare: 'Send on WhatsApp (full quality)',
+			waPreparing: 'Preparing the full-quality file…',
+			waShareNote: 'Choose WhatsApp from the list. The file goes as a document, so WhatsApp does not compress it.',
+			waDeskNote: 'WhatsApp cannot take a file from a web page on this device. Open the chat, tap the paperclip, choose Document and pick the downloaded file. That keeps full quality.',
+			waShareFail: 'Sharing did not work on this device. Use Download, then attach the file as a Document in WhatsApp.',
 			shop: 'Browse printing products',
 			waNote: 'Attach the downloaded image yourself in WhatsApp. It is not sent automatically.',
 			waMessage: 'Hello PRIME, I prepared an image using PRIME Image Lab and would like to print it.',
@@ -105,7 +118,7 @@
 			ask: 'ماذا تريد أن تفعل؟',
 			actions: {
 				up: [ 'تكبير وتوضيح الصورة', 'صورة أكبر وأوضح للطباعة.' ],
-				bg: [ 'إزالة الخلفية', 'تعمل مع الخلفيات البسيطة. تحصل على صورة شفافة.' ],
+				bg: [ 'إزالة الخلفية', 'تقص العنصر الرئيسي. تحصل على صورة شفافة.' ],
 				print: [ 'ملف جاهز للطباعة', 'بمقاس ورقتك ودقة 300 DPI.' ]
 			},
 			sizeAsk: 'اختر مقاس الورق',
@@ -117,7 +130,15 @@
 			upDone: 'تم. صورتك الآن %s. تكبير الصورة لا يضيف تفاصيل حقيقية، لكنه يجعلها أكبر وأوضح قليلاً.',
 			upAlready: 'صورتك كبيرة أصلاً، فاكتفينا بتوضيحها قليلاً.',
 			bgDone: 'تم. أصبحت الخلفية شفافة.',
-			bgFail: 'لم نجد خلفية بسيطة. جرّب صورة بجدار أو ورقة بسيطة خلف الشيء.',
+			bgFail: 'لم نجد عنصراً واضحاً لقصه. جرّب صورة يظهر فيها شيء أو شخص واحد بوضوح عن الخلفية.',
+			bgPlain: 'تم. لم يعمل نموذج الذكاء الاصطناعي على هذا الجهاز، فأزلنا الخلفية البسيطة بدلاً منه.',
+			aiTitle: 'إزالة الخلفية بالذكاء الاصطناعي',
+			aiText: 'لقص العنصر يحمّل المتصفح نموذج ذكاء اصطناعي صغيراً (حوالي 19 ميجابايت، مرة واحدة فقط). يعمل على جهازك ولا تُرفع صورتك أبداً. يعمل بأفضل شكل عندما يظهر شيء أو شخص واحد بوضوح.',
+			aiGo: 'متابعة',
+			aiCancel: 'إلغاء',
+			aiDownloading: 'جارٍ تنزيل نموذج الذكاء الاصطناعي… %s%',
+			aiPreparing: 'جارٍ تشغيل النموذج…',
+			aiRunning: 'جارٍ إزالة الخلفية…',
 			printDone: 'جاهزة للطباعة على %s بدقة %s DPI.',
 			printCap: 'جهازك لا يستطيع إنشاء ملف بدقة 300 DPI بهذا الحجم، لذلك هذا الملف بدقة %s DPI.',
 			shape: 'شكل صورتك يختلف عن %s، لذلك ستظهر مساحة فارغة على الورقة. حافظنا على الصورة كاملة.',
@@ -127,6 +148,11 @@
 			download: 'تنزيل',
 			startOver: 'البدء من جديد',
 			whatsapp: 'أرسل إلى برايم على واتساب',
+			waShare: 'أرسل على واتساب (بجودة كاملة)',
+			waPreparing: 'جارٍ تجهيز الملف بجودة كاملة…',
+			waShareNote: 'اختر واتساب من القائمة. يُرسل الملف كمستند، لذلك لا يضغطه واتساب.',
+			waDeskNote: 'لا يستطيع واتساب استلام ملف من صفحة ويب على هذا الجهاز. افتح المحادثة، اضغط على المشبك، اختر مستند، ثم اختر الملف الذي نزّلته. هكذا تبقى الجودة كاملة.',
+			waShareFail: 'لم تنجح المشاركة على هذا الجهاز. استخدم التنزيل، ثم أرفق الملف كمستند في واتساب.',
 			shop: 'تصفح منتجات الطباعة',
 			waNote: 'أرفق الصورة المنزّلة بنفسك في واتساب، فهي لا تُرسل تلقائياً.',
 			waMessage: 'مرحباً برايم، جهّزت صورة عبر مختبر الصور من برايم وأرغب في طباعتها.',
@@ -163,6 +189,9 @@
 		sizeKey: '',
 		hasAlpha: false,
 		busy: false,
+		aiOk: false, // the visitor agreed to download the model
+		shareFile: null, // the full-quality PDF handed to WhatsApp through the share sheet
+		sharePrep: false,
 		downloaded: false,
 		msg: { text: '', cls: '' }
 	};
@@ -446,7 +475,10 @@
 		} else {
 			var choices;
 
-			if ( 'sizes' === S.mode ) {
+			if ( 'ai' === S.mode ) {
+				choices = '<h3>' + esc( L.aiTitle ) + '</h3><p class="pil__note">' + esc( L.aiText ) + '</p><div class="pil__actions"><button type="button" class="pil__btn" id="pil-ai-go">' + esc( L.aiGo ) + '</button>' +
+					'<button type="button" class="pil__btn pil__btn--ghost" id="pil-ai-cancel">' + esc( L.aiCancel ) + '</button></div>';
+			} else if ( 'sizes' === S.mode ) {
 				choices = '<h3>' + esc( L.sizeAsk ) + '</h3><div class="pil__sizes">' + SIZES.map( function ( z ) {
 					return '<button type="button" class="pil__size" data-size="' + z.key + '"' + ( S.busy ? ' disabled' : '' ) + '><strong>' + z.key + '</strong><span>' + ltr( z.w + ' × ' + z.h + ' mm' ) + '</span></button>';
 				} ).join( '' ) + '</div><button type="button" class="pil__btn pil__btn--ghost" id="pil-back">' + esc( L.sizeBack ) + '</button>';
@@ -462,9 +494,9 @@
 				'<div class="pil__card pil__panel">' + choices + '<div id="pil-verdict"></div></div></div>' +
 				( S.work ?
 					'<div class="pil__card pil__export"><div class="pil__handoff"><button type="button" class="pil__btn" id="pil-download">' + esc( L.download ) + '</button>' +
-					( cfg.whatsapp ? '<a class="pil__btn pil__btn--wa" id="pil-wa" target="_blank" rel="noopener" href="#">' + esc( L.whatsapp ) + '</a>' : '' ) +
+					waElement() +
 					'<a class="pil__btn pil__btn--ghost" id="pil-shop" href="' + esc( cfg.shop || '/' ) + '">' + esc( L.shop ) + '</a></div>' +
-					( cfg.whatsapp ? '<p class="pil__note">' + esc( L.waNote ) + '</p>' : '' ) + '</div>' : '' ) +
+					( cfg.whatsapp ? '<p class="pil__note">' + esc( canShareFiles() ? L.waShareNote : L.waDeskNote ) + '</p>' : '' ) + '</div>' : '' ) +
 				'<div class="pil__after-actions"><button type="button" class="pil__btn pil__btn--ghost" id="pil-start">' + esc( L.startOver ) + '</button>' +
 				'<button type="button" class="pil__btn pil__btn--ghost" id="pil-change">' + esc( L.another ) + '</button></div>';
 		}
@@ -567,6 +599,8 @@
 		S.kind = '';
 		S.dpi = 0;
 		S.hasAlpha = false;
+		S.shareFile = null;
+		S.sharePrep = false;
 		S.downloaded = false;
 		S.mode = 'choose';
 	};
@@ -664,6 +698,8 @@
 		S.kind = kind;
 		S.dpi = dpi || 0;
 		S.hasAlpha = hasAlpha( canvas );
+		S.shareFile = null;
+		S.sharePrep = false;
 		S.downloaded = false;
 		S.mode = 'choose';
 	};
@@ -713,7 +749,7 @@
 		} );
 	};
 
-	var jobBg = function () {
+	var plainBg = function () {
 		var L = t();
 		var tolerances = [ 30, 15, 45, 60, 75 ];
 		var src = current();
@@ -749,6 +785,256 @@
 		};
 
 		return attempt();
+	};
+
+
+	/* ---- AI background removal (optional, loaded only on request) ---------- */
+
+	var AI = { session: null, loading: null };
+
+	var aiAvailable = function () {
+		return !! ( cfg.aiModel && cfg.aiOrt && cfg.aiWasm && window.WebAssembly );
+	};
+
+	var concatBytes = function ( parts, total ) {
+		var out = new Uint8Array( total );
+		var at = 0;
+
+		parts.forEach( function ( p ) {
+			out.set( p, at );
+			at += p.length;
+		} );
+
+		return out;
+	};
+
+	/** Fetch a file with byte progress. */
+	var fetchBytes = function ( url, onBytes ) {
+		return window.fetch( url ).then( function ( r ) {
+			if ( ! r.ok || ! r.body ) {
+				throw new Error( 'fetch' );
+			}
+
+			var reader = r.body.getReader();
+			var parts = [];
+			var total = 0;
+
+			var pump = function () {
+				return reader.read().then( function ( res ) {
+					if ( res.done ) {
+						return concatBytes( parts, total );
+					}
+
+					parts.push( res.value );
+					total += res.value.length;
+					onBytes( res.value.length );
+
+					return pump();
+				} );
+			};
+
+			return pump();
+		} );
+	};
+
+	var loadScript = function ( src ) {
+		return new Promise( function ( resolve, reject ) {
+			if ( window.ort ) {
+				resolve();
+				return;
+			}
+
+			var el = document.createElement( 'script' );
+
+			el.src = src;
+			el.onload = resolve;
+			el.onerror = function () {
+				reject( new Error( 'script' ) );
+			};
+			document.head.appendChild( el );
+		} );
+	};
+
+	var ensureAi = function () {
+		var L = t();
+
+		if ( AI.session ) {
+			return Promise.resolve( AI.session );
+		}
+
+		if ( AI.loading ) {
+			return AI.loading;
+		}
+
+		var total = ( cfg.aiWasmBytes || 14239897 ) + ( cfg.aiModelBytes || 4574861 );
+		var got = 0;
+		var report = function ( n ) {
+			got += n;
+			setMsg( fmt( t().aiDownloading, String( Math.min( 99, Math.round( got / total * 100 ) ) ) ), 'is-busy' );
+		};
+
+		setMsg( fmt( L.aiDownloading, '0' ), 'is-busy' );
+
+		AI.loading = loadScript( cfg.aiOrt ).then( function () {
+			return Promise.all( [ fetchBytes( cfg.aiWasm, report ), fetchBytes( cfg.aiModel, report ) ] );
+		} ).then( function ( files ) {
+			setMsg( t().aiPreparing, 'is-busy' );
+
+			var ort = window.ort;
+
+			ort.env.wasm.wasmBinary = files[ 0 ];
+			ort.env.wasm.wasmPaths = cfg.aiOrt.replace( /[^/]*$/, '' );
+			ort.env.wasm.numThreads = 1;
+
+			return ort.InferenceSession.create( files[ 1 ], { executionProviders: [ 'wasm' ] } );
+		} ).then( function ( session ) {
+			AI.session = session;
+			AI.loading = null;
+
+			return session;
+		}, function ( e ) {
+			AI.loading = null;
+			throw e;
+		} );
+
+		return AI.loading;
+	};
+
+	/** Cut out the main subject with the U2-Net-P model; returns a Promise of the finished canvas. */
+	var aiRemove = function ( session, src ) {
+		var SIZE = 320;
+		var small = makeCanvas( SIZE, SIZE );
+		var sctx = small.getContext( '2d' );
+
+		// Draw on white so any transparency already present reads as background.
+		sctx.fillStyle = '#fff';
+		sctx.fillRect( 0, 0, SIZE, SIZE );
+		sctx.imageSmoothingQuality = 'high';
+		sctx.drawImage( src, 0, 0, SIZE, SIZE );
+
+		var px = sctx.getImageData( 0, 0, SIZE, SIZE ).data;
+
+		freeCanvas( small );
+
+		var max = 1;
+		var i;
+
+		for ( i = 0; i < px.length; i += 4 ) {
+			max = Math.max( max, px[ i ], px[ i + 1 ], px[ i + 2 ] );
+		}
+
+		var mean = [ 0.485, 0.456, 0.406 ];
+		var std = [ 0.229, 0.224, 0.225 ];
+		var plane = SIZE * SIZE;
+		var input = new Float32Array( 3 * plane );
+
+		for ( var p = 0; p < plane; p++ ) {
+			for ( var ch = 0; ch < 3; ch++ ) {
+				input[ ch * plane + p ] = ( px[ p * 4 + ch ] / max - mean[ ch ] ) / std[ ch ];
+			}
+		}
+
+		var feeds = {};
+
+		feeds[ session.inputNames[ 0 ] ] = new window.ort.Tensor( 'float32', input, [ 1, 3, SIZE, SIZE ] );
+
+		return session.run( feeds ).then( function ( out ) {
+			var o = out[ session.outputNames[ 0 ] ].data;
+			var mn = Infinity;
+			var mx = -Infinity;
+
+			for ( var k = 0; k < o.length; k++ ) {
+				if ( o[ k ] < mn ) {
+					mn = o[ k ];
+				}
+				if ( o[ k ] > mx ) {
+					mx = o[ k ];
+				}
+			}
+
+			var maskCanvas = makeCanvas( SIZE, SIZE );
+			var mctx = maskCanvas.getContext( '2d' );
+			var mi = mctx.createImageData( SIZE, SIZE );
+
+			for ( var q = 0; q < plane; q++ ) {
+				mi.data[ q * 4 ] = 255;
+				mi.data[ q * 4 + 1 ] = 255;
+				mi.data[ q * 4 + 2 ] = 255;
+				mi.data[ q * 4 + 3 ] = Math.round( 255 * ( o[ q ] - mn ) / ( mx - mn || 1 ) );
+			}
+
+			mctx.putImageData( mi, 0, 0 );
+
+			// Scale the mask to the photo's size with the browser's smooth filter.
+			var big = makeCanvas( src.width, src.height );
+			var bctx = big.getContext( '2d' );
+
+			bctx.imageSmoothingQuality = 'high';
+			bctx.drawImage( maskCanvas, 0, 0, src.width, src.height );
+			freeCanvas( maskCanvas );
+
+			var mask = bctx.getImageData( 0, 0, src.width, src.height ).data;
+
+			freeCanvas( big );
+
+			var res = copyCanvas( src );
+			var rctx = res.getContext( '2d' );
+			var rd = rctx.getImageData( 0, 0, res.width, res.height );
+			var removed = 0;
+			var n = res.width * res.height;
+
+			for ( var m = 0; m < n; m++ ) {
+				var v = mask[ m * 4 + 3 ] / 255;
+				var tt = Math.min( 1, Math.max( 0, ( v - 0.3 ) / 0.4 ) );
+				var a = tt * tt * ( 3 - 2 * tt );
+
+				rd.data[ m * 4 + 3 ] = Math.round( rd.data[ m * 4 + 3 ] * a );
+
+				if ( a < 0.5 ) {
+					removed++;
+				}
+			}
+
+			rctx.putImageData( rd, 0, 0 );
+
+			return { canvas: res, removed: removed / n };
+		} );
+	};
+
+	var jobBg = function () {
+		var L = t();
+
+		if ( ! aiAvailable() ) {
+			return plainBg();
+		}
+
+		return ensureAi().then( function ( session ) {
+			setMsg( L.aiRunning, 'is-busy' );
+
+			// Let the message paint before the model starts working.
+			return new Promise( function ( resolve ) {
+				window.setTimeout( resolve, 30 );
+			} ).then( function () {
+				return aiRemove( session, current() );
+			} );
+		} ).then( function ( r ) {
+			if ( r.removed < 0.02 || r.removed > 0.98 ) {
+				freeCanvas( r.canvas );
+				setMsg( L.bgFail, 'is-error' );
+				return;
+			}
+
+			finish( r.canvas, 'bg', 0 );
+			setMsg( L.bgDone, '' );
+			showVerdict( '', '' );
+		}, function () {
+			// The model or the engine would not load on this device: use the plain-background method.
+			return plainBg().then( function () {
+				if ( S.work && 'bg' === S.kind ) {
+					setMsg( L.bgPlain, '' );
+				}
+			} );
+		} );
 	};
 
 	var jobPrint = function ( key ) {
@@ -824,6 +1110,223 @@
 				setMsg( e && e.message === 'memory' ? L.errMemory : L.errGeneric, 'is-error' );
 			} );
 		}, 30 );
+	};
+
+	/* ---- WhatsApp: hand over the file itself ------------------------------ */
+
+	var canShareFiles = function () {
+		try {
+			return !! ( navigator.share && navigator.canShare && navigator.canShare( { files: [ new File( [ 'x' ], 'a.pdf', { type: 'application/pdf' } ) ] } ) );
+		} catch ( e ) {
+			return false;
+		}
+	};
+
+	var waElement = function () {
+		var L = t();
+
+		if ( ! cfg.whatsapp ) {
+			return '';
+		}
+
+		if ( canShareFiles() ) {
+			return '<button type="button" class="pil__btn pil__btn--wa" id="pil-wa-share"' + ( S.shareFile ? '' : ' disabled' ) + '>' + esc( S.shareFile ? L.waShare : L.waPreparing ) + '</button>';
+		}
+
+		return '<a class="pil__btn pil__btn--wa" id="pil-wa" target="_blank" rel="noopener" href="#">' + esc( L.whatsapp ) + '</a>';
+	};
+
+	var concat = function ( parts ) {
+		var total = 0;
+
+		parts.forEach( function ( p ) {
+			total += p.length;
+		} );
+
+		var out = new Uint8Array( total );
+		var at = 0;
+
+		parts.forEach( function ( p ) {
+			out.set( p, at );
+			at += p.length;
+		} );
+
+		return out;
+	};
+
+	var deflate = function ( bytes ) {
+		var stream = new Blob( [ bytes ] ).stream().pipeThrough( new window.CompressionStream( 'deflate' ) );
+
+		return new Response( stream ).arrayBuffer().then( function ( b ) {
+			return new Uint8Array( b );
+		} );
+	};
+
+	/**
+	 * Wrap the result in a one-page PDF at its print size. A PDF goes through
+	 * WhatsApp as a document, which WhatsApp never recompresses, and the image
+	 * inside is stored as is: a JPEG at maximum quality is embedded untouched,
+	 * and transparent images are stored losslessly.
+	 */
+	var buildPdf = function () {
+		var c = S.work;
+		var enc = new TextEncoder();
+		var dpi = S.dpi || 300;
+		var wPt = ( c.width / dpi * 72 ).toFixed( 2 );
+		var hPt = ( c.height / dpi * 72 ).toFixed( 2 );
+
+		var imageParts;
+
+		if ( S.hasAlpha ) {
+			if ( ! window.CompressionStream ) {
+				return Promise.resolve( null );
+			}
+
+			var px = c.getContext( '2d' ).getImageData( 0, 0, c.width, c.height ).data;
+			var n = c.width * c.height;
+			var rgb = new Uint8Array( n * 3 );
+			var alpha = new Uint8Array( n );
+
+			for ( var i = 0, j = 0, k = 0; i < n; i++, j += 3, k += 4 ) {
+				rgb[ j ] = px[ k ];
+				rgb[ j + 1 ] = px[ k + 1 ];
+				rgb[ j + 2 ] = px[ k + 2 ];
+				alpha[ i ] = px[ k + 3 ];
+			}
+
+			imageParts = Promise.all( [ deflate( rgb ), deflate( alpha ) ] ).then( function ( r ) {
+				return { rgb: r[ 0 ], alpha: r[ 1 ], jpeg: null };
+			} );
+		} else {
+			imageParts = new Promise( function ( resolve ) {
+				var flat = makeCanvas( c.width, c.height );
+				var fctx = flat.getContext( '2d' );
+
+				fctx.fillStyle = '#fff';
+				fctx.fillRect( 0, 0, flat.width, flat.height );
+				fctx.drawImage( c, 0, 0 );
+				flat.toBlob( function ( blob ) {
+					freeCanvas( flat );
+					resolve( blob );
+				}, 'image/jpeg', 1 );
+			} ).then( function ( blob ) {
+				return blob ? blob.arrayBuffer().then( function ( b ) {
+					return { jpeg: new Uint8Array( b ) };
+				} ) : null;
+			} );
+		}
+
+		return imageParts.then( function ( img ) {
+			if ( ! img ) {
+				return null;
+			}
+
+			var chunks = [];
+			var offsets = [];
+			var len = 0;
+			var push = function ( bytes ) {
+				chunks.push( bytes );
+				len += bytes.length;
+			};
+			var text = function ( str ) {
+				push( enc.encode( str ) );
+			};
+			var obj = function ( num, dict, stream ) {
+				offsets[ num ] = len;
+				text( num + ' 0 obj\n' + dict.replace( 'LEN', stream ? String( stream.length ) : '0' ) + '\n' );
+
+				if ( stream ) {
+					text( 'stream\n' );
+					push( stream );
+					text( '\nendstream\n' );
+				}
+
+				text( 'endobj\n' );
+			};
+
+			text( '%PDF-1.4\n' );
+			obj( 1, '<< /Type /Catalog /Pages 2 0 R >>' );
+			obj( 2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>' );
+			obj( 3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + wPt + ' ' + hPt + '] /Contents 4 0 R /Resources << /XObject << /Im0 5 0 R >> >> >>' );
+
+			var content = enc.encode( 'q ' + wPt + ' 0 0 ' + hPt + ' 0 0 cm /Im0 Do Q' );
+
+			obj( 4, '<< /Length LEN >>', content );
+
+			var base = '/Type /XObject /Subtype /Image /Width ' + c.width + ' /Height ' + c.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8';
+
+			if ( img.jpeg ) {
+				obj( 5, '<< ' + base + ' /Filter /DCTDecode /Length LEN >>', img.jpeg );
+			} else {
+				obj( 5, '<< ' + base + ' /Filter /FlateDecode /SMask 6 0 R /Length LEN >>', img.rgb );
+				obj( 6, '<< /Type /XObject /Subtype /Image /Width ' + c.width + ' /Height ' + c.height + ' /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length LEN >>', img.alpha );
+			}
+
+			var count = offsets.length;
+			var xref = len;
+			var table = 'xref\n0 ' + count + '\n0000000000 65535 f \n';
+
+			for ( var o = 1; o < count; o++ ) {
+				table += ( '0000000000' + offsets[ o ] ).slice( -10 ) + ' 00000 n \n';
+			}
+
+			text( table + 'trailer\n<< /Size ' + count + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n' );
+
+			return new Blob( [ concat( chunks ) ], { type: 'application/pdf' } );
+		} );
+	};
+
+	var prepareShare = function () {
+		if ( ! S.work || S.shareFile || S.sharePrep || ! cfg.whatsapp || ! canShareFiles() ) {
+			return;
+		}
+
+		S.sharePrep = true;
+
+		var work = S.work;
+
+		buildPdf().then( function ( blob ) {
+			if ( S.work !== work || ! blob ) {
+				S.sharePrep = false;
+				return;
+			}
+
+			var d = new Date();
+			var pad = function ( n ) {
+				return ( n < 10 ? '0' : '' ) + n;
+			};
+			var label = 'print' === S.kind ? 'print-' + S.sizeKey : 'bg' === S.kind ? 'no-background' : 'bigger';
+
+			S.shareFile = new File( [ blob ], 'prime-' + label + '-' + d.getFullYear() + pad( d.getMonth() + 1 ) + pad( d.getDate() ) + '.pdf', { type: 'application/pdf' } );
+			S.sharePrep = false;
+
+			var btn = root.querySelector( '#pil-wa-share' );
+
+			if ( btn ) {
+				btn.disabled = false;
+				btn.textContent = t().waShare;
+			}
+		}, function () {
+			S.sharePrep = false;
+		} );
+	};
+
+	var shareToWhatsApp = function () {
+		var L = t();
+
+		if ( ! S.shareFile ) {
+			return;
+		}
+
+		navigator.share( { files: [ S.shareFile ], title: 'PRIME', text: L.waMessage } ).then( function () {
+			S.downloaded = true;
+		}, function ( e ) {
+			if ( e && 'AbortError' === e.name ) {
+				return;
+			}
+
+			setMsg( L.waShareFail, 'is-error' );
+		} );
 	};
 
 	/* ---- Download -------------------------------------------------------- */
@@ -970,7 +1473,12 @@
 				if ( 'up' === key ) {
 					run( jobUp );
 				} else if ( 'bg' === key ) {
-					run( jobBg );
+					if ( aiAvailable() && ! S.aiOk && ! AI.session ) {
+						S.mode = 'ai';
+						build();
+					} else {
+						run( jobBg );
+					}
 				} else {
 					S.mode = 'sizes';
 					build();
@@ -988,6 +1496,21 @@
 			} );
 		} );
 
+		var aiGo = root.querySelector( '#pil-ai-go' );
+		var aiCancel = root.querySelector( '#pil-ai-cancel' );
+
+		if ( aiGo ) {
+			aiGo.addEventListener( 'click', function () {
+				S.aiOk = true;
+				S.mode = 'choose';
+				run( jobBg );
+			} );
+			aiCancel.addEventListener( 'click', function () {
+				S.mode = 'choose';
+				build();
+			} );
+		}
+
 		var back = root.querySelector( '#pil-back' );
 
 		if ( back ) {
@@ -1001,6 +1524,13 @@
 
 		if ( dl ) {
 			dl.addEventListener( 'click', download );
+		}
+
+		var share = root.querySelector( '#pil-wa-share' );
+
+		if ( share ) {
+			share.addEventListener( 'click', shareToWhatsApp );
+			prepareShare();
 		}
 
 		root.querySelector( '#pil-start' ).addEventListener( 'click', function () {
