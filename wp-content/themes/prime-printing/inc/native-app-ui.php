@@ -157,6 +157,45 @@ function prime_app_render_tabbar() {
 add_action( 'wp_footer', 'prime_app_render_tabbar', 5 );
 
 /**
+ * Safety net for a page that reaches the app as its web version.
+ *
+ * A page cache (or anything else that serves one stored copy per URL) can hand
+ * the app the web HTML: the web header and its delivery strip, no tab bar. The
+ * app always carries "PrimePrintingApp" in its user agent, so when a page
+ * arrives without the app body class the page asks again once, with a throwaway
+ * query argument that no cache has seen, and the server answers in app mode.
+ * When it did, the argument is removed from the address again. A browser never
+ * matches the user agent, so none of this runs for web visitors.
+ */
+function prime_app_guard_script() {
+	?>
+<script>
+(function () {
+	try {
+		var inApp = document.body.classList.contains( 'prime-app' );
+		var u = new URL( window.location.href );
+
+		if ( inApp && u.searchParams.has( '_app' ) ) {
+			u.searchParams.delete( '_app' );
+			window.history.replaceState( null, '', u.toString() );
+			return;
+		}
+
+		if ( inApp || ! /PrimePrintingApp/.test( navigator.userAgent ) || u.searchParams.has( '_app' ) ) {
+			return;
+		}
+
+		document.cookie = 'prime_app=1; path=/; max-age=2592000; SameSite=Lax' + ( 'https:' === window.location.protocol ? '; Secure' : '' );
+		u.searchParams.set( '_app', String( Date.now() ) );
+		window.location.replace( u.toString() );
+	} catch ( e ) {}
+}());
+</script>
+	<?php
+}
+add_action( 'wp_footer', 'prime_app_guard_script', 1 );
+
+/**
  * The short title the top bar shows for the current screen.
  *
  * @return string
@@ -534,6 +573,7 @@ function prime_app_icon( $name ) {
 		'shop'    => '<rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/>',
 		'cart'    => '<path d="M6 7h13l-1.5 8H7.5z"/><path d="M6 7 5 4H3"/><circle cx="9" cy="19" r="1.3"/><circle cx="16" cy="19" r="1.3"/>',
 		'account' => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+		'menu'    => '<path d="M4 7h16M4 12h16M4 17h16"/>',
 		'lab'     => '<rect x="3" y="4" width="18" height="16" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 4 4"/>',
 		'search'  => '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
 		'back'    => '<path d="M15 5l-7 7 7 7"/>',

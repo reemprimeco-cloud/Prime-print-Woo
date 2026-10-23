@@ -34,8 +34,10 @@ $prime_shop_url = prime_has_woocommerce() && wc_get_page_id( 'shop' ) > 0
 
 <header class="prime-app-bar <?php echo $prime_is_home ? 'prime-app-bar--home' : 'prime-app-bar--inner'; ?>">
 	<?php if ( $prime_is_home ) : ?>
-		<?php /* Balances the search button on the other end so the logo sits on the bar's true centre. */ ?>
-		<span class="prime-app-bar__btn" aria-hidden="true"></span>
+		<?php /* The menu button (the app's only menu: pages, categories, language, contact); it also balances the search button so the logo sits on the bar's true centre. */ ?>
+		<button class="prime-app-bar__btn" type="button" data-prime-menu-open aria-expanded="false" aria-controls="prime-menu" aria-label="<?php esc_attr_e( 'Open menu', 'prime-printing' ); ?>">
+			<?php echo prime_app_icon( 'menu' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG set. ?>
+		</button>
 		<?php prime_logo(); ?>
 		<a class="prime-app-bar__btn" href="<?php echo esc_url( $prime_shop_url ); ?>" aria-label="<?php esc_attr_e( 'Search', 'prime-printing' ); ?>">
 			<?php echo prime_app_icon( 'search' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG set. ?>

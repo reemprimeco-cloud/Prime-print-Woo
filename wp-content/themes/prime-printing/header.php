@@ -36,8 +36,10 @@ defined( 'ABSPATH' ) || exit;
 
 <?php
 // App mode (inc/native-app-ui.php) has its own top bar and tab bar; the web
-// header and the full-screen mobile menu are not rendered at all there.
+// header is not rendered there.
 if ( ! function_exists( 'prime_is_native_app_request' ) || ! prime_is_native_app_request() ) {
 	get_template_part( 'template-parts/header' );
-	get_template_part( 'template-parts/mobile-menu' );
 }
+
+// The full-screen menu is the app's menu too (opened from the burger on the home bar).
+get_template_part( 'template-parts/mobile-menu' );

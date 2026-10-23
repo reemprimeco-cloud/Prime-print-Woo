@@ -19,7 +19,6 @@
    app mode already; these cover anything a plugin or template still prints. */
 body.prime-app .prime-topbar,
 body.prime-app .prime-nav,
-body.prime-app .prime-menu,
 body.prime-app .prime-footer,
 body.prime-app .prime-crumb,
 body.prime-app .prime-pagehead,
@@ -34,6 +33,10 @@ body.prime-app {
   background: var(--paper);
 }
 
+
+/* The full-screen menu keeps clear of the status bar and the home indicator. */
+body.prime-app .prime-menu__top { padding-block-start: calc(var(--app-safe-top) + 12px); }
+body.prime-app .prime-menu__body { padding-block-end: calc(var(--app-safe-bottom) + 24px); }
 
 /* ---- Navigation progress bar -----------------------------------------------
  * Every tab/link is a real full page load — there is no client-side router to

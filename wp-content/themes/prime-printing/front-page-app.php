@@ -4,9 +4,8 @@
  *
  * Served instead of front-page.php when the request comes from the iOS app
  * (inc/native-app-ui.php, prime_app_template()). An app home is a launcher,
- * not a landing page: one banner, a category strip, and the popular products
- * — the same featured-first list the web wall uses, so Reem curates both from
- * the one "featured" flag.
+ * not a landing page: one banner, a category strip and the product wall
+ * (Reem removed the separate "Popular" block, 2026-10-23).
  *
  * There is no search field on this screen. It had one, directly under a top
  * bar that already carries a search button; Reem removed it (2026-09-18,
@@ -25,7 +24,6 @@ $prime_shop_url  = $prime_has_shop ? get_permalink( wc_get_page_id( 'shop' ) ) :
 $prime_all_url   = $prime_has_shop ? add_query_arg( 'view', 'all', $prime_shop_url ) : home_url( '/' );
 $prime_banner    = prime_app_banner();
 $prime_cats      = prime_product_categories( 10 );
-$prime_popular   = function_exists( 'prime_wall_products' ) ? prime_wall_products( 6 ) : array();
 ?>
 
 <main id="prime-content" class="prime-main prime-app-home">
@@ -104,22 +102,6 @@ $prime_popular   = function_exists( 'prime_wall_products' ) ? prime_wall_product
 					<span><?php echo esc_html( $prime_term->name ); ?></span>
 				</a>
 			<?php endforeach; ?>
-		</div>
-	<?php endif; ?>
-
-	<?php if ( $prime_popular ) : ?>
-		<div class="prime-app-sec">
-			<h2><?php esc_html_e( 'Popular', 'prime-printing' ); ?></h2>
-			<a href="<?php echo esc_url( $prime_all_url ); ?>"><?php esc_html_e( 'See all', 'prime-printing' ); ?></a>
-		</div>
-		<div class="prime-grid prime-app-home__grid">
-			<?php
-			foreach ( $prime_popular as $prime_product ) {
-				$GLOBALS['product'] = $prime_product;
-				get_template_part( 'template-parts/shop/card' );
-			}
-			unset( $GLOBALS['product'] );
-			?>
 		</div>
 	<?php endif; ?>
 

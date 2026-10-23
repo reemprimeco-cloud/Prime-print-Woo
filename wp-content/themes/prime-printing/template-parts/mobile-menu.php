@@ -34,6 +34,13 @@ if ( prime_has_woocommerce() ) {
 	}
 }
 
+if ( function_exists( 'prime_app_lab_url' ) && prime_app_lab_url() ) {
+	$prime_menu_items[] = array(
+		'title' => is_rtl() ? 'مختبر الصور' : 'Image Lab',
+		'url'   => prime_app_lab_url(),
+	);
+}
+
 foreach ( get_pages( array( 'parent' => 0, 'sort_column' => 'menu_order,post_title', 'number' => 2, 'exclude' => prime_system_page_ids() ) ) as $prime_page ) {
 	$prime_menu_items[] = array(
 		'title' => $prime_page->post_title,
