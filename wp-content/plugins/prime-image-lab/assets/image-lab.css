@@ -362,3 +362,26 @@
 @media (prefers-reduced-motion: reduce) {
   .pil * { animation: none !important; transition: none !important; }
 }
+
+.pil__table { inline-size: 100%; border-collapse: collapse; font-size: 14px; }
+.pil__table th, .pil__table td { padding: 8px 10px; border: 1px solid var(--pil-line); text-align: start; font-weight: 300; }
+.pil__table th { background: var(--pil-mist); color: var(--pil-ink-mid); font-weight: 400; inline-size: 40%; }
+.pil__compare-after canvas { display: block; inline-size: 100%; block-size: auto; }
+.pil__compare-before { inline-size: 50%; }
+.pil__compare-before canvas { display: block; inline-size: var(--pil-w, 100%); max-inline-size: none; block-size: 100%; object-fit: fill; }
+.pil__stage .pil__btn { margin-block-start: 12px; }
+
+/* ---- Hardening against the theme's prose styles ------------------------- */
+.pil-host { max-inline-size: none !important; }
+.pil a, .pil a:hover { text-decoration: none; }
+.pil h3 { letter-spacing: normal; text-transform: none; font-family: inherit; line-height: 1.3; }
+.pil .pil__btn { color: var(--pil-paper); }
+.pil .pil__btn--ghost { color: var(--pil-navy); }
+@media (hover: hover) {
+  .pil .pil__btn:hover { color: var(--pil-navy-deep); }
+}
+.pil .pil__btn--wa:hover { background: var(--pil-sky); }
+.pil__note:empty { display: none; }
+.pil p { margin: 0; }
+.pil .pil__status { margin-block-start: 12px; }
+.pil .pil__privacy { margin-block-start: 24px; }

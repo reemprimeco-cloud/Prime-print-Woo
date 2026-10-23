@@ -10,7 +10,8 @@
 # How it runs: a push to main-0t9dg8 whose commit TITLE (first line) contains
 #   [deploy theme]    theme files changed since the last theme deploy
 #   [deploy plugin]   the designer plugin (editor rebuilt first)
-#   [deploy all]      both
+#   [deploy all]      theme and designer plugin
+#   [deploy imagelab] the PRIME Image Lab plugin (no build step)
 # or by hand: Actions → "Deploy to live site" → Run workflow.
 #
 # The last deployed theme commit is remembered in the tag "live-theme", so each
@@ -27,7 +28,7 @@ on:
       target:
         description: What to upload
         type: choice
-        options: [theme, plugin, all]
+        options: [theme, plugin, all, imagelab]
         default: all
 
 permissions:
@@ -43,7 +44,8 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.head_commit.message, '[deploy theme]') ||
       contains(github.event.head_commit.message, '[deploy plugin]') ||
-      contains(github.event.head_commit.message, '[deploy all]')
+      contains(github.event.head_commit.message, '[deploy all]') ||
+      contains(github.event.head_commit.message, '[deploy imagelab]')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -60,20 +62,22 @@ jobs:
       - name: Decide what to upload
         id: what
         run: |
-          theme=false; plugin=false
-          case "$TARGET" in theme) theme=true;; plugin) plugin=true;; all) theme=true; plugin=true;; esac
+          theme=false; plugin=false; imagelab=false
+          case "$TARGET" in theme) theme=true;; plugin) plugin=true;; all) theme=true; plugin=true;; imagelab) imagelab=true;; esac
           # Only the commit title counts, so a message that merely mentions a
           # trigger in its body (like the one that added this job) uploads nothing.
           title=$(printf '%s\n' "$MSG" | head -n 1)
           case "$title" in *"[deploy theme]"*) theme=true;; esac
           case "$title" in *"[deploy plugin]"*) plugin=true;; esac
           case "$title" in *"[deploy all]"*) theme=true; plugin=true;; esac
+          case "$title" in *"[deploy imagelab]"*) imagelab=true;; esac
           echo "theme=$theme" >> "$GITHUB_OUTPUT"
           echo "plugin=$plugin" >> "$GITHUB_OUTPUT"
-          echo "Theme: $theme   Plugin: $plugin"
+          echo "imagelab=$imagelab" >> "$GITHUB_OUTPUT"
+          echo "Theme: $theme   Plugin: $plugin   Image Lab: $imagelab"
 
       - name: Check the SFTP secrets are set
-        if: steps.what.outputs.theme == 'true' || steps.what.outputs.plugin == 'true'
+        if: steps.what.outputs.theme == 'true' || steps.what.outputs.plugin == 'true' || steps.what.outputs.imagelab == 'true'
         run: |
           if [ -z "$PRIME_SFTP_USER" ] || [ -z "$PRIME_SFTP_PASSWORD" ]; then
             echo "::error::Add PRIME_SFTP_USER and PRIME_SFTP_PASSWORD under Settings → Secrets and variables → Actions."
@@ -106,3 +110,7 @@ jobs:
         run: |
           (cd binder-editor && npm ci --no-audit --no-fund)
           scripts/deploy-binder-plugin.sh
+
+      - name: Upload the PRIME Image Lab plugin
+        if: steps.what.outputs.imagelab == 'true'
+        run: scripts/deploy-image-lab.sh
