@@ -780,3 +780,63 @@ body.prime-app .prime-app-tabs { view-transition-name: app-tabs; }
   ::view-transition-old(*),
   ::view-transition-new(*) { animation: none !important; }
 }
+
+
+/* ---- iOS layout polish -------------------------------------------------------
+ * Found by rendering the app screens at 390 and 320 points, English and Arabic:
+ * the wordmark touched the bar's edges, section labels and the banner button
+ * shouted in letter-spaced capitals, the menu counted its own links, and the
+ * small grey and sky-blue text fell short of 4.5:1.
+ */
+
+/* The wordmark gets air above and below inside the 56pt bar. */
+.prime-app-bar .prime-logo .prime-logo__img { inline-size: 92px; }
+
+/* Section heads read as headings, not as labels. */
+.prime-app-sec { align-items: center; margin-block-end: var(--sp-4); }
+
+.prime-app-sec h2 {
+  font-size: 19px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.2;
+}
+
+.prime-app-sec a {
+  font-size: 14px;
+  color: var(--sky-ink);
+  /* A 44pt tap target without changing the look. */
+  padding-block: 12px;
+  margin-block: -12px;
+}
+
+/* Banner: the small line above the title and the button stay quiet. */
+.prime-app-banner__eyebrow {
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.prime-app-banner__cta {
+  padding: 10px 16px;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+@media (max-width: 360px) {
+  .prime-app-banner__art { inline-size: 84px; block-size: 84px; }
+}
+
+/* Category names a little larger; they are the labels people tap on. */
+.prime-app-cat > span:last-child { font-size: 11.5px; }
+:lang(ar) .prime-app-cat > span:last-child { font-size: 12.5px; }
+
+/* Tab labels: grey that passes 4.5:1 on the bar. */
+body.prime-app .prime-app-tab { color: #6a6a70; }
+body.prime-app .prime-app-tab.is-on { color: var(--navy); }
+
+/* The menu: no numbering, no wide tracking, clear of the status bar. */
+body.prime-app .prime-menu__num { display: none; }
+body.prime-app .prime-menu__links a { letter-spacing: 0; font-weight: var(--fw-light); }
