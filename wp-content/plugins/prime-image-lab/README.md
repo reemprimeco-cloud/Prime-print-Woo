@@ -4,11 +4,11 @@ Free image tools for primekw.net that run **entirely in the visitor's browser**.
 Shortcode: `[prime_image_lab]`, placed on the page `/image-lab/`.
 
 ## What it does
-- **Improve:** brightness, contrast, sharpen, light noise reduction, resize by 1x to 4x or exact pixels. Browser Canvas resampling, not AI.
-- **Background:** removes a flat, single-colour background that touches the photo's edges; exports a transparent PNG. Not AI.
-- **Print check:** pixels, format, size, aspect ratio, estimated PPI at a print size in mm or cm, with plain warnings.
-- **Export:** JPEG (quality slider) or PNG, generic filename. WhatsApp hand-off and a shop link.
-- English and Arabic (RTL), switchable on the page.
+Three one-tap jobs, no settings:
+- **Make it bigger and clearer:** picks the enlargement automatically (up to 4x for small photos, none for large ones) and applies light sharpening and noise reduction. Browser Canvas resampling, not AI.
+- **Remove the background:** removes a flat, single-colour background that touches the photo's edges, trying several tolerances itself; exports a transparent PNG. Not AI.
+- **Make a print-ready file:** pick A5, A4, A3 or A2; the photo is fitted to the paper at 300 DPI (lower on phones that cannot make that many pixels), the DPI is written into the JPEG/PNG file, and a plain verdict says whether the photo is sharp enough.
+Jobs stack on the current result. Export is JPEG, or PNG when transparent, with a generic filename. English and Arabic (RTL).
 
 ## Privacy
 Images are read with `createImageBitmap`, drawn on in-memory canvases, processed in a Web Worker (or on the page if

@@ -385,3 +385,62 @@
 .pil p { margin: 0; }
 .pil .pil__status { margin-block-start: 12px; }
 .pil .pil__privacy { margin-block-start: 24px; }
+
+/* ---- Simple three-action layout ------------------------------------------ */
+.pil__grid--simple { grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr); }
+.pil__facts-line { font-size: 13px; color: var(--pil-ink-mid); margin-block-start: 12px; }
+.pil__panel { align-content: start; }
+
+.pil__actions-grid { display: grid; gap: 12px; }
+
+.pil__action {
+  display: grid;
+  gap: 4px;
+  text-align: start;
+  padding: 18px 20px;
+  min-block-size: 88px;
+  background: var(--pil-paper);
+  border: 1px solid var(--pil-line);
+  cursor: pointer;
+  transition: border-color .3s, background .3s, transform .3s;
+}
+
+.pil__action-title { font-size: 18px; color: var(--pil-navy); font-weight: 400; }
+.pil__action-text { font-size: 14px; color: var(--pil-ink-mid); }
+.pil__action:active { transform: scale(.985); border-color: var(--pil-sky); }
+.pil__action:focus-visible, .pil__size:focus-visible { outline: 2px solid var(--pil-sky-ink); outline-offset: 2px; }
+.pil__action[disabled], .pil__size[disabled] { opacity: .5; cursor: progress; }
+
+@media (hover: hover) {
+  .pil__action:hover, .pil__size:hover { border-color: var(--pil-navy); background: var(--pil-mist); }
+}
+
+.pil__sizes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.pil__size {
+  display: grid;
+  gap: 2px;
+  place-items: center;
+  min-block-size: 92px;
+  padding: 12px;
+  background: var(--pil-paper);
+  border: 1px solid var(--pil-line);
+  cursor: pointer;
+  transition: border-color .3s, background .3s, transform .3s;
+}
+
+.pil__size strong { font-size: 26px; font-weight: 300; color: var(--pil-navy); }
+.pil__size span { font-size: 13px; color: var(--pil-ink-mid); }
+.pil__size:active { transform: scale(.97); }
+
+.pil__after-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-block-start: 16px; }
+.pil .pil__verdict { display: block; padding: 12px 14px; font-size: 14px; }
+.pil .pil__verdict--good { background: var(--ok-wash, #E8F4EE); color: var(--pil-ok); }
+.pil .pil__verdict--fair { background: var(--warn-wash, #FBF2E3); color: #7a4d06; }
+.pil .pil__verdict--low { background: rgba(178, 58, 56, .08); color: var(--pil-danger); }
+
+@media (max-width: 900px) {
+  .pil__grid--simple { grid-template-columns: 1fr; }
+  .pil__step span { display: inline; }
+  .pil__step:not(.is-current) span { display: none; }
+}
