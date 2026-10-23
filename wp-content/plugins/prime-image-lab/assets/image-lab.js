@@ -78,6 +78,10 @@
 			bgPlain: 'Done. The AI model could not run on this device, so we removed a plain background instead.',
 			aiTitle: 'Remove the background with AI',
 			aiText: 'To cut out the subject, your browser downloads a small AI model (about 19 MB, one time only). It runs on your device and your photo is never uploaded. It works best when one object or person clearly stands out.',
+			upAiTitle: 'Make it bigger and clearer with AI',
+			upAiText: 'Your browser downloads a small AI model (about 5 MB, plus the 14 MB engine if it is not loaded yet; one time only). It redraws edges and detail instead of just stretching the pixels. It runs on your device and your photo is never uploaded.',
+			upAiRunning: 'Enhancing your photo with AI… %s%',
+			upAiDone: 'Done. Your photo is now %s. The AI redrew the edges and detail. It cannot bring back what was never in the photo, so check faces and small text.',
 			aiGo: 'Continue',
 			aiCancel: 'Cancel',
 			aiDownloading: 'Downloading the AI model… %s%',
@@ -165,6 +169,10 @@
 			bgPlain: 'تم. لم يعمل نموذج الذكاء الاصطناعي على هذا الجهاز، فأزلنا الخلفية البسيطة بدلاً منه.',
 			aiTitle: 'إزالة الخلفية بالذكاء الاصطناعي',
 			aiText: 'لقص العنصر يحمّل المتصفح نموذج ذكاء اصطناعي صغيراً (حوالي 19 ميجابايت، مرة واحدة فقط). يعمل على جهازك ولا تُرفع صورتك أبداً. يعمل بأفضل شكل عندما يظهر شيء أو شخص واحد بوضوح.',
+			upAiTitle: 'تكبير وتوضيح الصورة بالذكاء الاصطناعي',
+			upAiText: 'يحمّل المتصفح نموذج ذكاء اصطناعي صغيراً (حوالي 5 ميجابايت، إضافة إلى المحرّك 14 ميجابايت إن لم يكن محمّلاً؛ مرة واحدة فقط). يعيد رسم الحواف والتفاصيل بدل مجرد مطّ البكسلات. يعمل على جهازك ولا تُرفع صورتك أبداً.',
+			upAiRunning: 'جارٍ تحسين صورتك بالذكاء الاصطناعي… %s%',
+			upAiDone: 'تم. صورتك الآن %s. أعاد الذكاء الاصطناعي رسم الحواف والتفاصيل. لا يمكنه استرجاع ما لم يكن في الصورة أصلاً، فتأكد من الوجوه والنصوص الصغيرة.',
 			aiGo: 'متابعة',
 			aiCancel: 'إلغاء',
 			aiDownloading: 'جارٍ تنزيل نموذج الذكاء الاصطناعي… %s%',
@@ -255,6 +263,7 @@
 		printBase: null, // the image the print job started from, so it can be redone
 		printBaseOwned: false,
 		aiOk: false, // the visitor agreed to download the model
+		aiFor: 'bg', // which job the consent screen is for: 'bg' or 'up'
 		shareFile: null, // the full-quality PDF handed to WhatsApp through the share sheet
 		sharePrep: false,
 		downloaded: false,
@@ -541,7 +550,7 @@
 			var choices;
 
 			if ( 'ai' === S.mode ) {
-				choices = '<h3>' + esc( L.aiTitle ) + '</h3><p class="pil__note">' + esc( L.aiText ) + '</p><div class="pil__actions"><button type="button" class="pil__btn" id="pil-ai-go">' + esc( L.aiGo ) + '</button>' +
+				choices = '<h3>' + esc( 'up' === S.aiFor ? L.upAiTitle : L.aiTitle ) + '</h3><p class="pil__note">' + esc( 'up' === S.aiFor ? L.upAiText : L.aiText ) + '</p><div class="pil__actions"><button type="button" class="pil__btn" id="pil-ai-go">' + esc( L.aiGo ) + '</button>' +
 					'<button type="button" class="pil__btn pil__btn--ghost" id="pil-ai-cancel">' + esc( L.aiCancel ) + '</button></div>';
 			} else if ( 'rudesign' === S.mode ) {
 				var bt = S.bannerText;
@@ -891,7 +900,138 @@
 		return s < 1.05 ? 1 : s;
 	};
 
-	var jobUp = function () {
+	var SR_MAX_PIXELS = 400000;
+
+	/** Is this photo a candidate for the AI upscaler? Small, opaque photos that would be enlarged at least 2x. */
+	var srWanted = function () {
+		var src = current();
+
+		return !! ( aiAvailable() && cfg.aiSrModel && ! S.hasAlpha && src.width * src.height <= SR_MAX_PIXELS && autoScale( src.width, src.height ) >= 2 );
+	};
+
+	/** Rebuild a photo at 4x with the Real-ESRGAN model, tile by tile. */
+	var srEnhance = function ( session, src, onProgress ) {
+		var CORE = 128;
+		var PAD = 16;
+		var w = src.width;
+		var h = src.height;
+		var px = src.getContext( '2d' ).getImageData( 0, 0, w, h ).data;
+		var out = makeCanvas( w * 4, h * 4 );
+		var octx = out.getContext( '2d' );
+		var jobs = [];
+		var total;
+		var done = 0;
+		var tx;
+		var ty;
+
+		for ( ty = 0; ty < h; ty += CORE ) {
+			for ( tx = 0; tx < w; tx += CORE ) {
+				jobs.push( [ tx, ty ] );
+			}
+		}
+
+		total = jobs.length;
+
+		var next = function () {
+			if ( ! jobs.length ) {
+				return Promise.resolve( out );
+			}
+
+			var j = jobs.shift();
+			var x0 = j[ 0 ];
+			var y0 = j[ 1 ];
+			var cw = Math.min( CORE, w - x0 );
+			var ch = Math.min( CORE, h - y0 );
+			var iw = cw + PAD * 2;
+			var ih = ch + PAD * 2;
+			var plane = iw * ih;
+			var input = new Float32Array( plane * 3 );
+			var yy;
+			var xx;
+
+			// Edge pixels are repeated beyond the photo so the borders get the same context as the middle.
+			for ( yy = 0; yy < ih; yy++ ) {
+				var sy = Math.min( h - 1, Math.max( 0, y0 - PAD + yy ) );
+
+				for ( xx = 0; xx < iw; xx++ ) {
+					var sx = Math.min( w - 1, Math.max( 0, x0 - PAD + xx ) );
+					var si = ( sy * w + sx ) * 4;
+					var p = yy * iw + xx;
+
+					input[ p ] = px[ si ] / 255;
+					input[ plane + p ] = px[ si + 1 ] / 255;
+					input[ plane * 2 + p ] = px[ si + 2 ] / 255;
+				}
+			}
+
+			var feeds = {};
+
+			feeds[ session.inputNames[ 0 ] ] = new window.ort.Tensor( 'float32', input, [ 1, 3, ih, iw ] );
+
+			return session.run( feeds ).then( function ( res ) {
+				var o = res[ session.outputNames[ 0 ] ].data;
+				var ow = iw * 4;
+				var oplane = ow * ih * 4;
+				var tw = cw * 4;
+				var th = ch * 4;
+				var img = octx.createImageData( tw, th );
+				var d = img.data;
+				var y;
+				var x;
+
+				for ( y = 0; y < th; y++ ) {
+					var row = ( y + PAD * 4 ) * ow + PAD * 4;
+
+					for ( x = 0; x < tw; x++ ) {
+						var di = ( y * tw + x ) * 4;
+						var oi = row + x;
+
+						d[ di ] = o[ oi ] * 255;
+						d[ di + 1 ] = o[ oplane + oi ] * 255;
+						d[ di + 2 ] = o[ oplane * 2 + oi ] * 255;
+						d[ di + 3 ] = 255;
+					}
+				}
+
+				octx.putImageData( img, x0 * 4, y0 * 4 );
+				done++;
+				onProgress( done / total );
+
+				return next();
+			} );
+		};
+
+		return next();
+	};
+
+	var jobUpAi = function () {
+		var L = t();
+		var src = current();
+		var s = autoScale( src.width, src.height );
+
+		return ensureSr().then( function ( session ) {
+			setMsg( fmt( L.upAiRunning, '0' ), 'is-busy' );
+
+			return srEnhance( session, src, function ( f ) {
+				setMsg( fmt( t().upAiRunning, String( Math.round( f * 100 ) ) ), 'is-busy' );
+			} );
+		} ).then( function ( big ) {
+			var tw = Math.round( src.width * s );
+			var th = Math.round( src.height * s );
+			var fin = big;
+
+			if ( tw !== big.width ) {
+				fin = resample( big, tw, th );
+				freeCanvas( big );
+			}
+
+			finish( fin, 'up', 0 );
+			setMsg( fmt( L.upAiDone, dims( fin ) ), '' );
+			showVerdict( '', '' );
+		} );
+	};
+
+	var jobUpPlain = function () {
 		var L = t();
 		var src = current();
 		var s = autoScale( src.width, src.height );
@@ -911,6 +1051,17 @@
 		}, function ( e ) {
 			freeCanvas( scaled );
 			throw e;
+		} );
+	};
+
+	var jobUp = function () {
+		if ( ! srWanted() ) {
+			return jobUpPlain();
+		}
+
+		// If the model or the engine will not run on this device, fall back to the plain method.
+		return jobUpAi().catch( function () {
+			return jobUpPlain();
 		} );
 	};
 
@@ -955,7 +1106,7 @@
 
 	/* ---- AI background removal (optional, loaded only on request) ---------- */
 
-	var AI = { session: null, loading: null };
+	var AI = { session: null, sr: null, runtime: null, loading: {} };
 
 	var aiAvailable = function () {
 		return !! ( cfg.aiModel && cfg.aiOrt && cfg.aiWasm && window.WebAssembly );
@@ -1020,18 +1171,45 @@
 		} );
 	};
 
-	var ensureAi = function () {
+	/** The ONNX engine (script + WebAssembly), loaded once and shared by every model. */
+	var ensureRuntime = function ( report ) {
+		if ( AI.runtime ) {
+			return AI.runtime;
+		}
+
+		AI.runtime = loadScript( cfg.aiOrt ).then( function () {
+			return fetchBytes( cfg.aiWasm, report );
+		} ).then( function ( wasm ) {
+			var ort = window.ort;
+
+			ort.env.wasm.wasmBinary = wasm;
+			ort.env.wasm.wasmPaths = cfg.aiOrt.replace( /[^/]*$/, '' );
+			ort.env.wasm.numThreads = 1;
+		} );
+
+		AI.runtime.catch( function () {
+			AI.runtime = null;
+		} );
+
+		return AI.runtime;
+	};
+
+	/** Load one model ('bg' cut-out or 'sr' upscaler) with download progress. */
+	var ensureModel = function ( which ) {
 		var L = t();
+		var url = 'sr' === which ? cfg.aiSrModel : cfg.aiModel;
+		var modelBytes = 'sr' === which ? ( cfg.aiSrModelBytes || 4858579 ) : ( cfg.aiModelBytes || 4574861 );
+		var key = 'sr' === which ? 'sr' : 'session';
 
-		if ( AI.session ) {
-			return Promise.resolve( AI.session );
+		if ( AI[ key ] ) {
+			return Promise.resolve( AI[ key ] );
 		}
 
-		if ( AI.loading ) {
-			return AI.loading;
+		if ( AI.loading[ which ] ) {
+			return AI.loading[ which ];
 		}
 
-		var total = ( cfg.aiWasmBytes || 14239897 ) + ( cfg.aiModelBytes || 4574861 );
+		var total = modelBytes + ( AI.runtime ? 0 : ( cfg.aiWasmBytes || 14239897 ) );
 		var got = 0;
 		var report = function ( n ) {
 			got += n;
@@ -1040,29 +1218,29 @@
 
 		setMsg( fmt( L.aiDownloading, '0' ), 'is-busy' );
 
-		AI.loading = loadScript( cfg.aiOrt ).then( function () {
-			return Promise.all( [ fetchBytes( cfg.aiWasm, report ), fetchBytes( cfg.aiModel, report ) ] );
-		} ).then( function ( files ) {
+		AI.loading[ which ] = Promise.all( [ ensureRuntime( report ), fetchBytes( url, report ) ] ).then( function ( parts ) {
 			setMsg( t().aiPreparing, 'is-busy' );
 
-			var ort = window.ort;
-
-			ort.env.wasm.wasmBinary = files[ 0 ];
-			ort.env.wasm.wasmPaths = cfg.aiOrt.replace( /[^/]*$/, '' );
-			ort.env.wasm.numThreads = 1;
-
-			return ort.InferenceSession.create( files[ 1 ], { executionProviders: [ 'wasm' ] } );
+			return window.ort.InferenceSession.create( parts[ 1 ], { executionProviders: [ 'wasm' ] } );
 		} ).then( function ( session ) {
-			AI.session = session;
-			AI.loading = null;
+			AI[ key ] = session;
+			AI.loading[ which ] = null;
 
 			return session;
 		}, function ( e ) {
-			AI.loading = null;
+			AI.loading[ which ] = null;
 			throw e;
 		} );
 
-		return AI.loading;
+		return AI.loading[ which ];
+	};
+
+	var ensureAi = function () {
+		return ensureModel( 'bg' );
+	};
+
+	var ensureSr = function () {
+		return ensureModel( 'sr' );
 	};
 
 	/** Cut out the main subject with the U2-Net-P model; returns a Promise of the finished canvas. */
@@ -1905,9 +2083,16 @@
 				var key = b.getAttribute( 'data-action' );
 
 				if ( 'up' === key ) {
-					run( jobUp );
+					if ( srWanted() && ! S.aiOk && ! AI.sr ) {
+						S.aiFor = 'up';
+						S.mode = 'ai';
+						build();
+					} else {
+						run( jobUp );
+					}
 				} else if ( 'bg' === key ) {
 					if ( aiAvailable() && ! S.aiOk && ! AI.session ) {
+						S.aiFor = 'bg';
 						S.mode = 'ai';
 						build();
 					} else {
@@ -1973,7 +2158,7 @@
 			aiGo.addEventListener( 'click', function () {
 				S.aiOk = true;
 				S.mode = 'choose';
-				run( jobBg );
+				run( 'up' === S.aiFor ? jobUp : jobBg );
 			} );
 			aiCancel.addEventListener( 'click', function () {
 				S.mode = 'choose';
