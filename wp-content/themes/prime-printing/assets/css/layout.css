@@ -24,7 +24,15 @@
   justify-content: center;
   align-items: center;
   gap: 10px;
-  block-size: var(--topbar-h);
+  /* Grows with the text: a long line wraps on a narrow phone instead of being cut off. */
+  min-block-size: var(--topbar-h);
+  padding-block: 8px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .prime-topbar { font-size: 11px; letter-spacing: .08em; }
 }
 
 /* ---- Header ------------------------------------------------------------- */

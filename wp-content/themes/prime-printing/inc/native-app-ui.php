@@ -137,6 +137,28 @@ function prime_app_nocache_headers() {
 add_action( 'template_redirect', 'prime_app_nocache_headers', 1 );
 
 /**
+ * The same URL has an app version and a web version, so a shared page cache
+ * must never hand one to the other. Every front-end response says it varies by
+ * user agent, and the Image Lab page (a static page with no cart cookie, the
+ * kind a cache keeps) is never stored at all: it arrived in the app as its
+ * web version, with the web header and no tab bar (Reem, 2026-10-23).
+ */
+function prime_app_vary_headers() {
+	if ( is_admin() || is_feed() ) {
+		return;
+	}
+
+	if ( ! headers_sent() ) {
+		header( 'Vary: User-Agent', false );
+	}
+
+	if ( function_exists( 'prime_app_lab_page_id' ) && prime_app_lab_page_id() && is_page( prime_app_lab_page_id() ) ) {
+		nocache_headers();
+	}
+}
+add_action( 'template_redirect', 'prime_app_vary_headers', 2 );
+
+/**
  * The compact top bar, first thing in <body>.
  */
 function prime_app_render_topbar() {
