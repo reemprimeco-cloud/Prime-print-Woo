@@ -100,6 +100,7 @@ function prime_app_assets() {
 	}
 
 	wp_enqueue_style( 'prime-app', PRIME_URI . '/assets/css/app.css', $deps, prime_asset_version( '/assets/css/app.css' ) );
+	wp_enqueue_style( 'prime-app-ios', PRIME_URI . '/assets/css/app-ios.css', array( 'prime-app' ), prime_asset_version( '/assets/css/app-ios.css' ) );
 	wp_enqueue_script( 'prime-app', PRIME_URI . '/assets/js/app.js', array(), prime_asset_version( '/assets/js/app.js' ), true );
 
 	wp_localize_script(
@@ -216,6 +217,25 @@ function prime_app_guard_script() {
 	<?php
 }
 add_action( 'wp_footer', 'prime_app_guard_script', 1 );
+
+/**
+ * Does this screen show an iOS large title under the bar? Cart, checkout,
+ * account and plain pages do. The home screen has none, and the shop and
+ * product screens already carry their own heading.
+ *
+ * @return bool
+ */
+function prime_app_wants_large_title() {
+	if ( ( is_front_page() && ! is_paged() ) || '' === prime_app_page_title() ) {
+		return false;
+	}
+
+	if ( prime_has_woocommerce() && ( is_shop() || is_product() || is_product_taxonomy() || is_search() ) ) {
+		return false;
+	}
+
+	return true;
+}
 
 /**
  * The short title the top bar shows for the current screen.

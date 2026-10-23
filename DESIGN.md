@@ -214,3 +214,8 @@ A dense mosaic of product photographs with caption overlays. Tiles reveal on scr
 - **Don't** add a second accent colour or a status colour as a surface fill.
 - **Don't** add resting drop shadows.
 - **Don't** hide essential information behind hover.
+
+
+## App mode (iOS shell) — decided 2026-10-23
+
+Reem asked for the app to "look like a real iOS app". Inside the iOS app (`body.prime-app`, `assets/css/app.css` + `assets/css/app-ios.css`) the website's square hairline look gives way to the iOS design language: the system font (SF Pro / SF Arabic), grouped white rounded surfaces on the system grey (#f2f2f7), large titles that collapse into a translucent bar, filled 50pt buttons, pill chips, a bottom-sheet menu, press states instead of hover, 17pt form fields. The brand stays in the wordmark, the navy tint, and the catalogue photography. The website itself is unchanged.

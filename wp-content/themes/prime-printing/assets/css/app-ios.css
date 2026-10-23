@@ -1,0 +1,359 @@
+/**
+ * Prime Printing — app mode, iOS design language
+ *
+ * Loaded after app.css, only inside the iOS app. The website keeps the brand's
+ * square hairline look; the app speaks iOS: the system font, grouped rounded
+ * surfaces on the system grey, large titles that collapse into the bar, filled
+ * buttons, a bottom sheet for the menu. The brand stays in the logo, the navy
+ * tint and the photography.
+ *
+ * Logical properties throughout, so Arabic (RTL) needs no second copy.
+ */
+
+body.prime-app {
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+
+  --ios-bg: #f2f2f7;
+  --ios-card: #ffffff;
+  --ios-sep: rgba(60, 60, 67, .18);
+  --ios-label: #000000;
+  --ios-label2: rgba(60, 60, 67, .62);
+  --ios-fill: rgba(118, 118, 128, .12);
+  --ios-r: 14px;
+  --ios-r-sm: 10px;
+  --ios-tint: var(--navy);
+
+  background: var(--ios-bg);
+  color: var(--ios-label);
+  font-family: var(--body);
+}
+
+:lang(ar) body.prime-app,
+body.prime-app:lang(ar) {
+  --display: -apple-system, BlinkMacSystemFont, "SF Arabic", "Geeza Pro", system-ui, sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, "SF Arabic", "Geeza Pro", system-ui, sans-serif;
+}
+
+/* No capitals, no tracking: that is how a web brand shouts, not how iOS reads. */
+body.prime-app :is(h1, h2, h3, h4, button, .button, label, .prime-btn, .prime-label, .prime-card__add, .prime-app-more, .prime-app-chip, .prime-app-banner__cta) {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+body.prime-app :is(h1, h2, h3) { font-family: var(--display); }
+
+/* ---- Navigation bar and large titles -------------------------------------- */
+body.prime-app .prime-app-bar { border-block-end-width: 0; box-shadow: 0 .5px 0 var(--ios-sep); }
+body.prime-app .prime-app-bar__title { font-weight: 600; transition: opacity .18s ease-out; }
+
+.prime-app-large {
+  padding: 2px var(--wrap-pad) 8px;
+  font-family: var(--display);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: .01em;
+  color: var(--ios-label);
+  background: var(--ios-bg);
+}
+
+/* A screen with a large title shows the small one only once it has scrolled away. */
+body.prime-app.prime-has-large:not(.prime-scrolled-title) .prime-app-bar__title { opacity: 0; }
+body.prime-app.prime-has-large:not(.prime-scrolled-title) .prime-app-bar { box-shadow: none; background: var(--ios-bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* ---- Tab bar: the active tab is a filled glyph -------------------------------- */
+body.prime-app .prime-app-tab.is-on svg { fill: currentColor; fill-opacity: .16; }
+
+/* ---- Buttons: filled, rounded, 50pt -------------------------------------------- */
+body.prime-app :is(.prime-btn, .button, button.alt, .single_add_to_cart_button, #place_order, .prime-app-more) {
+  border-radius: var(--ios-r);
+  min-block-size: 50px;
+  padding-block: 12px;
+  font-family: var(--body);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+body.prime-app :is(.prime-btn--navy, .button.alt, .single_add_to_cart_button, #place_order) {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+body.prime-app .prime-app-more {
+  display: grid;
+  place-items: center;
+  background: var(--navy);
+  border: 0;
+  color: #fff;
+}
+
+/* ---- Fields ----------------------------------------------------------------------- */
+body.prime-app :is(input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="password"], input[type="search"], select, textarea) {
+  border-radius: 12px;
+  border: 0;
+  background: var(--ios-card);
+  box-shadow: inset 0 0 0 .5px var(--ios-sep);
+  min-block-size: 48px;
+  padding-inline: 14px;
+  /* 17pt also stops iOS zooming the page when a field gets focus. */
+  font-size: 17px;
+  font-family: var(--body);
+  color: var(--ios-label);
+}
+
+body.prime-app textarea { padding-block: 12px; }
+body.prime-app :is(input, select, textarea):focus { outline: none; box-shadow: inset 0 0 0 2px var(--navy); }
+
+/* ---- Home ------------------------------------------------------------------------- */
+body.prime-app .prime-app-banner {
+  border-radius: 20px;
+  background: linear-gradient(155deg, #1a3a6b 0%, var(--navy) 62%);
+  padding: 20px;
+}
+
+body.prime-app .prime-app-banner__art { display: none; }
+body.prime-app .prime-app-banner__eyebrow::before { display: none; }
+body.prime-app .prime-app-banner__eyebrow { margin-block-end: 6px; color: rgba(255, 255, 255, .72); font-weight: 500; }
+body.prime-app .prime-app-banner__title { font-family: var(--display); font-size: 22px; font-weight: 700; line-height: 1.2; }
+:lang(ar) body.prime-app .prime-app-banner__title { font-size: 21px; font-weight: 700; }
+
+body.prime-app .prime-app-banner__cta {
+  margin-block-start: 14px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+body.prime-app .prime-app-banner--media { border-radius: 20px; }
+
+body.prime-app .prime-app-sec h2 { font-size: 22px; font-weight: 700; }
+body.prime-app .prime-app-sec a { font-size: 17px; font-weight: 400; color: var(--navy); }
+
+body.prime-app .prime-app-cat__icon { border: 0; box-shadow: 0 1px 3px rgba(0, 0, 0, .14); }
+body.prime-app .prime-app-cat > span:last-child { color: var(--ios-label); font-weight: 500; }
+
+/* The wall: rounded tiles on the grey, sentence-case captions. */
+body.prime-app .prime-wall-section { background: transparent; padding-block: 4px 28px; }
+body.prime-app .prime-wall { gap: 10px; padding-inline: var(--wrap-pad); }
+body.prime-app .prime-tile { border-radius: 16px; }
+body.prime-app .prime-tile__name { font-family: var(--display); font-size: 15px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+body.prime-app .prime-tile__price { font-size: 13px; color: rgba(255, 255, 255, .85); }
+
+/* ---- Shop ------------------------------------------------------------------------- */
+body.prime-app .prime-app-shophead h1 { font-size: 34px; font-weight: 700; letter-spacing: .01em; color: var(--ios-label); }
+body.prime-app .prime-app-shophead__count { color: var(--ios-label2); font-size: 13px; }
+
+/* The wrapper is the search pill; the field inside is just the text. */
+body.prime-app .prime-app-search {
+  border: 0;
+  border-radius: var(--ios-r-sm);
+  background: var(--ios-fill);
+  block-size: 40px;
+  padding-inline: 12px;
+}
+
+body.prime-app .prime-app-search input {
+  min-block-size: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 17px;
+}
+
+body.prime-app .prime-app-chip {
+  border: 0;
+  border-radius: 999px;
+  background: var(--ios-card);
+  color: var(--ios-label);
+  padding: 9px 16px;
+  font-size: 15px;
+}
+
+body.prime-app .prime-app-chip.is-on { background: var(--navy); color: #fff; }
+
+body.prime-app .prime-grid { padding-inline: var(--wrap-pad); gap: 12px; }
+
+body.prime-app .prime-card {
+  background: var(--ios-card);
+  border: 0;
+  border-radius: var(--ios-r);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+
+body.prime-app .prime-card__media,
+body.prime-app .prime-card__media img { border-radius: 0; }
+
+body.prime-app .prime-grid .prime-card__body { padding: 10px 12px 12px; }
+body.prime-app .prime-grid .prime-card__title { font-size: 15px; font-weight: 600; color: var(--ios-label); }
+body.prime-app .prime-grid .prime-price { font-size: 15px; color: var(--ios-label2); }
+
+body.prime-app .prime-grid .prime-card__add {
+  border: 0;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* ---- Cart, checkout, account: white grouped surfaces on the grey ------------------ */
+body.prime-app :is(.woocommerce-cart-form, .cart_totals, .woocommerce-checkout #order_review, .woocommerce-MyAccount-content, #customer_details .col-1, #customer_details .col-2) {
+  background: var(--ios-card);
+  border: 0;
+  border-radius: var(--ios-r);
+  padding: 16px;
+}
+
+body.prime-app .woocommerce-MyAccount-navigation ul,
+body.prime-app .prime-app-links {
+  margin: 0 0 var(--sp-5);
+  padding: 0;
+  list-style: none;
+  border: 0;
+  border-radius: var(--ios-r);
+  overflow: hidden;
+  background: var(--ios-card);
+}
+
+body.prime-app .woocommerce-MyAccount-navigation li { margin: 0; border: 0; }
+
+body.prime-app .woocommerce-MyAccount-navigation a,
+body.prime-app .prime-app-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 0;
+  border-block-end: .5px solid var(--ios-sep);
+  font-size: 17px;
+  color: var(--ios-label);
+}
+
+body.prime-app .woocommerce-MyAccount-navigation li:last-child a,
+body.prime-app .prime-app-link:last-child { border-block-end: 0; }
+
+body.prime-app .woocommerce-MyAccount-navigation a::after {
+  content: "";
+  inline-size: 8px;
+  block-size: 8px;
+  border-block-start: 2px solid rgba(60, 60, 67, .3);
+  border-inline-end: 2px solid rgba(60, 60, 67, .3);
+  transform: rotate(45deg);
+}
+
+[dir="rtl"] body.prime-app .woocommerce-MyAccount-navigation a::after { transform: rotate(-45deg); }
+
+/* ---- The menu is a bottom sheet ---------------------------------------------------- */
+body.prime-app::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-menu) - 1);
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease-out;
+}
+
+body.prime-app.prime-lock::after { opacity: .4; }
+
+body.prime-app .prime-menu {
+  inset-block-start: calc(var(--app-safe-top) + 14px);
+  border-radius: 16px 16px 0 0;
+  background: var(--ios-bg);
+  color: var(--ios-label);
+  opacity: 1;
+  transform: translateY(100%);
+  transition: transform .4s cubic-bezier(.32, .72, 0, 1), visibility 0s .4s;
+}
+
+body.prime-app .prime-menu.is-open {
+  transform: none;
+  transition: transform .4s cubic-bezier(.32, .72, 0, 1), visibility 0s;
+}
+
+body.prime-app .prime-menu__top {
+  padding-block: 12px;
+  border-block-end: 0;
+}
+
+/* The light sheet takes the dark wordmark. */
+body.prime-app .prime-menu__top .prime-logo__img--dark { display: block; }
+body.prime-app .prime-menu__top .prime-logo__img--light { display: none; }
+
+body.prime-app .prime-menu__close {
+  inline-size: 30px;
+  block-size: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ios-fill);
+  color: var(--ios-label2);
+  font-size: 20px;
+  line-height: 1;
+}
+
+body.prime-app .prime-menu__search input {
+  border-radius: var(--ios-r-sm);
+  border: 0;
+  background: var(--ios-fill);
+  color: var(--ios-label);
+  box-shadow: none;
+}
+
+body.prime-app .prime-menu__search input::placeholder { color: var(--ios-label2); }
+body.prime-app .prime-menu__search button { color: var(--ios-label2); }
+
+body.prime-app .prime-menu__links {
+  margin-block: var(--sp-5);
+  border-radius: var(--ios-r);
+  overflow: hidden;
+  background: var(--ios-card);
+}
+
+body.prime-app .prime-menu__links li { border-block-end: .5px solid var(--ios-sep); }
+body.prime-app .prime-menu__links li:last-child { border-block-end: 0; }
+
+body.prime-app .prime-menu__links a {
+  padding: 14px 16px;
+  font-family: var(--body);
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--ios-label);
+}
+
+body.prime-app .prime-menu__links a:hover { padding-inline-start: 16px; color: var(--ios-label); }
+
+body.prime-app .prime-menu__links a::after {
+  content: "";
+  inline-size: 8px;
+  block-size: 8px;
+  border-block-start: 2px solid rgba(60, 60, 67, .3);
+  border-inline-end: 2px solid rgba(60, 60, 67, .3);
+  transform: rotate(45deg);
+}
+
+[dir="rtl"] body.prime-app .prime-menu__links a::after { transform: rotate(-45deg); }
+
+body.prime-app .prime-menu__head { color: var(--ios-label2); font-size: 13px; text-transform: uppercase; letter-spacing: 0; }
+
+body.prime-app .prime-menu__cat {
+  align-items: center;
+  border: 0;
+  border-radius: var(--ios-r-sm);
+  background: var(--ios-card);
+  color: var(--ios-label);
+}
+
+body.prime-app .prime-menu__cat b { color: var(--ios-label2); }
+body.prime-app .prime-menu__foot,
+body.prime-app .prime-menu__foot a { color: var(--ios-label2); }

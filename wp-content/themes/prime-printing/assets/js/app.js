@@ -107,6 +107,17 @@
 		}
 	} );
 
+	// iOS large titles: the bar's small title appears once the large one has scrolled away.
+	var largeTitle = document.querySelector( '[data-prime-large], .prime-app-shophead h1' );
+
+	if ( largeTitle && 'IntersectionObserver' in window ) {
+		document.body.classList.add( 'prime-has-large' );
+
+		new IntersectionObserver( function ( entries ) {
+			document.body.classList.toggle( 'prime-scrolled-title', ! entries[ 0 ].isIntersecting );
+		}, { rootMargin: '-56px 0px 0px 0px', threshold: 0 } ).observe( largeTitle );
+	}
+
 	var back = document.querySelector( '[data-prime-app-back]' );
 
 	if ( back ) {

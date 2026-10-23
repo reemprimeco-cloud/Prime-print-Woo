@@ -58,3 +58,7 @@ $prime_shop_url = prime_has_woocommerce() && wc_get_page_id( 'shop' ) > 0
 		<?php endif; ?>
 	<?php endif; ?>
 </header>
+
+<?php if ( prime_app_wants_large_title() ) : ?>
+	<h1 class="prime-app-large" data-prime-large><?php echo esc_html( prime_app_page_title() ); ?></h1>
+<?php endif; ?>
