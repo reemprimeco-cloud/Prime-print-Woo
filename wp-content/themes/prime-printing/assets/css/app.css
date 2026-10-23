@@ -677,3 +677,106 @@ body.prime-app .prime-wall-section {
 body.prime-app .prime-wall-section .prime-wrap { padding-inline: var(--sp-4, 16px); }
 body.prime-app .prime-wall-section .prime-sechead h2 { font-size: 22px; }
 body.prime-app .prime-wall__more { margin-block-start: var(--sp-6, 20px); }
+
+
+/* ---- Native feel -----------------------------------------------------------
+ * The app is a WebView of the site, so it is the small habits of the web that
+ * give it away: selectable chrome, grey tap flashes, shouting letter-spaced
+ * labels, hard page swaps, hover-style states. This section swaps those for
+ * how an iPhone app behaves. Brand type and colour stay on the content.
+ */
+body.prime-app {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation; /* no double-tap zoom, no 300ms wait */
+}
+
+/* Chrome and controls are not text to select; inputs and reading text stay selectable. */
+body.prime-app a,
+body.prime-app button,
+body.prime-app nav,
+body.prime-app label,
+body.prime-app h1,
+body.prime-app h2,
+body.prime-app h3,
+body.prime-app .prime-app-bar,
+body.prime-app .prime-app-tabs {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body.prime-app input,
+body.prime-app textarea { -webkit-user-select: text; user-select: text; }
+
+body.prime-app :focus:not(:focus-visible) { outline: none; }
+
+/* The system font for the bars, set the way iOS sets it. */
+body.prime-app .prime-app-bar,
+body.prime-app .prime-app-tabs {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+}
+
+body.prime-app .prime-app-bar__title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Tab bar: translucent material, sentence-case labels, no top indicator line. */
+body.prime-app .prime-app-tabs {
+  background: rgba(249, 249, 249, .88);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+  border-block-start: .5px solid rgba(60, 60, 67, .29);
+}
+
+body.prime-app .prime-app-tab {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #8a8a8e;
+}
+
+:lang(ar) body.prime-app .prime-app-tab,
+body.prime-app:lang(ar) .prime-app-tab { font-size: 10.5px; }
+
+body.prime-app .prime-app-tab.is-on { color: var(--navy); }
+body.prime-app .prime-app-tab.is-on::before { display: none; }
+
+body.prime-app .prime-app-bar {
+  background: rgba(249, 249, 249, .88);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+  border-block-end: .5px solid rgba(60, 60, 67, .29);
+}
+
+/* Touch feedback on press, not hover. */
+body.prime-app a,
+body.prime-app button,
+body.prime-app .prime-btn { transition: opacity .12s ease-out, transform .12s ease-out; }
+
+body.prime-app .prime-app-tab:active,
+body.prime-app .prime-app-bar__btn:active { opacity: .45; }
+
+body.prime-app .prime-btn:active,
+body.prime-app .prime-app-banner:active,
+body.prime-app .prime-app-cat:active,
+body.prime-app .prime-card:active { transform: scale(.97); opacity: .85; }
+
+/* Screens cross-fade instead of hard-swapping; the bars stay put like a real navigation stack. */
+@view-transition { navigation: auto; }
+
+body.prime-app .prime-app-bar { view-transition-name: app-bar; }
+body.prime-app .prime-app-tabs { view-transition-name: app-tabs; }
+
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: .16s; animation-timing-function: ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
