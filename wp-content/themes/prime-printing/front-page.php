@@ -29,6 +29,7 @@ get_template_part( 'template-parts/home/hero' );
 	<?php
 	get_template_part( 'template-parts/home/apps' );
 	get_template_part( 'template-parts/home/proof' );
+	get_template_part( 'template-parts/home/lab' );
 	get_template_part( 'template-parts/home/ticker' );
 	get_template_part( 'template-parts/home/wall' );
 	get_template_part( 'template-parts/home/clients' );
