@@ -447,3 +447,17 @@
 
 .pil__size--wide { grid-column: 1 / -1; min-block-size: 76px; }
 .pil__verdict + .pil__btn { margin-block-start: 12px; }
+
+/* ---- Side-by-side result when the print job changes the shape ------------ */
+.pil__duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; direction: ltr; }
+.pil__duo-fig { margin: 0; display: flex; flex-direction: column; gap: 8px; min-inline-size: 0; }
+.pil__duo-frame {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--pil-mist, #eef2f6);
+  border: 1px solid var(--pil-line);
+  padding: 10px;
+}
+.pil__duo-frame canvas { display: block; inline-size: auto; max-inline-size: 100%; block-size: auto; max-block-size: min(70vh, 640px); object-fit: contain; }
+.pil__duo-fig--after .pil__duo-frame { box-shadow: 0 10px 24px rgba(8, 19, 42, .18); }
+.pil__duo figcaption { font-size: 13px; color: var(--pil-ink-mid); text-align: center; }
+@media (max-width: 520px) { .pil__duo { gap: 10px; } .pil__duo-frame { padding: 4px; } }

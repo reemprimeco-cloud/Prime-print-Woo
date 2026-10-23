@@ -567,9 +567,12 @@
 			}
 
 			body = '<div class="pil__grid pil__grid--simple"><div class="pil__card pil__stage">' +
-				'<div class="pil__compare" id="pil-compare"><div class="pil__compare-after" id="pil-after"></div><div class="pil__compare-before" id="pil-before"></div><div class="pil__handle" id="pil-handle"></div>' +
-				'<span class="pil__tag pil__tag--before">' + esc( L.before ) + '</span><span class="pil__tag pil__tag--after">' + esc( L.after ) + '</span>' +
-				'<input class="pil__range" id="pil-pos" type="range" min="0" max="100" value="50" aria-label="' + esc( L.compare ) + '"></div>' +
+				( isDuo() ?
+					'<div class="pil__duo" id="pil-duo"><figure class="pil__duo-fig"><div class="pil__duo-frame" id="pil-before"></div><figcaption>' + esc( L.before ) + '</figcaption></figure>' +
+					'<figure class="pil__duo-fig pil__duo-fig--after"><div class="pil__duo-frame" id="pil-after"></div><figcaption>' + esc( L.after ) + paperCaption() + '</figcaption></figure></div>' :
+					'<div class="pil__compare" id="pil-compare"><div class="pil__compare-after" id="pil-after"></div><div class="pil__compare-before" id="pil-before"></div><div class="pil__handle" id="pil-handle"></div>' +
+					'<span class="pil__tag pil__tag--before">' + esc( L.before ) + '</span><span class="pil__tag pil__tag--after">' + esc( L.after ) + '</span>' +
+					'<input class="pil__range" id="pil-pos" type="range" min="0" max="100" value="50" aria-label="' + esc( L.compare ) + '"></div>' ) +
 				'<p class="pil__facts-line" id="pil-facts"></p><p class="pil__status" id="pil-msg" role="status" aria-live="polite"></p></div>' +
 				'<div class="pil__card pil__panel">' + choices + '<div id="pil-verdict"></div></div></div>' +
 				( S.work ?
@@ -595,6 +598,48 @@
 		refresh();
 	};
 
+	// The slider only works when both sides share one shape. A print job is shown as the sheet it
+	// prints on (A4, roll-up...) with the photo placed exactly as the PDF places it, next to the photo.
+	var isDuo = function () {
+		return !! ( S.work && S.orig && 'print' === S.kind && S.paper );
+	};
+
+	var sheetPreview = function () {
+		var pw = S.paper.w;
+		var ph = S.paper.h;
+		var k = 1100 / Math.max( pw, ph );
+		var sw = Math.max( 1, Math.round( pw * k ) );
+		var sh = Math.max( 1, Math.round( ph * k ) );
+		var c = document.createElement( 'canvas' );
+		var ctx = c.getContext( '2d' );
+		var dpi = S.dpi || 300;
+		var w = 'RU' === S.sizeKey ? sw : Math.min( sw, S.work.width / dpi * 25.4 * k );
+		var h = 'RU' === S.sizeKey ? sh : Math.min( sh, S.work.height / dpi * 25.4 * k );
+
+		c.width = sw;
+		c.height = sh;
+		ctx.fillStyle = '#fff';
+		ctx.fillRect( 0, 0, sw, sh );
+		ctx.imageSmoothingQuality = 'high';
+		ctx.drawImage( S.work, ( sw - w ) / 2, ( sh - h ) / 2, w, h );
+		ctx.strokeStyle = 'rgba(8,19,42,.25)';
+		ctx.strokeRect( 0.5, 0.5, sw - 1, sh - 1 );
+
+		return c;
+	};
+
+	var paperCaption = function () {
+		var z;
+
+		if ( ! S.paper ) {
+			return '';
+		}
+
+		z = S.paper.w >= 800 ? t().ruDims : S.paper.w + ' × ' + S.paper.h + ' mm';
+
+		return ' · ' + ltr( z );
+	};
+
 	var mount = function () {
 		var before = root.querySelector( '#pil-before' );
 		var after = root.querySelector( '#pil-after' );
@@ -604,6 +649,14 @@
 		}
 
 		before.appendChild( S.orig );
+
+		if ( root.querySelector( '#pil-duo' ) ) {
+			freeCanvas( S.view );
+			S.view = sheetPreview();
+			after.appendChild( S.view );
+
+			return;
+		}
 
 		if ( S.work ) {
 			after.appendChild( S.work );
@@ -1841,9 +1894,11 @@
 
 		var pos = root.querySelector( '#pil-pos' );
 
-		pos.addEventListener( 'input', function () {
-			setPos( parseInt( pos.value, 10 ) );
-		} );
+		if ( pos ) {
+			pos.addEventListener( 'input', function () {
+				setPos( parseInt( pos.value, 10 ) );
+			} );
+		}
 
 		Array.prototype.forEach.call( root.querySelectorAll( '[data-action]' ), function ( b ) {
 			b.addEventListener( 'click', function () {
