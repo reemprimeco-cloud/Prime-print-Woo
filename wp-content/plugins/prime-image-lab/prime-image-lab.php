@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       PRIME Image Lab
  * Description:       Free, private image tools that run entirely in the visitor's browser: improve a photo, remove a plain background and check print readiness. Add it to a page with the [prime_image_lab] shortcode.
- * Version:           0.4.0
+ * Version:           0.5.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Prime Printing Co.
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PRIME_IMAGE_LAB_VERSION', '0.4.0' );
+define( 'PRIME_IMAGE_LAB_VERSION', '0.5.0' );
 define( 'PRIME_IMAGE_LAB_URL', plugin_dir_url( __FILE__ ) );
 
 /**
@@ -80,7 +80,8 @@ function prime_image_lab_enqueue() {
 
 	wp_enqueue_style( 'prime-image-lab', $base . 'image-lab.css', array(), $ver );
 	wp_enqueue_script( 'prime-image-lab-core', $base . 'image-lab-core.js', array(), $ver, true );
-	wp_enqueue_script( 'prime-image-lab', $base . 'image-lab.js', array( 'prime-image-lab-core' ), $ver, true );
+	wp_enqueue_script( 'prime-image-lab-banner', $base . 'image-lab-banner.js', array(), $ver, true );
+	wp_enqueue_script( 'prime-image-lab', $base . 'image-lab.js', array( 'prime-image-lab-core', 'prime-image-lab-banner' ), $ver, true );
 
 	$lang = function_exists( 'pll_current_language' ) ? (string) pll_current_language() : substr( determine_locale(), 0, 2 );
 

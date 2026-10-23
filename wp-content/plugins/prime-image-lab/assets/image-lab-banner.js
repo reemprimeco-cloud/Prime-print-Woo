@@ -23,43 +23,7 @@
 	};
 
 	/** Soft blur without ctx.filter (not available in every Safari): shrink hard, enlarge smoothly. */
-	var softBlur = function ( src, w, h, strength ) {
-		var tiny = makeCanvas( Math.max( 4, w / strength ), Math.max( 4, h / strength ) );
-		var tctx = tiny.getContext( '2d' );
-
-		tctx.imageSmoothingQuality = 'high';
-		tctx.drawImage( src, 0, 0, tiny.width, tiny.height );
-
-		var out = makeCanvas( w, h );
-		var octx = out.getContext( '2d' );
-
-		octx.imageSmoothingQuality = 'high';
-		octx.drawImage( tiny, 0, 0, w, h );
-
-		// A second pass smooths the blocky steps left by one large enlargement.
-		var mid = makeCanvas( w / 2, h / 2 );
-		var mctx = mid.getContext( '2d' );
-
-		mctx.imageSmoothingQuality = 'high';
-		mctx.drawImage( out, 0, 0, mid.width, mid.height );
-		octx.drawImage( mid, 0, 0, w, h );
-		tiny.width = 0;
-		mid.width = 0;
-
-		return out;
-	};
-
 	/** Draw src to fill w x h, cropping the overflow around a focal point. */
-	var cover = function ( ctx, src, x, y, w, h, fx, fy ) {
-		var k = Math.max( w / src.width, h / src.height );
-		var sw = w / k;
-		var sh = h / k;
-		var sx = Math.min( src.width - sw, Math.max( 0, ( src.width - sw ) * ( fx === undefined ? 0.5 : fx ) ) );
-		var sy = Math.min( src.height - sh, Math.max( 0, ( src.height - sh ) * ( fy === undefined ? 0.5 : fy ) ) );
-
-		ctx.drawImage( src, sx, sy, sw, sh, x, y, w, h );
-	};
-
 	/** Average colour, a vibrant colour and a light/dark flag from a 24 px sample. */
 	var palette = function ( src ) {
 		var c = makeCanvas( 24, 24 );
@@ -171,7 +135,9 @@
 		ctx.fillStyle = o.color;
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'top';
-		ctx.direction = o.rtl ? 'rtl' : 'ltr';
+		// Direction follows the script of the words themselves, so a Latin phone line stays
+		// in order even on an Arabic banner.
+		ctx.direction = /[\u0600-\u06FF]/.test( text ) ? 'rtl' : 'ltr';
 
 		if ( o.shadow ) {
 			ctx.shadowColor = 'rgba(0,0,0,.35)';
@@ -197,7 +163,7 @@
 	 * compose( opts ) -> canvas
 	 *  src     canvas of the photo
 	 *  mask    optional canvas of the photo with the background removed (transparent PNG-like)
-	 *  style   'extend' | 'hero' | 'panel'
+	 *  style   'hero' (cut-out subject) | 'extend' (the whole photo, framed; used when no cut-out is possible)
 	 *  width, height   output size in px
 	 *  text    { headline, sub, contact }
 	 *  rtl     right-to-left text
@@ -214,133 +180,53 @@
 		var pal = palette( opts.mask || src );
 		var pad = W * 0.07;
 		var textW = W - pad * 2;
-		var style = opts.style || 'extend';
 		var headlineSize = W * 0.105;
 		var white = '#ffffff';
 		var topTextY;
 		var bottomTextY;
 
-		if ( 'extend' === style ) {
-			// The photo's own edges are stretched and blurred into a backdrop, and the photo sits
-			// in the middle with its top and bottom melting into it.
-			var back = makeCanvas( W, H );
-			var bctx = back.getContext( '2d' );
+		// Backdrop shared by both layouts: a gradient and glow built from the photo's own colours.
+		var top = mix( pal.vivid, [ 8, 19, 42 ], pal.dark ? 0.35 : 0.62 );
+		var bottom = mix( pal.vivid, [ 8, 19, 42 ], pal.dark ? 0.7 : 0.85 );
+		var grad = ctx.createLinearGradient( 0, 0, 0, H );
 
-			cover( bctx, src, 0, 0, W, H, 0.5, 0.5 );
+		grad.addColorStop( 0, rgb( top ) );
+		grad.addColorStop( 1, rgb( bottom ) );
+		ctx.fillStyle = grad;
+		ctx.fillRect( 0, 0, W, H );
 
-			var blurred = softBlur( back, W, H, 28 );
+		var glow = ctx.createRadialGradient( W / 2, H * 0.55, W * 0.05, W / 2, H * 0.55, W * 0.9 );
 
-			ctx.drawImage( blurred, 0, 0 );
-			blurred.width = 0;
-			back.width = 0;
-			ctx.fillStyle = rgb( mix( pal.avg, [ 8, 19, 42 ], 0.55 ), 0.62 );
-			ctx.fillRect( 0, 0, W, H );
+		glow.addColorStop( 0, rgb( mix( pal.vivid, [ 255, 255, 255 ], 0.35 ), 0.55 ) );
+		glow.addColorStop( 1, rgb( pal.vivid, 0 ) );
+		ctx.fillStyle = glow;
+		ctx.fillRect( 0, 0, W, H );
 
-			var ph = src.height * ( W / src.width );
-			var maxPh = H * 0.5;
-			var pw = W;
+		// 'hero': the cut-out subject; 'extend': the whole photo, framed, when no cut-out is possible.
+		var subject = opts.mask || src;
+		var sw = W * 0.9;
+		var sh = subject.height * ( sw / subject.width );
+		var maxSh = H * 0.5;
 
-			if ( ph > maxPh ) {
-				ph = maxPh;
-				pw = src.width * ( ph / src.height );
-			}
-
-			var py = H * 0.3;
-			var band = makeCanvas( W, ph );
-			var cx = band.getContext( '2d' );
-
-			cx.drawImage( src, ( W - pw ) / 2, 0, pw, ph );
-
-			// Feather the band's top and bottom (and sides if it does not span the width).
-			cx.globalCompositeOperation = 'destination-in';
-
-			var fade = cx.createLinearGradient( 0, 0, 0, ph );
-
-			fade.addColorStop( 0, 'rgba(0,0,0,0)' );
-			fade.addColorStop( 0.16, 'rgba(0,0,0,1)' );
-			fade.addColorStop( 0.84, 'rgba(0,0,0,1)' );
-			fade.addColorStop( 1, 'rgba(0,0,0,0)' );
-			cx.fillStyle = fade;
-			cx.fillRect( 0, 0, W, ph );
-			ctx.drawImage( band, 0, py );
-			band.width = 0;
-
-			topTextY = H * 0.07;
-			bottomTextY = py + ph + H * 0.04;
-		} else if ( 'hero' === style ) {
-			// A gradient built from the photo's colours, a glow, and the cut-out subject large in front.
-			var top = mix( pal.vivid, [ 8, 19, 42 ], pal.dark ? 0.35 : 0.62 );
-			var bottom = mix( pal.vivid, [ 8, 19, 42 ], pal.dark ? 0.7 : 0.85 );
-			var grad = ctx.createLinearGradient( 0, 0, 0, H );
-
-			grad.addColorStop( 0, rgb( top ) );
-			grad.addColorStop( 1, rgb( bottom ) );
-			ctx.fillStyle = grad;
-			ctx.fillRect( 0, 0, W, H );
-
-			var glow = ctx.createRadialGradient( W / 2, H * 0.55, W * 0.05, W / 2, H * 0.55, W * 0.9 );
-
-			glow.addColorStop( 0, rgb( mix( pal.vivid, [ 255, 255, 255 ], 0.35 ), 0.55 ) );
-			glow.addColorStop( 1, rgb( pal.vivid, 0 ) );
-			ctx.fillStyle = glow;
-			ctx.fillRect( 0, 0, W, H );
-
-			var subject = opts.mask || src;
-			var sw = W * 0.9;
-			var sh = subject.height * ( sw / subject.width );
-			var maxSh = H * 0.5;
-
-			if ( sh > maxSh ) {
-				sh = maxSh;
-				sw = subject.width * ( sh / subject.height );
-			}
-
-			ctx.shadowColor = 'rgba(0,0,0,.45)';
-			ctx.shadowBlur = W * 0.04;
-			ctx.shadowOffsetY = W * 0.025;
-			ctx.drawImage( subject, ( W - sw ) / 2, H * 0.62 - sh / 2, sw, sh );
-			ctx.shadowColor = 'transparent';
-			ctx.shadowBlur = 0;
-			ctx.shadowOffsetY = 0;
-
-			topTextY = H * 0.07;
-			bottomTextY = H * 0.62 + sh / 2 + H * 0.025;
-		} else {
-			// A photo block on top, a solid brand panel below for the words.
-			var blockH = H * 0.52;
-
-			ctx.fillStyle = NAVY;
-			ctx.fillRect( 0, 0, W, H );
-			cover( ctx, src, 0, 0, W, blockH, 0.5, 0.45 );
-
-			var shade = ctx.createLinearGradient( 0, blockH * 0.7, 0, blockH );
-
-			shade.addColorStop( 0, 'rgba(16,37,74,0)' );
-			shade.addColorStop( 1, 'rgba(16,37,74,1)' );
-			ctx.fillStyle = shade;
-			ctx.fillRect( 0, blockH * 0.7, W, blockH * 0.3 );
-			ctx.fillStyle = SKY;
-			ctx.fillRect( pad, blockH + H * 0.012, W * 0.12, H * 0.004 );
-
-			topTextY = blockH + H * 0.04;
-			bottomTextY = null;
+		if ( sh > maxSh ) {
+			sh = maxSh;
+			sw = subject.width * ( sh / subject.height );
 		}
 
-		var onDark = 'panel' === style || 'hero' === style || true;
-		var textColor = onDark ? white : NAVY;
-		var y;
+		ctx.shadowColor = 'rgba(0,0,0,.45)';
+		ctx.shadowBlur = W * 0.04;
+		ctx.shadowOffsetY = W * 0.025;
+		ctx.drawImage( subject, ( W - sw ) / 2, H * 0.62 - sh / 2, sw, sh );
+		ctx.shadowColor = 'transparent';
+		ctx.shadowBlur = 0;
+		ctx.shadowOffsetY = 0;
 
-		if ( 'panel' === style ) {
-			y = drawText( ctx, W, text.headline, topTextY, textW, { size: headlineSize, weight: 700, family: family, color: textColor, maxLines: 3, rtl: opts.rtl } );
-			y = drawText( ctx, W, text.sub, y + H * 0.015, textW, { size: W * 0.052, weight: 400, family: family, color: 'rgba(255,255,255,.82)', maxLines: 4, rtl: opts.rtl } );
-		} else {
-			y = drawText( ctx, W, text.headline, topTextY, textW, { size: headlineSize, weight: 700, family: family, color: textColor, maxLines: 3, rtl: opts.rtl, shadow: true } );
-			drawText( ctx, W, text.sub, y + H * 0.012, textW, { size: W * 0.05, weight: 400, family: family, color: 'rgba(255,255,255,.9)', maxLines: 3, rtl: opts.rtl, shadow: true } );
+		topTextY = H * 0.07;
+		bottomTextY = H * 0.62 + sh / 2 + H * 0.025;
 
-			if ( bottomTextY ) {
-				drawText( ctx, W, text.body || '', bottomTextY, textW, { size: W * 0.048, weight: 400, family: family, color: 'rgba(255,255,255,.9)', maxLines: 4, rtl: opts.rtl, shadow: true } );
-			}
-		}
+		var y = drawText( ctx, W, text.headline, topTextY, textW, { size: headlineSize, weight: 700, family: family, color: white, maxLines: 3, shadow: true } );
+
+		drawText( ctx, W, text.sub, y + H * 0.012, textW, { size: W * 0.05, weight: 400, family: family, color: 'rgba(255,255,255,.9)', maxLines: 3, shadow: true } );
 
 		// Contact bar at the foot.
 		if ( text.contact ) {
@@ -350,13 +236,26 @@
 			ctx.fillRect( 0, H - barH, W, barH );
 			ctx.fillStyle = SKY;
 			ctx.fillRect( 0, H - barH, W, H * 0.003 );
-			drawText( ctx, W, text.contact, H - barH + barH * 0.3, textW, { size: W * 0.055, weight: 500, family: family, color: white, maxLines: 1, rtl: opts.rtl } );
+			drawText( ctx, W, text.contact, H - barH + barH * 0.3, textW, { size: W * 0.055, weight: 500, family: family, color: white, maxLines: 1 } );
 		}
 
 		return out;
 	}
 
-	root.PrimeLabBanner = { compose: compose, palette: palette };
+	/** The width the main image is drawn at on the banner, in px, for the given layout. */
+	function drawnWidth( style, img, W, H ) {
+		var w = W * 0.9;
+		var h = img.height * ( w / img.width );
+		var maxH = H * 0.5;
+
+		if ( h > maxH ) {
+			w = img.width * ( maxH / img.height );
+		}
+
+		return w;
+	}
+
+	root.PrimeLabBanner = { compose: compose, palette: palette, drawnWidth: drawnWidth };
 
 	if ( typeof module !== 'undefined' && module.exports ) {
 		module.exports = root.PrimeLabBanner;

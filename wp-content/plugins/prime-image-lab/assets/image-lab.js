@@ -94,6 +94,20 @@
 			ruFit: 'The whole photo is kept, with blank space above and below.',
 			ruShowWhole: 'Show the whole photo instead',
 			ruFill: 'Fill the banner instead',
+			ruDesignTitle: 'Design your roll-up banner',
+			ruDesignText: 'We build the banner from your photo: your main subject, colours taken from the photo, and your words. The words are optional.',
+			ruAiNote: 'The first time, your browser downloads a small AI model (about 19 MB) to cut out your subject. It runs on your device and your photo is never uploaded.',
+			fHeadline: 'Headline',
+			fSub: 'A short line',
+			fContact: 'Website and phone',
+			phHeadline: 'Your product or offer here',
+			phSub: 'A short line about it',
+			phContact: 'Your website | your phone',
+			ruDesignGo: 'Design my banner',
+			ruAsIs: 'Use my photo as it is',
+			ruDesigned: 'Your banner is ready: exactly 85 × 200 cm at %s DPI.',
+			ruExtendNote: 'We could not cut out your subject on this device, so your whole photo is placed on a matching background instead.',
+			ruEditText: 'Change the text',
 			ruBig: 'This is a very large file. It can take a minute.',
 			ruCap: 'Your device cannot make a 100 DPI file this big, so this one is %s DPI.',
 			downloadPdf: 'Download PDF for the printer',
@@ -167,6 +181,20 @@
 			ruFit: 'حافظنا على الصورة كاملة مع مساحة فارغة أعلاها وأسفلها.',
 			ruShowWhole: 'أظهر الصورة كاملة بدلاً من ذلك',
 			ruFill: 'املأ البانر بدلاً من ذلك',
+			ruDesignTitle: 'صمّم الرول أب',
+			ruDesignText: 'نبني البانر من صورتك: العنصر الرئيسي، وألوان مأخوذة من الصورة، وكلماتك. الكلمات اختيارية.',
+			ruAiNote: 'في المرة الأولى يحمّل المتصفح نموذج ذكاء اصطناعي صغيراً (حوالي 19 ميجابايت) لقص العنصر. يعمل على جهازك ولا تُرفع صورتك أبداً.',
+			fHeadline: 'العنوان',
+			fSub: 'سطر قصير',
+			fContact: 'الموقع والهاتف',
+			phHeadline: 'اسم منتجك أو عرضك هنا',
+			phSub: 'وصف قصير',
+			phContact: 'موقعك | رقم هاتفك',
+			ruDesignGo: 'صمّم البانر',
+			ruAsIs: 'استخدم صورتي كما هي',
+			ruDesigned: 'بانرك جاهز: بمقاس 85 × 200 سم بالضبط بدقة %s DPI.',
+			ruExtendNote: 'لم نستطع قص العنصر على هذا الجهاز، فوضعنا صورتك كاملة على خلفية متناسقة بدلاً من ذلك.',
+			ruEditText: 'غيّر النص',
 			ruBig: 'هذا ملف كبير جداً. قد يستغرق دقيقة.',
 			ruCap: 'جهازك لا يستطيع إنشاء ملف بدقة 100 DPI بهذا الحجم، لذلك هذا الملف بدقة %s DPI.',
 			downloadPdf: 'تنزيل PDF للمطبعة',
@@ -221,6 +249,8 @@
 		hasAlpha: false,
 		busy: false,
 		paper: null, // { w, h } in mm of the artboard the last print job was made for
+		bannerText: { headline: '', sub: '', contact: '' },
+		designed: false, // the result is a designed banner, not the photo as is
 		fit: false, // roll-up: keep the whole photo instead of filling the banner
 		printBase: null, // the image the print job started from, so it can be redone
 		printBaseOwned: false,
@@ -513,6 +543,18 @@
 			if ( 'ai' === S.mode ) {
 				choices = '<h3>' + esc( L.aiTitle ) + '</h3><p class="pil__note">' + esc( L.aiText ) + '</p><div class="pil__actions"><button type="button" class="pil__btn" id="pil-ai-go">' + esc( L.aiGo ) + '</button>' +
 					'<button type="button" class="pil__btn pil__btn--ghost" id="pil-ai-cancel">' + esc( L.aiCancel ) + '</button></div>';
+			} else if ( 'rudesign' === S.mode ) {
+				var bt = S.bannerText;
+				var field = function ( id, label, ph, value, max ) {
+					return '<div class="pil__field"><label for="' + id + '">' + esc( label ) + '</label><input id="' + id + '" type="text" maxlength="' + max + '" placeholder="' + esc( ph ) + '" value="' + esc( value ) + '"></div>';
+				};
+
+				choices = '<h3>' + esc( L.ruDesignTitle ) + '</h3><p class="pil__note">' + esc( L.ruDesignText ) + '</p>' +
+					field( 'pil-t-head', L.fHeadline, L.phHeadline, bt.headline, 60 ) + field( 'pil-t-sub', L.fSub, L.phSub, bt.sub, 90 ) + field( 'pil-t-contact', L.fContact, L.phContact, bt.contact, 60 ) +
+					( aiAvailable() && ! S.aiOk && ! AI.session ? '<p class="pil__note">' + esc( L.ruAiNote ) + '</p>' : '' ) +
+					'<div class="pil__actions"><button type="button" class="pil__btn" id="pil-ru-go">' + esc( L.ruDesignGo ) + '</button>' +
+					'<button type="button" class="pil__btn pil__btn--ghost" id="pil-ru-asis">' + esc( L.ruAsIs ) + '</button></div>' +
+					'<button type="button" class="pil__btn pil__btn--ghost" id="pil-back">' + esc( L.sizeBack ) + '</button>';
 			} else if ( 'sizes' === S.mode ) {
 				choices = '<h3>' + esc( L.sizeAsk ) + '</h3><div class="pil__sizes">' + SIZES.map( function ( z ) {
 					var name = z.large ? L.ruName : z.key;
@@ -647,6 +689,7 @@
 		S.printBaseOwned = false;
 		S.paper = null;
 		S.fit = false;
+		S.designed = false;
 		S.shareFile = null;
 		S.sharePrep = false;
 		S.downloaded = false;
@@ -761,6 +804,14 @@
 
 		if ( box ) {
 			box.innerHTML = text ? '<p class="pil__verdict pil__verdict--' + level + '">' + esc( text ) + '</p>' : '';
+		}
+
+		if ( box && text && S.verdict && S.verdict.edit ) {
+			box.innerHTML += '<button type="button" class="pil__btn pil__btn--ghost" id="pil-ru-edit">' + esc( t().ruEditText ) + '</button>';
+			box.querySelector( '#pil-ru-edit' ).addEventListener( 'click', function () {
+				S.mode = 'rudesign';
+				build();
+			} );
 		}
 
 		if ( box && text && S.verdict && S.verdict.toggle ) {
@@ -1098,6 +1149,143 @@
 		} );
 	};
 
+	/** Trim a cut-out to the box around its visible pixels (with a small margin). */
+	var trimToAlpha = function ( canvas ) {
+		var k = Math.min( 1, 400 / Math.max( canvas.width, canvas.height ) );
+		var sw = Math.max( 1, Math.round( canvas.width * k ) );
+		var sh = Math.max( 1, Math.round( canvas.height * k ) );
+		var small = makeCanvas( sw, sh );
+		var sctx = small.getContext( '2d' );
+
+		sctx.drawImage( canvas, 0, 0, sw, sh );
+
+		var d = sctx.getImageData( 0, 0, sw, sh ).data;
+		var x0 = sw;
+		var y0 = sh;
+		var x1 = -1;
+		var y1 = -1;
+
+		for ( var y = 0; y < sh; y++ ) {
+			for ( var x = 0; x < sw; x++ ) {
+				if ( d[ ( y * sw + x ) * 4 + 3 ] > 80 ) {
+					x0 = Math.min( x0, x );
+					x1 = Math.max( x1, x );
+					y0 = Math.min( y0, y );
+					y1 = Math.max( y1, y );
+				}
+			}
+		}
+
+		freeCanvas( small );
+
+		if ( x1 < x0 || y1 < y0 ) {
+			return canvas;
+		}
+
+		var m = Math.round( Math.max( sw, sh ) * 0.01 );
+		var rx = Math.max( 0, Math.floor( ( x0 - m ) / k ) );
+		var ry = Math.max( 0, Math.floor( ( y0 - m ) / k ) );
+		var rw = Math.min( canvas.width - rx, Math.ceil( ( x1 - x0 + 2 * m + 1 ) / k ) );
+		var rh = Math.min( canvas.height - ry, Math.ceil( ( y1 - y0 + 2 * m + 1 ) / k ) );
+		var out = makeCanvas( rw, rh );
+
+		out.getContext( '2d' ).drawImage( canvas, rx, ry, rw, rh, 0, 0, rw, rh );
+
+		return out;
+	};
+
+	/** Design the roll-up: cut-out subject on a gradient from the photo's colours, plus the visitor's words. */
+	var jobRuDesign = function () {
+		var L = t();
+		var size = SIZES.filter( function ( z ) {
+			return z.large;
+		} )[ 0 ];
+		var src = 'print' === S.kind && S.printBase ? S.printBase : current();
+		var area = ( size.w / 25.4 ) * ( size.h / 25.4 );
+		var dpi = Math.max( 50, Math.min( 100, Math.floor( Math.sqrt( LIMITS.pixels / area ) ) ) );
+		var W = Math.round( size.w / 25.4 * dpi );
+		var H = Math.round( size.h / 25.4 * dpi );
+		var family = 'Montserrat, "IBM Plex Sans Arabic", "GE Dinar Two", Arial, sans-serif';
+		var subject = null;
+
+		setMsg( L.ruBig, 'is-busy' );
+
+		var fonts = Promise.all( [ '700 40px Montserrat', '400 40px Montserrat', '500 40px Montserrat', '700 40px "IBM Plex Sans Arabic"', '400 40px "IBM Plex Sans Arabic"' ].map( function ( f ) {
+			return document.fonts && document.fonts.load ? document.fonts.load( f ).catch( function () {} ) : Promise.resolve();
+		} ) );
+
+		var cut = aiAvailable() ? ensureAi().then( function ( session ) {
+			setMsg( L.aiRunning, 'is-busy' );
+
+			return aiRemove( session, src );
+		} ).then( function ( r ) {
+			if ( r.removed < 0.02 || r.removed > 0.98 ) {
+				freeCanvas( r.canvas );
+				return null;
+			}
+
+			var trimmed = trimToAlpha( r.canvas );
+
+			if ( trimmed !== r.canvas ) {
+				freeCanvas( r.canvas );
+			}
+
+			return trimmed;
+		} ).catch( function () {
+			return null;
+		} ) : Promise.resolve( null );
+
+		return Promise.all( [ cut, fonts ] ).then( function ( res ) {
+			subject = res[ 0 ];
+
+			var style = subject ? 'hero' : 'extend';
+			var canvas;
+
+			setMsg( L.ruBig, 'is-busy' );
+
+			try {
+				canvas = window.PrimeLabBanner.compose( { src: src, mask: subject, style: style, width: W, height: H, text: S.bannerText, family: family } );
+			} catch ( e ) {
+				freeCanvas( subject );
+				throw e;
+			}
+
+			var img = subject || src;
+			var effPpi = Core.ppi( img.width, window.PrimeLabBanner.drawnWidth( style, img, W, H ) / dpi * 25.4 );
+
+			freeCanvas( subject );
+
+			if ( 'print' !== S.kind ) {
+				if ( S.printBaseOwned ) {
+					freeCanvas( S.printBase );
+				}
+
+				S.printBase = src;
+				S.printBaseOwned = src === S.work;
+
+				if ( S.printBaseOwned ) {
+					S.work = null;
+				}
+			}
+
+			finish( canvas, 'print', dpi );
+			S.sizeKey = 'RU';
+			S.paper = { w: size.w, h: size.h };
+			S.designed = true;
+			S.fit = false;
+			S.mode = 'choose';
+
+			var level = effPpi >= 100 ? 'ruGood' : effPpi >= 60 ? 'ruFair' : 'ruLow';
+
+			setMsg( fmt( L.ruDesigned, String( dpi ) ), '' );
+			S.verdict = {
+				level: level === 'ruGood' ? 'good' : level === 'ruFair' ? 'fair' : 'low',
+				text: L[ level ] + ( 'extend' === style ? ' ' + L.ruExtendNote : '' ) + ( dpi < 100 ? ' ' + fmt( L.ruCap, String( dpi ) ) : '' ),
+				edit: true
+			};
+		} );
+	};
+
 	/** Crop a canvas to a target aspect ratio, centred. Returns a new canvas. */
 	var cropToAspect = function ( src, aspect ) {
 		var cw = src.width;
@@ -1124,6 +1312,9 @@
 
 		// Redo from the image the first print job used, never from a print result.
 		var src = 'print' === S.kind && S.printBase ? S.printBase : current();
+
+		S.designed = false;
+
 		var landscape = src.width >= src.height;
 		var pw = size.large ? size.w : ( landscape ? size.h : size.w );
 		var ph = size.large ? size.h : ( landscape ? size.w : size.h );
@@ -1678,11 +1869,47 @@
 			b.addEventListener( 'click', function () {
 				var key = b.getAttribute( 'data-size' );
 
+				if ( 'RU' === key ) {
+					S.mode = 'rudesign';
+					build();
+					return;
+				}
+
 				run( function () {
 					return jobPrint( key );
 				} );
 			} );
 		} );
+
+		var ruGo = root.querySelector( '#pil-ru-go' );
+
+		if ( ruGo ) {
+			var readText = function () {
+				S.bannerText = {
+					headline: root.querySelector( '#pil-t-head' ).value.trim(),
+					sub: root.querySelector( '#pil-t-sub' ).value.trim(),
+					contact: root.querySelector( '#pil-t-contact' ).value.trim()
+				};
+			};
+
+			[ 'pil-t-head', 'pil-t-sub', 'pil-t-contact' ].forEach( function ( id ) {
+				root.querySelector( '#' + id ).addEventListener( 'input', readText );
+			} );
+
+			ruGo.addEventListener( 'click', function () {
+				readText();
+				S.aiOk = true;
+				run( jobRuDesign );
+			} );
+
+			root.querySelector( '#pil-ru-asis' ).addEventListener( 'click', function () {
+				S.fit = false;
+				S.mode = 'choose';
+				run( function () {
+					return jobPrint( 'RU' );
+				} );
+			} );
+		}
 
 		var aiGo = root.querySelector( '#pil-ai-go' );
 		var aiCancel = root.querySelector( '#pil-ai-cancel' );
@@ -1703,7 +1930,7 @@
 
 		if ( back ) {
 			back.addEventListener( 'click', function () {
-				S.mode = 'choose';
+				S.mode = 'rudesign' === S.mode ? 'sizes' : 'choose';
 				build();
 			} );
 		}
