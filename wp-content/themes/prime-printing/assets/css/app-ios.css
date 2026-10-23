@@ -357,3 +357,26 @@ body.prime-app .prime-menu__cat {
 body.prime-app .prime-menu__cat b { color: var(--ios-label2); }
 body.prime-app .prime-menu__foot,
 body.prime-app .prime-menu__foot a { color: var(--ios-label2); }
+
+
+/* ---- Tab bar: lifted off the home indicator, edge tabs not clipped ---------------- */
+body.prime-app { --app-lift: 10px; }
+
+body.prime-app .prime-app-tabs {
+  padding-block-end: calc(var(--app-safe-bottom) + var(--app-lift));
+  /* The first and last tabs sit under the rounded screen corners. */
+  padding-inline: max(8px, env(safe-area-inset-left, 0px)) max(8px, env(safe-area-inset-right, 0px));
+}
+
+body.prime-app { padding-block-end: calc(var(--app-tab-h) + var(--app-safe-bottom) + var(--app-lift)); }
+
+body.prime-app .prime-product__summary button.single_add_to_cart_button.button.alt {
+  inset-block-end: calc(var(--app-tab-h) + var(--app-safe-bottom) + var(--app-lift) + 10px);
+}
+
+/* Room for the full glyph height (Arabic ascenders and descenders were shaved by the clip). */
+body.prime-app .prime-app-tab span:not(.prime-app-tab__badge) {
+  line-height: 1.5;
+  padding-block: 1px;
+  padding-inline: 4px;
+}
