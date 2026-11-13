@@ -46,6 +46,7 @@ define( 'PRIME_URI', get_template_directory_uri() );
  * account           Phase 8 — customer account page (my-account/ overrides, Files tab, reorder)
  * push-notifications Phase 13 — APNs push for the iOS app: token registration, order-status pushes, admin announcements
  * native-app-tracking Phase 13 — strips Meta Pixel/Pinterest tracking scripts inside the iOS app (no ATT prompt needed)
+ * landing-pages    standalone HTML pages served at /<slug>/ from landing/ (designer-skill)
  */
 $prime_modules = array(
 	'setup',
@@ -85,6 +86,7 @@ $prime_modules = array(
 	'native-app-tracking',
 	'app-promo',
 	'native-app-ui',
+	'landing-pages',
 );
 
 foreach ( $prime_modules as $prime_module ) {
